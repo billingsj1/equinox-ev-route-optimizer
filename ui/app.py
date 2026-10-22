@@ -70,11 +70,16 @@ class OptimizationRequest(BaseModel):
     has_ea_pass: bool = False
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
 async def serve_index():
+    root_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "index.html")
+    if os.path.exists(root_path):
+        with open(root_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
     template_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
     with open(template_path, "r", encoding="utf-8") as f:
-        html = f.read()
-    return HTMLResponse(content=html)
+        return HTMLResponse(content=f.read())
 
 @app.get("/api/stations")
 async def get_stations():
