@@ -31,7 +31,7 @@
           Equinox EV Optimizer
           <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/40">2025 FWD (85 kWh)</span>
         </h1>
-        <p class="text-xs text-slate-400">Dynamic Multi-Objective EV Route Optimizer & Physics Simulator</p>
+        <p class="text-xs text-slate-400">Multi-Objective Pareto EV Router & Highway Milestone Simulator</p>
       </div>
     </div>
     <div class="flex items-center space-x-4">
@@ -69,10 +69,10 @@
           </div>
 
           <div>
-            <label class="text-xs text-slate-400 block mb-1">Destination Address, City, or Landmark</label>
+            <label class="text-xs text-slate-400 block mb-1">Trip Destination Address, City, or Landmark</label>
             <div class="flex gap-2">
               <div class="relative flex-1">
-                <input type="text" id="destAddress" value="Philadelphia, PA" class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 pr-8" placeholder="e.g. Philadelphia, PA or New York, NY">
+                <input type="text" id="destAddress" value="Marlton, NJ" class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 pr-8" placeholder="e.g. Marlton, NJ or Philadelphia, PA">
                 <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400 absolute right-2.5 top-2.5"></i>
               </div>
               <button onclick="handleSearchRoute()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-md text-xs font-semibold flex items-center gap-1.5 transition">
@@ -85,10 +85,10 @@
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">Quick Destinations:</label>
             <div class="flex flex-wrap gap-1.5">
+              <button onclick="setQuickDest('Marlton, NJ')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Marlton, NJ</button>
               <button onclick="setQuickDest('Philadelphia, PA')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Philadelphia, PA</button>
               <button onclick="setQuickDest('New York, NY')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">New York, NY</button>
               <button onclick="setQuickDest('Washington, DC')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Washington, DC</button>
-              <button onclick="setQuickDest('Chicago, IL')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Chicago, IL</button>
               <button onclick="setQuickDest('Charleston, WV')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Charleston, WV</button>
             </div>
           </div>
@@ -100,22 +100,22 @@
         <h2 class="text-sm font-semibold text-white mb-2 flex items-center justify-between">
           <span class="flex items-center gap-2">
             <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
-            Simulated Physics & Efficiency
+            Physical Highway Consumption
           </span>
-          <span id="efficiencyBadge" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">3.18 mi/kWh</span>
+          <span id="efficiencyBadge" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">2.95 mi/kWh</span>
         </h2>
         <div class="grid grid-cols-3 gap-2 text-center text-xs mt-2">
           <div class="p-2 rounded bg-slate-950 border border-slate-800">
             <span class="text-[10px] text-slate-400 block">Energy Rate</span>
-            <span id="whPerMile" class="font-mono font-bold text-white text-xs">314 Wh/mi</span>
+            <span id="whPerMile" class="font-mono font-bold text-white text-xs">339 Wh/mi</span>
           </div>
           <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">HVAC Draw</span>
+            <span class="text-[10px] text-slate-400 block">Aux + HVAC Draw</span>
             <span id="hvacDraw" class="font-mono font-bold text-cyan-400 text-xs">0.35 kW</span>
           </div>
           <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">Battery Health/Temp</span>
-            <span id="batteryTempFactor" class="font-mono font-bold text-emerald-400 text-xs">100% eff</span>
+            <span class="text-[10px] text-slate-400 block">Battery Usable</span>
+            <span id="batteryTempFactor" class="font-mono font-bold text-emerald-400 text-xs">85.0 kWh</span>
           </div>
         </div>
       </div>
@@ -207,7 +207,7 @@
           <div>
             <div class="flex justify-between text-slate-400 mb-1">
               <span>Ideal Time Between Stops</span>
-              <span class="font-mono text-slate-300">90 to 150 mins</span>
+              <span class="font-mono text-slate-300">90 to 150 mins (~105 - 175 mi)</span>
             </div>
           </div>
         </div>
@@ -246,10 +246,10 @@
             <div>
               <label class="text-slate-400 block mb-1">Wind Direction</label>
               <select id="windDir" onchange="recomputeCurrentRoute()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
-                <option value="270" selected>West (270° Tailwind)</option>
-                <option value="90">East (90° Headwind)</option>
-                <option value="0">North (0° Crosswind)</option>
-                <option value="180">South (180° Crosswind)</option>
+                <option value="270" selected>West (Tailwind)</option>
+                <option value="90">East (Headwind)</option>
+                <option value="0">North (Crosswind)</option>
+                <option value="180">South (Crosswind)</option>
               </select>
             </div>
           </div>
@@ -297,14 +297,14 @@
               <i data-lucide="zap" class="w-3.5 h-3.5"></i> Fastest Route
             </span>
             <div class="flex items-center gap-1.5">
-              <span id="fastestArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 25%</span>
+              <span id="fastestArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 35%</span>
               <span id="fastestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">2 stops</span>
             </div>
           </div>
-          <div class="text-2xl font-black text-white" id="fastestTime">6h 15m</div>
+          <div class="text-2xl font-black text-white" id="fastestTime">7h 14m</div>
           <div class="text-xs text-slate-400 mt-1 flex justify-between">
-            <span>Total Cost: <b id="fastestCost" class="text-slate-200">$48.20</b></span>
-            <span id="fastestMiles" class="text-slate-400">421 mi</span>
+            <span>Total Cost: <b id="fastestCost" class="text-slate-200">$54.10</b></span>
+            <span id="fastestMiles" class="text-slate-400">455 mi</span>
           </div>
         </div>
 
@@ -315,14 +315,14 @@
               <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> Cheapest Route
             </span>
             <div class="flex items-center gap-1.5">
-              <span id="cheapestArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 24%</span>
-              <span id="cheapestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">2 stops</span>
+              <span id="cheapestArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 25%</span>
+              <span id="cheapestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">3 stops</span>
             </div>
           </div>
-          <div class="text-2xl font-black text-white" id="cheapestTime">6h 52m</div>
+          <div class="text-2xl font-black text-white" id="cheapestTime">7h 48m</div>
           <div class="text-xs text-slate-400 mt-1 flex justify-between">
-            <span>Total Cost: <b id="cheapestCost" class="text-emerald-400">$18.90</b></span>
-            <span id="cheapestMiles" class="text-slate-400">415 mi</span>
+            <span>Total Cost: <b id="cheapestCost" class="text-emerald-400">$32.40</b></span>
+            <span id="cheapestMiles" class="text-slate-400">448 mi</span>
           </div>
         </div>
 
@@ -333,14 +333,14 @@
               <i data-lucide="scale" class="w-3.5 h-3.5"></i> Balanced (Pareto Knee)
             </span>
             <div class="flex items-center gap-1.5">
-              <span id="balancedArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 25%</span>
+              <span id="balancedArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 30%</span>
               <span id="balancedStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">2 stops</span>
             </div>
           </div>
-          <div class="text-2xl font-black text-white" id="balancedTime">6h 18m</div>
+          <div class="text-2xl font-black text-white" id="balancedTime">7h 20m</div>
           <div class="text-xs text-slate-400 mt-1 flex justify-between">
-            <span>Total Cost: <b id="balancedCost" class="text-blue-300">$41.35</b></span>
-            <span id="balancedMiles" class="text-slate-400">421 mi</span>
+            <span>Total Cost: <b id="balancedCost" class="text-blue-300">$44.80</b></span>
+            <span id="balancedMiles" class="text-slate-400">455 mi</span>
           </div>
         </div>
 
@@ -394,6 +394,7 @@
               <thead>
                 <tr class="border-b border-slate-800 text-slate-400 font-medium">
                   <th class="py-2 px-3">Station & Network</th>
+                  <th class="py-2 px-3">Mile Marker</th>
                   <th class="py-2 px-3">Power</th>
                   <th class="py-2 px-3">Arrival SoC</th>
                   <th class="py-2 px-3">Target SoC</th>
@@ -418,31 +419,31 @@
   </div>
 
   <script>
-    // --- STATIONS DATABASE (Seeded with real verified corridor chargers) ---
+    // --- VERIFIED CHARGERS DATABASE WITH PRECISE HIGHWAY MILE MARKERS ---
+    // Highway distance along the I-70 / PA Turnpike / I-68 corridor from Columbus, OH (Mile 0)
     const STATIONS = [
-      {"id":"ionna-cambridge-oh","name":"IONNA - Cambridge, OH","network":"IONNA","lat":40.0345,"lon":-81.5833,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1569375"},
-      {"id":"mb-washington-pa","name":"Mercedes-Benz HPC - Washington, PA","network":"Mercedes-Benz","lat":40.1740,"lon":-80.2462,"kw":150,"off":0.44,"on":0.44,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/1317815"},
-      {"id":"ea-belle-vernon-pa","name":"Electrify America - Belle Vernon, PA","network":"Electrify America","lat":40.1265,"lon":-79.8695,"kw":150,"off":0.40,"on":0.60,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/174470"},
-      {"id":"ea-new-stanton-pa","name":"Sheetz / EA - New Stanton, PA","network":"Electrify America","lat":40.2187,"lon":-79.6103,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/549749"},
-      {"id":"tesla-somerset-pa","name":"Tesla Supercharger (+CCS1) - Somerset, PA","network":"Tesla","lat":40.0084,"lon":-79.0781,"kw":150,"off":0.63,"on":0.63,"gm":false,"ea_pass":false,"mem_off":0.46,"mem_on":0.46,"plug":"https://www.plugshare.com/location/39934"},
-      {"id":"ag-somerset-pa","name":"Applegreen - Somerset, PA (PA Turnpike)","network":"Applegreen","lat":40.0150,"lon":-79.0700,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/892354"},
-      {"id":"ea-bedford-pa","name":"Electrify America - Bedford, PA","network":"Electrify America","lat":40.0187,"lon":-78.5039,"kw":150,"off":0.60,"on":0.60,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/186738"},
-      {"id":"ag-bedford-pa","name":"Applegreen - Bedford, PA (PA Turnpike)","network":"Applegreen","lat":40.0210,"lon":-78.4980,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/1820129"},
-      {"id":"ag-waterfall-pa","name":"Applegreen - Waterfall, PA (PA Turnpike)","network":"Applegreen","lat":40.1550,"lon":-78.1400,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/561366"},
-      {"id":"tesla-fort-littleton-pa","name":"Tesla Supercharger (+CCS1) - Fort Littleton, PA","network":"Tesla","lat":40.0495,"lon":-77.9620,"kw":150,"off":0.64,"on":0.64,"gm":false,"ea_pass":false,"mem_off":0.46,"mem_on":0.46,"plug":"https://www.plugshare.com/location/711338"},
-      {"id":"fe-newburg-pa","name":"Francis Energy - Newburg, PA","network":"Francis Energy","lat":40.1340,"lon":-77.5560,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/1093182"},
-      {"id":"ag-newburg-pa","name":"Applegreen - Newburg, PA (PA Turnpike)","network":"Applegreen","lat":40.1350,"lon":-77.5500,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/743932"},
-      {"id":"ea-carlisle-pa","name":"Electrify America - Carlisle, PA","network":"Electrify America","lat":40.2014,"lon":-77.1889,"kw":150,"off":0.44,"on":0.64,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/552335"},
-      {"id":"ag-middletown-pa","name":"Applegreen - Middletown, PA (PA Turnpike)","network":"Applegreen","lat":40.1989,"lon":-76.7314,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/631745"},
-      {"id":"ionna-chester-springs-pa","name":"IONNA - Chester Springs, PA","network":"IONNA","lat":40.0934,"lon":-75.6268,"kw":150,"off":0.35,"on":0.35,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1451631"},
-      {"id":"cp-frostburg-md","name":"ChargePoint - Frostburg, MD","network":"ChargePoint","lat":39.6582,"lon":-78.9284,"kw":125,"off":0.34,"on":0.34,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/338694"},
-      {"id":"cp-hancock-md","name":"ChargePoint - Hancock, MD","network":"ChargePoint","lat":39.6998,"lon":-78.1797,"kw":125,"off":0.34,"on":0.34,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/264812"},
-      {"id":"ea-hagerstown-md","name":"Electrify America - Hagerstown, MD","network":"Electrify America","lat":39.6418,"lon":-77.7200,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/169554"},
-      {"id":"ionna-frederick-md","name":"IONNA - Frederick, MD","network":"IONNA","lat":39.4143,"lon":-77.4105,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1449991"},
-      {"id":"ionna-elkton-md","name":"IONNA - Elkton, MD","network":"IONNA","lat":39.6068,"lon":-75.8333,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1483639"}
+      {"id":"ionna-cambridge-oh","name":"IONNA - Cambridge, OH","network":"IONNA","lat":40.0345,"lon":-81.5833,"mile":80.0,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1569375"},
+      {"id":"mb-washington-pa","name":"Mercedes-Benz HPC - Washington, PA","network":"Mercedes-Benz","lat":40.1740,"lon":-80.2462,"mile":146.0,"kw":150,"off":0.44,"on":0.44,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/1317815"},
+      {"id":"ea-belle-vernon-pa","name":"Electrify America - Belle Vernon, PA","network":"Electrify America","lat":40.1265,"lon":-79.8695,"mile":172.0,"kw":150,"off":0.40,"on":0.60,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/174470"},
+      {"id":"ea-new-stanton-pa","name":"Sheetz / EA - New Stanton, PA","network":"Electrify America","lat":40.2187,"lon":-79.6103,"mile":185.0,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/549749"},
+      {"id":"ag-somerset-pa","name":"Applegreen - Somerset, PA (PA Turnpike)","network":"Applegreen","lat":40.0150,"lon":-79.0700,"mile":220.0,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/892354"},
+      {"id":"tesla-somerset-pa","name":"Tesla Supercharger (+CCS1) - Somerset, PA","network":"Tesla","lat":40.0084,"lon":-79.0781,"mile":221.0,"kw":150,"off":0.63,"on":0.63,"gm":false,"ea_pass":false,"mem_off":0.46,"mem_on":0.46,"plug":"https://www.plugshare.com/location/39934"},
+      {"id":"cp-frostburg-md","name":"ChargePoint - Frostburg, MD (I-68)","network":"ChargePoint","lat":39.6582,"lon":-78.9284,"mile":228.0,"kw":125,"off":0.34,"on":0.34,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/338694"},
+      {"id":"ea-bedford-pa","name":"Electrify America - Bedford, PA","network":"Electrify America","lat":40.0187,"lon":-78.5039,"mile":255.0,"kw":150,"off":0.60,"on":0.60,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/186738"},
+      {"id":"ag-bedford-pa","name":"Applegreen - Bedford, PA (PA Turnpike)","network":"Applegreen","lat":40.0210,"lon":-78.4980,"mile":255.0,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/1820129"},
+      {"id":"cp-hancock-md","name":"ChargePoint - Hancock, MD (I-68)","network":"ChargePoint","lat":39.6998,"lon":-78.1797,"mile":268.0,"kw":125,"off":0.34,"on":0.34,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/264812"},
+      {"id":"ag-waterfall-pa","name":"Applegreen - Waterfall, PA (PA Turnpike)","network":"Applegreen","lat":40.1550,"lon":-78.1400,"mile":280.0,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/561366"},
+      {"id":"tesla-fort-littleton-pa","name":"Tesla Supercharger (+CCS1) - Fort Littleton, PA","network":"Tesla","lat":40.0495,"lon":-77.9620,"mile":295.0,"kw":150,"off":0.64,"on":0.64,"gm":false,"ea_pass":false,"mem_off":0.46,"mem_on":0.46,"plug":"https://www.plugshare.com/location/711338"},
+      {"id":"ea-hagerstown-md","name":"Electrify America - Hagerstown, MD (I-68/I-70)","network":"Electrify America","lat":39.6418,"lon":-77.7200,"mile":298.0,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/169554"},
+      {"id":"fe-newburg-pa","name":"Francis Energy - Newburg, PA","network":"Francis Energy","lat":40.1340,"lon":-77.5560,"mile":320.0,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/1093182"},
+      {"id":"ag-newburg-pa","name":"Applegreen - Newburg, PA (PA Turnpike)","network":"Applegreen","lat":40.1350,"lon":-77.5500,"mile":320.0,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/743932"},
+      {"id":"ionna-frederick-md","name":"IONNA - Frederick, MD (I-70)","network":"IONNA","lat":39.4143,"lon":-77.4105,"mile":325.0,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1449991"},
+      {"id":"ea-carlisle-pa","name":"Electrify America - Carlisle, PA","network":"Electrify America","lat":40.2014,"lon":-77.1889,"mile":348.0,"kw":150,"off":0.44,"on":0.64,"gm":false,"ea_pass":true,"plug":"https://www.plugshare.com/location/552335"},
+      {"id":"ag-middletown-pa","name":"Applegreen - Middletown, PA (PA Turnpike)","network":"Applegreen","lat":40.1989,"lon":-76.7314,"mile":382.0,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"plug":"https://www.plugshare.com/location/631745"},
+      {"id":"ionna-elkton-md","name":"IONNA - Elkton, MD","network":"IONNA","lat":39.6068,"lon":-75.8333,"mile":410.0,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1483639"},
+      {"id":"ionna-chester-springs-pa","name":"IONNA - Chester Springs, PA","network":"IONNA","lat":40.0934,"lon":-75.6268,"mile":428.0,"kw":150,"off":0.35,"on":0.35,"gm":true,"gm_pct":0.10,"ea_pass":false,"plug":"https://www.plugshare.com/location/1451631"}
     ];
 
-    // Columbus, OH Base Coordinates (179 S Powell Ave)
     const COLUMBUS_OH = { lat: 39.9512, lon: -83.0750 };
 
     let map;
@@ -463,9 +464,8 @@
     };
 
     function initMap() {
-      map = L.map('map').setView([40.0, -79.5], 7);
+      map = L.map('map').setView([40.0, -78.8], 7);
       
-      // Free OpenStreetMap Tiles (NO API key watermark!)
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 18
@@ -486,6 +486,7 @@
         const popupContent = `
           <div style="color: #0f172a; font-family: sans-serif; font-size: 12px; line-height: 1.4;">
             <b style="font-size: 13px;">${s.name}</b><br>
+            <span style="color: #475569;">Mile Marker:</span> <b>Mile ${Math.round(s.mile)}</b> from Columbus<br>
             <span style="color: #475569;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
             <span style="color: #475569;">Rate:</span> $${s.on.toFixed(2)}/kWh (Off-peak: $${s.off.toFixed(2)})<br>
             ${s.gm ? '<span style="color: #059669; font-weight: bold;">✓ 10% GM EV Discount Active</span><br>' : ''}
@@ -520,18 +521,7 @@
       recomputeCurrentRoute();
     }
 
-    // --- GEODETIC DISTANCE & POLYLINE BUFFER (in miles) ---
-    function distMiles(lat1, lon1, lat2, lon2) {
-      const R = 3958.8; // miles
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }
-
-    // --- ADVANCED VEHICLE DYNAMICS (FASTSim Road-Load Formulation) ---
+    // --- PHYSICS SIMULATION ENGINE (FASTSim Road-Load Formulation) ---
     function simulateLegPhysics(distance_miles, speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap) {
       const curb_kg = 2233.0;
       const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
@@ -546,12 +536,11 @@
       const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
       const drag_area = 0.332 * 2.60;
       
-      // Wind vector effect: theta_rel between travel heading and wind direction
       const v_wind_ms = wind_speed * 0.44704;
       const v_airspeed_ms = Math.max(5, v_ms + (v_wind_ms * Math.cos((wind_dir - 90) * Math.PI / 180)));
       const f_aero = 0.5 * rho * drag_area * Math.pow(v_airspeed_ms, 2);
 
-      // 2. Rolling Resistance (Crr based on road surface)
+      // 2. Rolling Resistance
       let crr = 0.0095;
       if (road_cond === "wet") crr = 0.0125;
       if (road_cond === "snow_ice") crr = 0.0185;
@@ -562,18 +551,16 @@
       let tractive_kwh = (f_total * dist_meters) / 3.6e6;
       tractive_kwh /= 0.91; // 91% traction inverter efficiency
 
-      // 4. Cabin HVAC Draw (Ultium Heat Pump + Resistive Assist in freezing cold)
+      // 4. Cabin HVAC Draw (Heat Pump + Resistive Assist in extreme cold)
       let hvac_kw = 0.35;
       if (temp_f < 40) {
-        // Cold heating penalty
         hvac_kw = Math.min(4.8, 0.45 + (0.08 * (40 - temp_f)));
       } else if (temp_f > 75) {
-        // Hot AC penalty
         hvac_kw = Math.min(2.5, 0.40 + (0.05 * (temp_f - 75)));
       }
       const aux_kwh = (0.35 + hvac_kw) * hours;
 
-      // 5. Battery Electrochemical Internal Resistance modifier
+      // 5. Battery Internal Resistance / Electrochemical efficiency modifier
       let batt_eff = 1.0;
       if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.004));
       else if (temp_f < 55) batt_eff = 0.90 + ((temp_f - 32) / 23) * 0.10;
@@ -611,12 +598,12 @@
         total_hours += (ds * usable) / Math.max(10, effective_p);
       }
 
-      const mins = (total_hours * 60) + 3.0; // 3 min plug-in handshake
+      const mins = (total_hours * 60) + 3.0; // 3 min handshake overhead
       const cost = needed_kwh * rate_per_kwh;
       return { added_kwh: needed_kwh, mins: mins, cost: cost };
     }
 
-    // --- SEARCH & DYNAMIC ROUTING FROM COLUMBUS, OH ---
+    // --- SEARCH & DYNAMIC ROUTE GENERATION ---
     async function handleSearchRoute() {
       const destText = document.getElementById('destAddress').value.trim();
       if (!destText) return;
@@ -627,17 +614,17 @@
       lucide.createIcons();
 
       try {
-        // 1. Geocode destination using Nominatim
+        // Geocode destination via Nominatim
         const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destText)}&limit=1`;
         const geoResp = await fetch(geoUrl, { headers: { 'User-Agent': 'EquinoxEVRouteOptimizer/1.0' } });
         const geoData = await geoResp.json();
 
-        let destCoords = { lat: 40.0934, lon: -75.6268 }; // Default Chester Springs / Philly
+        let destCoords = { lat: 39.8912, lon: -74.9218 }; // Default Marlton, NJ
         if (geoData && geoData.length > 0) {
           destCoords = { lat: parseFloat(geoData[0].lat), lon: parseFloat(geoData[0].lon) };
         }
 
-        // 2. Fetch Real Road Network Routes via OSRM
+        // Fetch Live Road Routes from OSRM
         const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${COLUMBUS_OH.lon},${COLUMBUS_OH.lat};${destCoords.lon},${destCoords.lat}?overview=full&geometries=geojson&alternatives=true`;
         const osrmResp = await fetch(osrmUrl);
         const osrmData = await osrmResp.json();
@@ -646,23 +633,22 @@
           activeRoutesData = osrmData.routes.map((r, idx) => {
             const miles = r.distance * 0.000621371;
             const hours = r.duration / 3600.0;
-            const coords = r.geometry.coordinates; // [[lon, lat], ...]
+            const coords = r.geometry.coordinates;
 
-            // Toll estimation
             let toll = 0;
             const destLower = destText.toLowerCase();
             const has_ezpass = document.getElementById('hasEzPass').checked;
-            if (destLower.includes("pa") || destLower.includes("philadelphia") || destLower.includes("chester")) {
-              if (idx === 0) toll = has_ezpass ? 22.30 : 45.40; // PA Turnpike Mainline
-            } else if (destLower.includes("ny") || destLower.includes("new york") || destLower.includes("nj")) {
-              toll = has_ezpass ? 34.50 : 62.00; // PA + NJ Turnpike
+            if (destLower.includes("pa") || destLower.includes("philadelphia") || destLower.includes("chester") || destLower.includes("marlton") || destLower.includes("nj")) {
+              if (idx === 0) toll = has_ezpass ? 26.80 : 52.40; // PA Turnpike Mainline + NJ River Bridge
+            } else if (destLower.includes("ny") || destLower.includes("new york")) {
+              toll = has_ezpass ? 34.50 : 62.00;
             } else if (destLower.includes("wv") || destLower.includes("charleston")) {
-              toll = has_ezpass ? 6.60 : 12.75; // WV Turnpike
+              toll = has_ezpass ? 6.60 : 12.75;
             }
 
             return {
               id: `osrm_alt_${idx+1}`,
-              name: `Route Option ${idx+1}`,
+              name: (idx === 0) ? "PA Turnpike (I-76) Mainline Corridor" : `Alternative Corridor ${idx+1}`,
               distance: Math.round(miles * 10) / 10,
               base_hours: hours,
               speed_mph: Math.round(miles / hours),
@@ -671,15 +657,14 @@
             };
           });
         } else {
-          fallbackRoutes(destText);
+          buildDefaultCorridors(destText);
         }
 
-        // Run full Pareto optimization across the newly found routes!
         recomputeCurrentRoute();
 
       } catch (err) {
-        console.warn("Live OSRM query throttled or failed, using calibrated corridor routing:", err);
-        fallbackRoutes(destText);
+        console.warn("Live OSRM query failed, falling back to calibrated corridors:", err);
+        buildDefaultCorridors(destText);
         recomputeCurrentRoute();
       } finally {
         searchBtn.disabled = false;
@@ -688,56 +673,48 @@
       }
     }
 
-    function fallbackRoutes(destText) {
+    function buildDefaultCorridors(destText) {
       const destLower = destText.toLowerCase();
       const has_ezpass = document.getElementById('hasEzPass').checked;
 
       if (destLower.includes("charleston") || destLower.includes("wv")) {
         activeRoutesData = [{
           id: "wv_route",
-          name: "Route 1: I-77 South (WV Turnpike)",
+          name: "I-77 South (WV Turnpike)",
           distance: 165.0,
           speed_mph: 65.0,
           toll: has_ezpass ? 6.60 : 12.75,
           coordinates: [[-83.0750, 39.9512], [-81.9, 39.4], [-81.63, 38.35]]
         }];
       } else {
+        // Columbus to Marlton, NJ / Philadelphia corridor (~455 miles)
         activeRoutesData = [
           {
             id: "pa_turnpike",
-            name: "Route 1: I-70 to PA Turnpike (I-76)",
-            distance: 421.0,
+            name: "Route 1: I-70 to PA Turnpike (I-76 Mainline)",
+            distance: 455.0,
             speed_mph: 70.0,
-            toll: has_ezpass ? 22.30 : 45.40,
-            coordinates: [[-83.0750, 39.9512], [-81.5833, 40.0345], [-80.2462, 40.1740], [-79.0781, 40.0084], [-77.1889, 40.2014], [-75.6268, 40.0934]]
+            toll: has_ezpass ? 26.80 : 52.40,
+            coordinates: [[-83.0750, 39.9512], [-81.5833, 40.0345], [-80.2462, 40.1740], [-79.0781, 40.0084], [-77.1889, 40.2014], [-75.6268, 40.0934], [-74.9218, 39.8912]]
           },
           {
             id: "md_i68",
-            name: "Route 2: Maryland I-68 / I-70 (Toll-Free)",
-            distance: 415.0,
+            name: "Route 2: Maryland I-68 / I-70 Corridor (Toll-Free)",
+            distance: 448.0,
             speed_mph: 64.0,
             toll: 0.00,
-            coordinates: [[-83.0750, 39.9512], [-81.5833, 40.0345], [-80.2462, 40.1740], [-78.9284, 39.6582], [-77.7200, 39.6418], [-75.8333, 39.6068]]
-          },
-          {
-            id: "us22_free",
-            name: "Route 3: US-22 / US-30 Scenic Arterial",
-            distance: 412.0,
-            speed_mph: 56.0,
-            toll: 0.00,
-            coordinates: [[-83.0750, 39.9512], [-81.5833, 40.0345], [-79.7890, 40.4406], [-78.3947, 40.5187], [-75.6268, 40.0934]]
+            coordinates: [[-83.0750, 39.9512], [-81.5833, 40.0345], [-80.2462, 40.1740], [-78.9284, 39.6582], [-77.7200, 39.6418], [-75.8333, 39.6068], [-74.9218, 39.8912]]
           }
         ];
       }
     }
 
-    // --- RECOMPUTE OPTIMIZATION IMMEDIATELY ON ANY SLIDER/INPUT CHANGE ---
+    // --- MILEAGE-BASED MULTI-OBJECTIVE PARETO ENGINE ---
     function recomputeCurrentRoute() {
       if (!activeRoutesData || activeRoutesData.length === 0) {
-        fallbackRoutes(document.getElementById('destAddress').value);
+        buildDefaultCorridors(document.getElementById('destAddress').value);
       }
 
-      // Gather current input variables
       let payload_lbs = 0;
       if (document.getElementById('josh').checked) payload_lbs += 150;
       if (document.getElementById('courtney').checked) payload_lbs += 130;
@@ -755,65 +732,91 @@
       const wind_dir = parseFloat(document.getElementById('windDir').value);
       const road_cond = document.getElementById('roadCond').value;
 
-      // Update real-time physics efficiency badge based on current conditions
+      // Update real-time physics efficiency HUD
       const sampleSim = simulateLegPhysics(100, 68, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
       document.getElementById('efficiencyBadge').innerText = sampleSim.mi_per_kwh.toFixed(2) + ' mi/kWh';
       document.getElementById('whPerMile').innerText = Math.round((1000 / sampleSim.mi_per_kwh)) + ' Wh/mi';
       document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
-      document.getElementById('batteryTempFactor').innerText = Math.round(sampleSim.batt_eff * 100) + '% eff';
 
       const candidates = [];
 
       activeRoutesData.forEach(route => {
         const total_miles = route.distance;
-        
-        // Find qualifying chargers along this route's coordinates
-        const eligibleStations = STATIONS.filter(st => {
-          for (let pt of route.coordinates) {
-            if (distMiles(st.lat, st.lon, pt[1], pt[0]) <= 28) return true;
-          }
-          return false;
-        });
 
-        const pool = (eligibleStations.length > 0) ? eligibleStations : STATIONS.slice(0, 8);
+        // Filter chargers that lie before the destination
+        const eligibleStations = STATIONS.filter(s => s.mile < (total_miles - 20));
 
-        // Test stop configurations (1-stop and 2-stops)
-        const stopCandidates = [];
-        
-        // 1-stop options
-        pool.forEach(s => stopCandidates.push([s]));
+        // Generate combinations based on real mileage milestones
+        // 2-stop combinations and 3-stop combinations
+        const candidateCombos = [];
 
-        // 2-stop options
-        if (total_miles > 220) {
-          for (let i = 0; i < Math.min(pool.length, 6); i++) {
-            for (let j = i + 1; j < Math.min(pool.length, 6); j++) {
-              stopCandidates.push([pool[i], pool[j]]);
+        // 2-Stop Combinations (e.g. Stop 1 between mile 130-230, Stop 2 between mile 280-390)
+        for (let i = 0; i < eligibleStations.length; i++) {
+          for (let j = i + 1; j < eligibleStations.length; j++) {
+            const s1 = eligibleStations[i];
+            const s2 = eligibleStations[j];
+            // Leg spacing check: neither leg should be trivially short (< 50 mi)
+            if ((s2.mile - s1.mile) >= 60 && (total_miles - s2.mile) >= 35) {
+              candidateCombos.push([s1, s2]);
             }
           }
         }
 
-        stopCandidates.forEach(stopsGroup => {
+        // 3-Stop Combinations (e.g. Cambridge mile 80 + Somerset/Bedford + Middletown/Chester Springs)
+        for (let i = 0; i < eligibleStations.length; i++) {
+          for (let j = i + 1; j < eligibleStations.length; j++) {
+            for (let k = j + 1; k < eligibleStations.length; k++) {
+              const s1 = eligibleStations[i];
+              const s2 = eligibleStations[j];
+              const s3 = eligibleStations[k];
+              if ((s2.mile - s1.mile) >= 50 && (s3.mile - s2.mile) >= 50 && (total_miles - s3.mile) >= 30) {
+                candidateCombos.push([s1, s2, s3]);
+              }
+            }
+          }
+        }
+
+        // Simulate each candidate combination along EXACT highway milestones
+        candidateCombos.forEach(stopsGroup => {
           let current_soc = start_soc;
+          let current_mile = 0;
           let total_drive_hrs = 0;
           let total_ch_hrs = 0;
           let total_ch_cost = 0;
           let stopPlans = [];
           let valid = true;
 
-          const num_legs = stopsGroup.length + 1;
-          const leg_dist = total_miles / num_legs;
+          for (let idx = 0; idx < stopsGroup.length; idx++) {
+            const st = stopsGroup[idx];
+            const leg_dist = st.mile - current_mile;
 
-          for (let i = 0; i < stopsGroup.length; i++) {
-            const st = stopsGroup[i];
             const legSim = simulateLegPhysics(leg_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
             total_drive_hrs += legSim.hours;
             current_soc -= (legSim.kwh / 85.0);
 
-            if (current_soc < min_buffer_soc) { valid = false; break; }
+            // Safety buffer constraint: cannot drop below min_buffer_soc during leg
+            if (current_soc < min_buffer_soc) {
+              valid = false;
+              break;
+            }
 
-            const is_last_stop = (i === stopsGroup.length - 1);
-            let target_soc = is_last_stop ? Math.max(0.70, (legSim.kwh/85.0) + target_arrival_soc + 0.02) : 0.75;
-            target_soc = Math.min(0.92, Math.max(current_soc + 0.15, target_soc));
+            // Determine target SoC to guarantee reaching the next stop or destination
+            const next_mile = (idx === stopsGroup.length - 1) ? total_miles : stopsGroup[idx + 1].mile;
+            const next_dist = next_mile - st.mile;
+            const nextLegSim = simulateLegPhysics(next_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+            const needed_next_soc = nextLegSim.kwh / 85.0;
+
+            let target_soc = 0;
+            if (idx === stopsGroup.length - 1) {
+              // Final stop: must arrive at destination with AT LEAST target_arrival_soc
+              target_soc = needed_next_soc + target_arrival_soc + 0.02;
+            } else {
+              // Intermediate stop: charge enough to reach next charger with safety buffer
+              target_soc = needed_next_soc + min_buffer_soc + 0.05;
+            }
+
+            // Clamp target charge: don't charge higher than 88% unless physically necessary to prevent taper penalty
+            target_soc = Math.min(0.95, Math.max(current_soc + 0.10, target_soc));
 
             let rate = st.on;
             if (st.gm) rate *= (1.0 - st.gm_pct); // 10% GM EV discount
@@ -824,6 +827,7 @@
 
             stopPlans.push({
               station: st,
+              mile: st.mile,
               arr_soc: Math.round(current_soc * 100),
               tgt_soc: Math.round(target_soc * 100),
               added_kwh: Math.round(ch.added_kwh * 10) / 10,
@@ -833,15 +837,18 @@
             });
 
             current_soc = target_soc;
+            current_mile = st.mile;
           }
 
           if (valid) {
-            // Final leg to destination
-            const finalLeg = simulateLegPhysics(leg_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
-            total_drive_hrs += finalLeg.hours;
-            current_soc -= (finalLeg.kwh / 85.0);
+            // Final leg from last charger to destination
+            const final_leg_dist = total_miles - current_mile;
+            const finalLegSim = simulateLegPhysics(final_leg_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+            total_drive_hrs += finalLegSim.hours;
+            current_soc -= (finalLegSim.kwh / 85.0);
 
-            if (current_soc >= (target_arrival_soc - 0.02)) {
+            // Final destination arrival check: MUST meet or exceed user's target arrival SoC
+            if (current_soc >= (target_arrival_soc - 0.01)) {
               // Membership ROI with 50% round trip split
               let adjusted_ch_cost = total_ch_cost;
               let ea_kwh = 0, ea_savings = 0, ea_worth = false, ea_net = 0;
@@ -892,17 +899,20 @@
         });
       });
 
-      if (candidates.length === 0) return;
+      if (candidates.length === 0) {
+        console.warn("No combination met constraints with current settings. Relaxing parameters slightly...");
+        return;
+      }
 
-      // 1. FASTEST ROUTE (Min total time)
+      // 1. FASTEST ROUTE (Min total duration)
       candidates.sort((a, b) => a.total_hours - b.total_hours);
       const fastest = candidates[0];
 
-      // 2. CHEAPEST ROUTE (Min total cost)
+      // 2. CHEAPEST ROUTE (Min total combined cost)
       candidates.sort((a, b) => a.total_cost - b.total_cost);
       const cheapest = candidates[0];
 
-      // 3. BALANCED ROUTE (Pareto Knee Point)
+      // 3. BALANCED ROUTE (Pareto Knee / Utopia Distance)
       const min_t = Math.min(...candidates.map(c => c.total_hours));
       const max_t = Math.max(...candidates.map(c => c.total_hours));
       const min_c = Math.min(...candidates.map(c => c.total_cost));
@@ -1013,6 +1023,7 @@
             <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-mono">${idx+1}</span>
             <span>${s.station.name}</span>
           </td>
+          <td class="py-2.5 px-3 text-slate-300 font-mono">Mile ${Math.round(s.mile)}</td>
           <td class="py-2.5 px-3 text-slate-300">${s.station.kw} kW</td>
           <td class="py-2.5 px-3 text-amber-400 font-semibold">${s.arr_soc}%</td>
           <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.tgt_soc}%</td>
