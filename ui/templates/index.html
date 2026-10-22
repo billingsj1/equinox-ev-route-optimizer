@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2025 Chevrolet Equinox EV Route Optimizer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    #map { height: 520px; border-radius: 0.75rem; }
+    .station-marker {
+      border: 2px solid white;
+      border-radius: 9999px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/30">
+        <i data-lucide="zap" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Equinox EV Optimizer
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/40">2025 FWD (85 kWh)</span>
+        </h1>
+        <p class="text-xs text-slate-400">Decoupled Multi-Objective Pareto Router & Real-Time CPO Pricing Scraper</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <div id="liveMassBadge" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700 text-slate-300 flex items-center gap-1.5">
+        <i data-lucide="scale" class="w-4 h-4 text-emerald-400"></i>
+        <span>Vehicle Mass: <b id="massDisplay" class="text-white">5,273 lbs</b> (2,392 kg)</span>
+      </div>
+      <button onclick="runOptimization()" id="calcBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition shadow-lg shadow-emerald-500/20">
+        <i data-lucide="play" class="w-4 h-4"></i>
+        <span>Compute Pareto Frontier</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1700px] w-full mx-auto">
+    
+    <!-- LEFT SIDEBAR: Parameter Controls -->
+    <div class="lg:col-span-4 space-y-4 max-h-[calc(100vh-100px)] overflow-y-auto pr-1">
+      
+      <!-- Corridor Selection -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400"></i>
+          Corridor & Waypoints
+        </h2>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Travel Corridor Preset</label>
+            <select id="corridorPreset" onchange="onCorridorChange()" class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="pa_turnpike">Washington, PA → Chester Springs, PA (PA Turnpike I-76)</option>
+              <option value="md_i68">Washington, PA → Elkton, MD (I-68 / I-70 Scenic Mountains)</option>
+              <option value="us22_free">Washington, PA → Harrisburg / Philly (US-22 / US-30)</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span class="text-slate-400 block">Origin:</span>
+              <span id="originText" class="text-slate-200 font-mono">Washington, PA</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block">Destination:</span>
+              <span id="destText" class="text-slate-200 font-mono">Chester Springs, PA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payload Weight Toggles -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-3 flex items-center justify-between">
+          <span class="flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
+            Payload Configuration
+          </span>
+          <span class="text-xs text-slate-400 font-normal">Curb: 4,923 lbs</span>
+        </h2>
+        <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" id="josh" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+            <span>Josh (150 lbs)</span>
+          </label>
+          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" id="courtney" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+            <span>Courtney (130 lbs)</span>
+          </label>
+          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" id="asher" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+            <span>Asher (20 lbs)</span>
+          </label>
+          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" id="arno" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+            <span>Arno Dog (50 lbs)</span>
+          </label>
+        </div>
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Cargo / Gear Weight</span>
+            <span id="gearDisplay" class="font-mono text-emerald-400">50 lbs</span>
+          </div>
+          <input type="range" id="gearSlider" min="0" max="100" value="50" step="5" oninput="updateMass()" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Battery & Driving Policy -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          <i data-lucide="gauge" class="w-4 h-4 text-emerald-400"></i>
+          Battery & Driving Policy
+        </h2>
+        <div class="space-y-3 text-xs">
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>Starting Charge (Home departure)</span>
+              <span id="startSocDisplay" class="font-mono text-emerald-400">100% (85.0 kWh)</span>
+            </div>
+            <input type="range" id="startSocSlider" min="20" max="100" value="100" step="5" oninput="document.getElementById('startSocDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>Min Safety Buffer (Arrival reserve)</span>
+              <span id="bufferDisplay" class="font-mono text-amber-400">10% (8.5 kWh)</span>
+            </div>
+            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="text-slate-400 block mb-1">Speed Limit Offset</label>
+              <select id="speedOffset" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
+                <option value="0">+0 mph (Speed Limit)</option>
+                <option value="5" selected>+5 mph</option>
+                <option value="9">+9 mph</option>
+                <option value="15">+15 mph</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-slate-400 block mb-1">Max Speed Cap</label>
+              <select id="maxSpeedCap" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
+                <option value="70">70 mph</option>
+                <option value="75" selected>75 mph</option>
+                <option value="80">80 mph</option>
+                <option value="85">85 mph</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>Ideal Time Between Stops</span>
+              <span class="font-mono text-slate-300">90 to 150 mins</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weather & Environmental Modifiers -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          <i data-lucide="cloud-sun" class="w-4 h-4 text-emerald-400"></i>
+          Weather & Environment
+        </h2>
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="text-slate-400 block mb-1">Weather Source</label>
+            <select id="weatherMode" onchange="onWeatherModeChange()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
+              <option value="manual" selected>Manual Inputs</option>
+              <option value="historical">Historical Average (Seasonal)</option>
+              <option value="live">Live OpenWeatherMap</option>
+            </select>
+          </div>
+          <div id="manualWeatherFields" class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-slate-400 block mb-1">Ambient Temp (°F)</label>
+              <input type="number" id="tempF" value="68" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
+            </div>
+            <div>
+              <label class="text-slate-400 block mb-1">Road Condition</label>
+              <select id="roadCond" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
+                <option value="dry" selected>Dry Asphalt (Crr 0.0095)</option>
+                <option value="wet">Wet / Rain (Crr 0.0125)</option>
+                <option value="snow_ice">Snow / Ice (Crr 0.0185)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-slate-400 block mb-1">Wind Speed (mph)</label>
+              <input type="number" id="windSpeed" value="8" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
+            </div>
+            <div>
+              <label class="text-slate-400 block mb-1">Wind Direction</label>
+              <select id="windDir" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
+                <option value="270" selected>West (270°)</option>
+                <option value="0">North (0°)</option>
+                <option value="90">East (90°)</option>
+                <option value="180">South (180°)</option>
+              </select>
+            </div>
+          </div>
+          <div id="historicalMonthField" class="hidden">
+            <label class="text-slate-400 block mb-1">Travel Month</label>
+            <select id="histMonth" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
+              <option value="1">January (Cold / Snow)</option>
+              <option value="4">April (Spring / Mild)</option>
+              <option value="7">July (Summer / Hot)</option>
+              <option value="10" selected>October (Fall / Crisp)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toll Pass & Perks -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+          <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
+          Tolls & OEM Perks
+        </h2>
+        <div class="space-y-2 text-xs">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="hasEzPass" checked class="accent-emerald-500 rounded">
+            <span>E-ZPass Equipped (PA/NJ/WV preferred rates)</span>
+          </label>
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="hasNjGreenPass" checked class="accent-emerald-500 rounded">
+            <span>NJ Turnpike EV Green Pass (10% off off-peak)</span>
+          </label>
+          <div class="p-2 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+            <div class="flex items-center gap-1.5 text-emerald-300 font-medium">
+              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              <span>GM Ultium Perks Active:</span>
+            </div>
+            <div>• 10% discount at IONNA stations</div>
+            <div>• 10% discount at EVgo ($0 session fees)</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT MAIN CONTENT: Pareto Itineraries & Map -->
+    <div class="lg:col-span-8 space-y-6">
+      
+      <!-- 3 Pareto Route Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Fastest Route Card -->
+        <div id="cardFastest" onclick="selectItinerary('fastest')" class="bg-slate-900 border-2 border-emerald-500/60 rounded-xl p-4 cursor-pointer hover:border-emerald-400 transition relative overflow-hidden shadow-lg">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i> Fastest Route
+            </span>
+            <span id="fastestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+          </div>
+          <div class="text-2xl font-black text-white" id="fastestTime">4h 25m</div>
+          <div class="text-xs text-slate-400 mt-1 flex justify-between">
+            <span>Total Cost: <b id="fastestCost" class="text-slate-200">$21.40</b></span>
+            <span id="fastestMiles" class="text-slate-400">284 mi</span>
+          </div>
+        </div>
+
+        <!-- Cheapest Route Card -->
+        <div id="cardCheapest" onclick="selectItinerary('cheapest')" class="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-slate-700 transition relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> Cheapest Route
+            </span>
+            <span id="cheapestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+          </div>
+          <div class="text-2xl font-black text-white" id="cheapestTime">4h 42m</div>
+          <div class="text-xs text-slate-400 mt-1 flex justify-between">
+            <span>Total Cost: <b id="cheapestCost" class="text-emerald-400">$2.04</b></span>
+            <span id="cheapestMiles" class="text-slate-400">268 mi</span>
+          </div>
+        </div>
+
+        <!-- Balanced Route Card (Pareto Knee) -->
+        <div id="cardBalanced" onclick="selectItinerary('balanced')" class="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-slate-700 transition relative overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+              <i data-lucide="scale" class="w-3.5 h-3.5"></i> Balanced (Pareto Knee)
+            </span>
+            <span id="balancedStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+          </div>
+          <div class="text-2xl font-black text-white" id="balancedTime">4h 42m</div>
+          <div class="text-xs text-slate-400 mt-1 flex justify-between">
+            <span>Total Cost: <b id="balancedCost" class="text-blue-300">$2.04</b></span>
+            <span id="balancedMiles" class="text-slate-400">268 mi</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Interactive Map -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm relative">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              <i data-lucide="navigation" class="w-4 h-4 text-emerald-400"></i>
+              Interactive Corridor Map & Verified DC Fast Chargers
+            </h2>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Selected</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> IONNA</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> EA</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Applegreen</span>
+          </div>
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <!-- Itinerary Detail & EA Pass Recommendation -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        
+        <!-- Pass+ Recommendation Banner -->
+        <div id="eaBanner" class="p-3 rounded-lg bg-blue-950/40 border border-blue-800/60 flex items-start gap-3">
+          <i data-lucide="info" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
+          <div class="text-xs space-y-0.5">
+            <div class="font-semibold text-blue-200" id="eaTitle">Electrify America Pass+ Analysis</div>
+            <div class="text-slate-300" id="eaText">Evaluating if $7.00/mo membership discount saves money on this trip...</div>
+          </div>
+        </div>
+
+        <!-- Charging Stops Table -->
+        <div>
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Planned Charging Stops & Timeline</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300 border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 font-medium">
+                  <th class="py-2 px-3">Station & Network</th>
+                  <th class="py-2 px-3">Power</th>
+                  <th class="py-2 px-3">Arrival SoC</th>
+                  <th class="py-2 px-3">Target SoC</th>
+                  <th class="py-2 px-3">Energy</th>
+                  <th class="py-2 px-3">Time</th>
+                  <th class="py-2 px-3">Rate</th>
+                  <th class="py-2 px-3">Cost</th>
+                  <th class="py-2 px-3">Plugshare</th>
+                </tr>
+              </thead>
+              <tbody id="stopsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let map;
+    let routeLayers = [];
+    let stationMarkers = [];
+    let optimizationData = null;
+    let currentItineraryKey = "fastest";
+
+    const NETWORK_COLORS = {
+      "IONNA": "#a855f7",
+      "Mercedes-Benz": "#38bdf8",
+      "Electrify America": "#3b82f6",
+      "Applegreen": "#f97316",
+      "Francis Energy": "#eab308",
+      "ChargePoint": "#10b981",
+      "Tesla": "#ef4444"
+    };
+
+    function initMap() {
+      map = L.map('map').setView([40.1, -78.0], 8);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 18
+      }).addTo(map);
+    }
+
+    function updateMass() {
+      const curb = 2233; // kg
+      let payload_lbs = 0;
+      if (document.getElementById('josh').checked) payload_lbs += 150;
+      if (document.getElementById('courtney').checked) payload_lbs += 130;
+      if (document.getElementById('asher').checked) payload_lbs += 20;
+      if (document.getElementById('arno').checked) payload_lbs += 50;
+      const gear = parseFloat(document.getElementById('gearSlider').value);
+      payload_lbs += gear;
+      document.getElementById('gearDisplay').innerText = gear + ' lbs';
+
+      const total_lbs = (curb * 2.20462) + payload_lbs;
+      const total_kg = total_lbs / 2.20462;
+      document.getElementById('massDisplay').innerText = Math.round(total_lbs).toLocaleString() + ' lbs';
+      document.getElementById('liveMassBadge').title = `Payload: ${payload_lbs} lbs | Total Mass: ${Math.round(total_kg)} kg`;
+    }
+
+    function onCorridorChange() {
+      const val = document.getElementById('corridorPreset').value;
+      if (val === "pa_turnpike") {
+        document.getElementById('originText').innerText = "Washington, PA";
+        document.getElementById('destText').innerText = "Chester Springs, PA";
+      } else if (val === "md_i68") {
+        document.getElementById('originText').innerText = "Washington, PA";
+        document.getElementById('destText').innerText = "Elkton, MD";
+      } else {
+        document.getElementById('originText').innerText = "Washington, PA";
+        document.getElementById('destText').innerText = "Harrisburg / Chester Springs";
+      }
+      runOptimization();
+    }
+
+    function onWeatherModeChange() {
+      const mode = document.getElementById('weatherMode').value;
+      document.getElementById('manualWeatherFields').classList.toggle('hidden', mode !== 'manual');
+      document.getElementById('historicalMonthField').classList.toggle('hidden', mode !== 'historical');
+    }
+
+    async function loadStationsOnMap() {
+      try {
+        const res = await fetch('/api/stations');
+        const stations = await res.json();
+        
+        stationMarkers.forEach(m => map.removeLayer(m));
+        stationMarkers = [];
+
+        stations.forEach(s => {
+          const color = NETWORK_COLORS[s.network] || "#64748b";
+          const marker = L.circleMarker([s.latitude, s.longitude], {
+            radius: 6,
+            fillColor: color,
+            color: "#ffffff",
+            weight: 1.5,
+            opacity: 1,
+            fillOpacity: 0.9
+          });
+
+          const popupContent = `
+            <div style="color: #0f172a; font-family: sans-serif; font-size: 12px; line-height: 1.4;">
+              <b style="font-size: 13px;">${s.name}</b><br>
+              <span style="color: #475569;">Network:</span> <b>${s.network}</b> (${s.power_kw} kW)<br>
+              <span style="color: #475569;">Rate:</span> $${s.rate_on_peak.toFixed(2)}/kWh (Off-peak: $${s.rate_off_peak.toFixed(2)})<br>
+              ${s.gm_discount_eligible ? '<span style="color: #059669; font-weight: bold;">✓ 10% GM EV Discount</span><br>' : ''}
+              ${s.plugshare_url ? `<a href="${s.plugshare_url}" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: 500;">View on PlugShare</a>` : ''}
+            </div>
+          `;
+          marker.bindPopup(popupContent);
+          marker.addTo(map);
+          stationMarkers.push(marker);
+        });
+      } catch (e) {
+        console.error("Error loading stations:", e);
+      }
+    }
+
+    async function runOptimization() {
+      const calcBtn = document.getElementById('calcBtn');
+      calcBtn.disabled = true;
+      calcBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Optimizing...</span>`;
+      lucide.createIcons();
+
+      const payload = {
+        payload_josh: document.getElementById('josh').checked,
+        payload_courtney: document.getElementById('courtney').checked,
+        payload_asher: document.getElementById('asher').checked,
+        payload_arno: document.getElementById('arno').checked,
+        payload_gear_lbs: parseFloat(document.getElementById('gearSlider').value),
+        speed_offset_mph: parseFloat(document.getElementById('speedOffset').value),
+        max_speed_cap_mph: parseFloat(document.getElementById('maxSpeedCap').value),
+        initial_soc_pct: parseFloat(document.getElementById('startSocSlider').value),
+        min_safety_buffer_pct: parseFloat(document.getElementById('bufferSlider').value),
+        weather_mode: document.getElementById('weatherMode').value,
+        temperature_f: parseFloat(document.getElementById('tempF').value),
+        wind_speed_mph: parseFloat(document.getElementById('windSpeed').value),
+        wind_direction_deg: parseFloat(document.getElementById('windDir').value),
+        road_condition: document.getElementById('roadCond').value,
+        historical_month: parseInt(document.getElementById('histMonth').value),
+        has_ezpass: document.getElementById('hasEzPass').checked,
+        has_nj_green_pass: document.getElementById('hasNjGreenPass').checked
+      };
+
+      try {
+        const resp = await fetch('/api/optimize', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        optimizationData = await resp.json();
+        renderOptimizationResults();
+      } catch (err) {
+        console.error("Optimization failed:", err);
+      } finally {
+        calcBtn.disabled = false;
+        calcBtn.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i><span>Compute Pareto Frontier</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function renderOptimizationResults() {
+      if (!optimizationData) return;
+
+      const itins = optimizationData.itineraries;
+
+      // Card 1: Fastest
+      document.getElementById('fastestTime').innerText = formatHours(itins.fastest.total_time_hours);
+      document.getElementById('fastestCost').innerText = '$' + itins.fastest.total_cost.toFixed(2);
+      document.getElementById('fastestMiles').innerText = itins.fastest.total_distance_miles + ' mi';
+      document.getElementById('fastestStopsBadge').innerText = itins.fastest.stops.length + ' stops';
+
+      // Card 2: Cheapest
+      document.getElementById('cheapestTime').innerText = formatHours(itins.cheapest.total_time_hours);
+      document.getElementById('cheapestCost').innerText = '$' + itins.cheapest.total_cost.toFixed(2);
+      document.getElementById('cheapestMiles').innerText = itins.cheapest.total_distance_miles + ' mi';
+      document.getElementById('cheapestStopsBadge').innerText = itins.cheapest.stops.length + ' stops';
+
+      // Card 3: Balanced
+      document.getElementById('balancedTime').innerText = formatHours(itins.balanced.total_time_hours);
+      document.getElementById('balancedCost').innerText = '$' + itins.balanced.total_cost.toFixed(2);
+      document.getElementById('balancedMiles').innerText = itins.balanced.total_distance_miles + ' mi';
+      document.getElementById('balancedStopsBadge').innerText = itins.balanced.stops.length + ' stops';
+
+      selectItinerary(currentItineraryKey);
+    }
+
+    function selectItinerary(key) {
+      currentItineraryKey = key;
+      if (!optimizationData) return;
+
+      ['cardFastest', 'cardCheapest', 'cardBalanced'].forEach(id => {
+        document.getElementById(id).classList.remove('border-emerald-500', 'border-2', 'border-amber-500', 'border-blue-500');
+        document.getElementById(id).classList.add('border-slate-800', 'border');
+      });
+
+      if (key === 'fastest') {
+        document.getElementById('cardFastest').classList.remove('border-slate-800', 'border');
+        document.getElementById('cardFastest').classList.add('border-emerald-500', 'border-2');
+      } else if (key === 'cheapest') {
+        document.getElementById('cardCheapest').classList.remove('border-slate-800', 'border');
+        document.getElementById('cardCheapest').classList.add('border-amber-500', 'border-2');
+      } else {
+        document.getElementById('cardBalanced').classList.remove('border-slate-800', 'border');
+        document.getElementById('cardBalanced').classList.add('border-blue-500', 'border-2');
+      }
+
+      const itin = optimizationData.itineraries[key];
+      renderMapRoutes(itin);
+      renderStopsTable(itin);
+      renderEABanner(itin);
+    }
+
+    function renderMapRoutes(selectedItin) {
+      routeLayers.forEach(l => map.removeLayer(l));
+      routeLayers = [];
+
+      optimizationData.routes.forEach(r => {
+        const isSelected = (r.route_id === selectedItin.route_id);
+        const latlngs = r.coordinates.map(c => [c[1], c[0]]);
+
+        const line = L.polyline(latlngs, {
+          color: isSelected ? '#10b981' : '#475569',
+          weight: isSelected ? 5 : 2.5,
+          opacity: isSelected ? 0.95 : 0.45,
+          dashArray: isSelected ? null : '5, 5'
+        }).addTo(map);
+
+        line.bindTooltip(`${r.name} (${r.distance_miles} mi)`, { sticky: true });
+        routeLayers.push(line);
+
+        if (isSelected) {
+          map.fitBounds(line.getBounds(), { padding: [40, 40] });
+        }
+      });
+    }
+
+    function renderStopsTable(itin) {
+      const tbody = document.getElementById('stopsTableBody');
+      tbody.innerHTML = '';
+
+      if (itin.stops.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="py-4 text-center text-slate-500 italic">
+              No charging stops required! Battery capacity & efficiency are sufficient to reach the destination directly.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      itin.stops.forEach((s, idx) => {
+        const row = document.createElement('tr');
+        row.className = "hover:bg-slate-800/40 transition";
+        row.innerHTML = `
+          <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-mono">${idx+1}</span>
+            <span>${s.name}</span>
+          </td>
+          <td class="py-2.5 px-3 text-slate-300">${s.power_kw} kW</td>
+          <td class="py-2.5 px-3 text-amber-400 font-semibold">${s.arrival_soc}%</td>
+          <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.target_soc}%</td>
+          <td class="py-2.5 px-3 text-slate-300">${s.energy_added_kwh} kWh</td>
+          <td class="py-2.5 px-3 text-slate-200 font-semibold">${s.charge_duration_minutes} min</td>
+          <td class="py-2.5 px-3 text-slate-400">$${s.rate_per_kwh.toFixed(2)}</td>
+          <td class="py-2.5 px-3 text-emerald-400 font-semibold">$${s.charging_cost.toFixed(2)}</td>
+          <td class="py-2.5 px-3">
+            ${s.plugshare_url ? `<a href="${s.plugshare_url}" target="_blank" class="text-blue-400 hover:text-blue-300 underline font-sans text-[11px]">View</a>` : '-'}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderEABanner(itin) {
+      const rec = itin.ea_pass_recommendation;
+      const title = document.getElementById('eaTitle');
+      const text = document.getElementById('eaText');
+
+      if (!rec || rec.ea_kwh_used === 0) {
+        title.innerText = "Electrify America Pass+ Not Needed";
+        text.innerText = "This itinerary does not use Pass+-eligible Electrify America stations, so no monthly pass is required.";
+      } else if (rec.worth_it) {
+        title.innerText = "✓ Electrify America Pass+ Recommended";
+        text.innerText = `You charge ${rec.ea_kwh_used} kWh at eligible EA stations. Subscribing to Pass+ ($7.00/mo) saves ~$${rec.estimated_savings.toFixed(2)}, netting you a profit of $${rec.net_benefit.toFixed(2)} on this trip!`;
+      } else {
+        title.innerText = "Electrify America Pass+ Not Cost-Effective";
+        text.innerText = `You charge ${rec.ea_kwh_used} kWh at EA ($${rec.estimated_savings.toFixed(2)} savings vs $7.00 fee). Guest pricing is cheaper by $${Math.abs(rec.net_benefit).toFixed(2)}.`;
+      }
+    }
+
+    function formatHours(hrs) {
+      const h = Math.floor(hrs);
+      const m = Math.round((hrs - h) * 60);
+      return `${h}h ${m}m`;
+    }
+
+    window.onload = async () => {
+      initMap();
+      await loadStationsOnMap();
+      updateMass();
+      runOptimization();
+      lucide.createIcons();
+    };
+  </script>
+</body>
+</html>
