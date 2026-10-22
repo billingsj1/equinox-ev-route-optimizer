@@ -120,8 +120,8 @@
               <button onclick="setQuickDest('Marlton, NJ')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Marlton, NJ</button>
               <button onclick="setQuickDest('Philadelphia, PA')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Philadelphia, PA</button>
               <button onclick="setQuickDest('New York, NY')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">New York, NY</button>
-              <button onclick="setQuickDest('Washington, DC')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Washington, DC</button>
-              <button onclick="setQuickDest('Charleston, WV')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Charleston, WV</button>
+              <button onclick="setQuickDest('Carlisle, PA')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Carlisle, PA</button>
+              <button onclick="setQuickDest('Sewickley, PA')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Sewickley, PA</button>
               <button onclick="setQuickDest('Pittsburgh, PA')" class="text-[11px] px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300">Pittsburgh, PA</button>
             </div>
           </div>
@@ -491,6 +491,10 @@
       "new york, ny": { lat: 40.7128, lon: -74.0060, toll_ez: 34.50, toll_cash: 64.00, name: "New York, NY" },
       "new york": { lat: 40.7128, lon: -74.0060, toll_ez: 34.50, toll_cash: 64.00, name: "New York, NY" },
       "nyc": { lat: 40.7128, lon: -74.0060, toll_ez: 34.50, toll_cash: 64.00, name: "New York, NY" },
+      "sewickley, pa": { lat: 40.5401, lon: -80.1834, toll_ez: 0.00, toll_cash: 0.00, name: "Sewickley, PA" },
+      "sewickley": { lat: 40.5401, lon: -80.1834, toll_ez: 0.00, toll_cash: 0.00, name: "Sewickley, PA" },
+      "carlisle, pa": { lat: 40.2014, lon: -77.1889, toll_ez: 19.50, toll_cash: 39.00, name: "Carlisle, PA" },
+      "carlisle": { lat: 40.2014, lon: -77.1889, toll_ez: 19.50, toll_cash: 39.00, name: "Carlisle, PA" },
       "washington, dc": { lat: 38.9072, lon: -77.0369, toll_ez: 0.00, toll_cash: 0.00, name: "Washington, DC" },
       "washington dc": { lat: 38.9072, lon: -77.0369, toll_ez: 0.00, toll_cash: 0.00, name: "Washington, DC" },
       "charleston, wv": { lat: 38.3498, lon: -81.6326, toll_ez: 6.60, toll_cash: 12.75, name: "Charleston, WV" },
@@ -794,7 +798,44 @@
       const has_ezpass = document.getElementById('hasEzPass').checked;
       const q = destGeo.name.toLowerCase();
 
-      if (q.includes("charleston") || q.includes("wv")) {
+      if (q.includes("sewickley")) {
+        activeRoutesData = [{
+          id: "sewickley_route",
+          name: "I-70 East to I-79 North (Sewickley, PA)",
+          distance: 172.0,
+          speed_mph: 68.0,
+          toll: 0.00,
+          coordinates: [
+            [originGeo.lon, originGeo.lat],
+            [-81.5833, 40.0345], // Cambridge OH
+            [-80.2462, 40.1740], // Washington PA
+            [-80.1834, 40.5401]  // Sewickley PA
+          ],
+          origin: originGeo,
+          destination: destGeo
+        }];
+      } else if (q.includes("carlisle")) {
+        activeRoutesData = [{
+          id: "carlisle_route",
+          name: "I-70 East to PA Turnpike (Carlisle Exit 226)",
+          distance: 348.0,
+          speed_mph: 70.0,
+          toll: has_ezpass ? 19.50 : 39.00,
+          coordinates: [
+            [originGeo.lon, originGeo.lat],
+            [-81.5833, 40.0345], // Cambridge OH
+            [-80.2462, 40.1740], // Washington PA
+            [-79.6103, 40.2187], // New Stanton
+            [-79.0700, 40.0150], // Somerset
+            [-78.5039, 40.0187], // Bedford
+            [-77.9620, 40.0495], // Fort Littleton
+            [-77.5500, 40.1350], // Newburg
+            [-77.1889, 40.2014]  // Carlisle PA
+          ],
+          origin: originGeo,
+          destination: destGeo
+        }];
+      } else if (q.includes("charleston") || q.includes("wv")) {
         activeRoutesData = [{
           id: "wv_i77",
           name: "I-77 South (WV Turnpike)",
