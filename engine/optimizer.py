@@ -1,10 +1,11 @@
 """
 Multi-objective Pareto route optimizer.
 Evaluates candidate charging stop combinations across alternative routes,
-enforces safety buffers and ideal time between stops, and determines
-Fastest, Cheapest, and Balanced (Pareto Knee) itineraries.
+enforces safety buffers, target arrival SoC at destination, and ideal time between stops.
+Calculates Fastest, Cheapest, and Balanced (Pareto Knee) itineraries, with
+round-trip 50% cost allocation for EA Pass+ and Tesla memberships.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Tuple
 import math
 import numpy as np
@@ -41,8 +42,9 @@ class Itinerary:
     toll_cost: float
     total_cost: float
     stops: List[ChargingStopPlan]
-    ea_pass_recommendation: Dict[str, Any]
+    membership_recommendations: Dict[str, Any]
     soc_waypoint_profile: List[Dict[str, Any]]
+    final_arrival_soc: float = 20.0
     pareto_score: float = 0.0
 
 class MultiObjectiveOptimizer:
@@ -94,7 +96,6 @@ class MultiObjectiveOptimizer:
 
         legs = []
         n_segs = len(route.segments)
-        # Proportionally map station order along segments
         num_stops = len(chosen_stations)
         step = max(1, n_segs // (num_stops + 1))
 
@@ -115,14 +116,22 @@ class MultiObjectiveOptimizer:
         profile: DrivingProfile,
         toll_config: TollPassConfig,
         initial_soc: float = 1.00,
-        has_ea_pass: bool = False
+        has_ea_pass: bool = False,
+        has_tesla_membership: bool = False
     ) -> Optional[Itinerary]:
         """
         Simulates driving legs, applies time between stops bounding constraints,
-        enforces minimum safety buffer, and calculates (Total Time, Total Cost).
+        enforces minimum safety buffer and ideal ending charge state (target_arrival_soc),
+        and calculates (Total Time, Total Cost) with 50% round-trip membership allocations.
         """
         legs = self._partition_route_by_stations(route, candidate_stations)
         
+        # Precalculate energy required for each leg
+        leg_energy_reqs = []
+        for leg in legs:
+            _, _, leg_kwh = self._simulate_leg(leg, weather, payload, profile, 1.0)
+            leg_energy_reqs.append(leg_kwh / self.vehicle.usable_battery_kwh)
+
         current_soc = initial_soc
         total_driving_hours = 0.0
         total_charging_hours = 0.0
@@ -140,7 +149,7 @@ class MultiObjectiveOptimizer:
             elapsed_trip_hours += leg_dur_hours
             time_since_last_stop_min += (leg_dur_hours * 60.0)
 
-            # Safety buffer check: if SoC drops below min_safety_buffer, invalid candidate
+            # Safety buffer check during transit: cannot drop below min_safety_buffer_soc
             if end_soc < profile.min_safety_buffer_soc:
                 return None
 
@@ -152,19 +161,30 @@ class MultiObjectiveOptimizer:
                 # Check "Ideal Time Between Stops" constraint (90 - 150 mins)
                 # If stopping earlier than 90 mins, prune UNLESS current_soc is near buffer
                 if time_since_last_stop_min < profile.ideal_time_min_bound and current_soc > (profile.min_safety_buffer_soc + 0.15):
-                    # Pruned: stopping too early when not needed
                     return None
 
-                # Optimal target SoC: typically 70-80% for speed/cost balance
-                target_soc = 0.75 if len(candidate_stations) > 1 else 0.70
-                if target_soc <= current_soc:
-                    target_soc = min(0.85, current_soc + 0.25)
+                # Determine target SoC:
+                # Must be enough to cover the remaining leg PLUS the target arrival SoC
+                remaining_leg_soc = leg_energy_reqs[i + 1] if (i + 1) < len(leg_energy_reqs) else 0.0
+                is_final_stop = (i == len(candidate_stations) - 1)
+                
+                if is_final_stop:
+                    # Must reach destination with at least profile.target_arrival_soc
+                    min_needed_target = remaining_leg_soc + profile.target_arrival_soc + 0.03
+                    target_soc = max(min_needed_target, min(0.80, current_soc + 0.30))
+                else:
+                    # Intermediate stop: target 70-75% for fast charging taper avoidance
+                    min_needed_target = remaining_leg_soc + profile.min_safety_buffer_soc + 0.05
+                    target_soc = max(min_needed_target, 0.75)
+
+                target_soc = min(0.95, max(current_soc + 0.05, target_soc))
 
                 effective_rate = self.station_mgr.get_effective_rate(
                     station,
                     hour=int((toll_config.time_of_day_hour + elapsed_trip_hours) % 24),
                     is_gm_ev=True,
-                    has_ea_pass=has_ea_pass
+                    has_ea_pass=has_ea_pass,
+                    has_tesla_membership=has_tesla_membership
                 )
 
                 charge_res = self.vehicle.calculate_charge_session(
@@ -208,8 +228,8 @@ class MultiObjectiveOptimizer:
 
             total_driving_hours += leg_dur_hours
 
-        # Final destination arrival check
-        if current_soc < profile.min_safety_buffer_soc:
+        # Final destination arrival SoC check: MUST meet or exceed user's target arrival SoC
+        if current_soc < profile.target_arrival_soc:
             return None
 
         soc_waypoints.append({
@@ -218,28 +238,57 @@ class MultiObjectiveOptimizer:
             "time_hrs": round(elapsed_trip_hours, 2)
         })
 
-        # Calculate toll cost
+        # Toll cost
         toll_res = self.toll_calc.calculate_corridor_tolls(
             route_corridor=route.corridor,
             pass_config=toll_config
         )
         total_toll = toll_res["total_toll"]
 
-        # Electrify America Pass+ evaluation
-        # EA Pass+ costs $7.00/mo. Calculate savings if applied on this itinerary
+        # Membership Evaluations (50% monthly cost allocation for round-trip):
+        # 1. Electrify America Pass+: $7.00/mo -> $3.50 one-way allocated cost
         ea_kwh_used = sum(s.energy_added_kwh for s in stops_plan if s.network.lower() == "electrify america" and s.station.ea_pass_eligible)
-        ea_savings = ea_kwh_used * 0.15 # approx 25% discount saves ~$0.15/kWh
-        net_ea_benefit = ea_savings - 7.00
-        ea_recommendation = {
-            "ea_kwh_used": round(ea_kwh_used, 1),
-            "monthly_fee": 7.00,
-            "estimated_savings": round(ea_savings, 2),
-            "net_benefit": round(net_ea_benefit, 2),
-            "worth_it": net_ea_benefit > 0.0
+        ea_savings = ea_kwh_used * 0.15 # ~25% off saves ~$0.15/kWh
+        ea_allocated_fee = 3.50
+        ea_net_benefit = ea_savings - ea_allocated_fee
+        ea_worth_it = ea_net_benefit > 0.0
+
+        # 2. Tesla Supercharger Membership: $12.99/mo -> $6.50 one-way allocated cost
+        tesla_kwh_used = sum(s.energy_added_kwh for s in stops_plan if s.network.lower() == "tesla")
+        # Regular $0.63-$0.64 vs Member $0.46 -> savings ~$0.175/kWh
+        tesla_savings = tesla_kwh_used * 0.175
+        tesla_allocated_fee = 6.50
+        tesla_net_benefit = tesla_savings - tesla_allocated_fee
+        tesla_worth_it = tesla_net_benefit > 0.0
+
+        membership_recs = {
+            "electrify_america": {
+                "kwh_used": round(ea_kwh_used, 1),
+                "monthly_fee": 7.00,
+                "one_way_allocated_fee": ea_allocated_fee,
+                "estimated_savings": round(ea_savings, 2),
+                "net_benefit": round(ea_net_benefit, 2),
+                "worth_it": ea_worth_it
+            },
+            "tesla": {
+                "kwh_used": round(tesla_kwh_used, 1),
+                "monthly_fee": 12.99,
+                "one_way_allocated_fee": tesla_allocated_fee,
+                "estimated_savings": round(tesla_savings, 2),
+                "net_benefit": round(tesla_net_benefit, 2),
+                "worth_it": tesla_worth_it
+            }
         }
 
+        # Apply membership savings to total itinerary cost if cost-effective
+        adjusted_charging_cost = total_charging_cost
+        if ea_worth_it and not has_ea_pass:
+            adjusted_charging_cost -= ea_net_benefit
+        if tesla_worth_it and not has_tesla_membership:
+            adjusted_charging_cost -= tesla_net_benefit
+
         total_time_hours = total_driving_hours + total_charging_hours
-        total_cost = total_charging_cost + total_toll
+        total_cost = adjusted_charging_cost + total_toll
 
         return Itinerary(
             itinerary_type="Candidate",
@@ -249,12 +298,13 @@ class MultiObjectiveOptimizer:
             driving_time_hours=round(total_driving_hours, 2),
             charging_time_hours=round(total_charging_hours, 2),
             total_time_hours=round(total_time_hours, 2),
-            charging_cost=round(total_charging_cost, 2),
+            charging_cost=round(adjusted_charging_cost, 2),
             toll_cost=round(total_toll, 2),
             total_cost=round(total_cost, 2),
             stops=stops_plan,
-            ea_pass_recommendation=ea_recommendation,
-            soc_waypoint_profile=soc_waypoints
+            membership_recommendations=membership_recs,
+            soc_waypoint_profile=soc_waypoints,
+            final_arrival_soc=round(current_soc * 100, 1)
         )
 
     def optimize(
@@ -276,10 +326,9 @@ class MultiObjectiveOptimizer:
         candidates: List[Itinerary] = []
 
         for route in routes:
-            # Find eligible chargers along this route
             chargers = self.station_mgr.find_chargers_along_route(route.coordinates, buffer_miles=5.0)
 
-            # 0-stop check (if battery can make it all the way)
+            # 0-stop check (if battery can make it all the way to destination with >= target_arrival_soc)
             itin_0 = self.evaluate_candidate_plan(
                 route, [], weather, payload, profile, toll_config, initial_soc
             )
@@ -294,7 +343,7 @@ class MultiObjectiveOptimizer:
                 if itin_1:
                     candidates.append(itin_1)
 
-            # 2-stop combinations (if route length warrants)
+            # 2-stop combinations
             if len(chargers) >= 2:
                 for i in range(len(chargers)):
                     for j in range(i + 1, min(len(chargers), i + 4)):
@@ -305,15 +354,14 @@ class MultiObjectiveOptimizer:
                             candidates.append(itin_2)
 
         if not candidates:
-            # Fallback if strict constraints pruned everything: relax bound constraints slightly
+            # Fallback relaxation if strict constraints pruned:
             for route in routes:
                 chargers = self.station_mgr.find_chargers_along_route(route.coordinates, buffer_miles=5.0)
                 if chargers:
-                    # Pick closest midpoint charger
                     mid_ch = chargers[len(chargers)//2]
                     legs = self._partition_route_by_stations(route, [mid_ch])
                     total_dur = sum(s.distance_meters for s in route.segments) / (65.0 * 0.44704 * 3600.0)
-                    ch_res = self.vehicle.calculate_charge_session(0.20, 0.75, mid_ch.power_kw, 0.45)
+                    ch_res = self.vehicle.calculate_charge_session(0.20, max(0.60, profile.target_arrival_soc + 0.35), mid_ch.power_kw, 0.45)
                     candidates.append(Itinerary(
                         itinerary_type="Fallback",
                         route_name=route.name,
@@ -328,7 +376,7 @@ class MultiObjectiveOptimizer:
                         stops=[ChargingStopPlan(
                             station=mid_ch,
                             arrival_soc=20.0,
-                            target_soc=75.0,
+                            target_soc=round(max(0.60, profile.target_arrival_soc + 0.35) * 100, 1),
                             energy_added_kwh=ch_res["energy_added_kwh"],
                             charge_duration_minutes=ch_res["duration_minutes"],
                             charging_cost=ch_res["cost"],
@@ -336,28 +384,29 @@ class MultiObjectiveOptimizer:
                             network=mid_ch.network,
                             plugshare_url=mid_ch.plugshare_url
                         )],
-                        ea_pass_recommendation={"worth_it": False, "estimated_savings": 0.0},
-                        soc_waypoint_profile=[]
+                        membership_recommendations={
+                            "electrify_america": {"worth_it": False, "estimated_savings": 0.0, "net_benefit": 0.0},
+                            "tesla": {"worth_it": False, "estimated_savings": 0.0, "net_benefit": 0.0}
+                        },
+                        soc_waypoint_profile=[],
+                        final_arrival_soc=round(profile.target_arrival_soc * 100, 1)
                     ))
 
         # --- MULTI-OBJECTIVE PARETO FRONTIER COMPUTATION ---
-        # Objective 1: Total Time (minimize)
-        # Objective 2: Total Cost (minimize)
         times = np.array([c.total_time_hours for c in candidates])
         costs = np.array([c.total_cost for c in candidates])
 
-        # 1. Fastest Route (min total time)
+        # 1. Fastest Route
         fastest_idx = int(np.argmin(times))
         fastest = candidates[fastest_idx]
         fastest.itinerary_type = "Fastest Route"
 
-        # 2. Cheapest Route (min total cost)
+        # 2. Cheapest Route
         cheapest_idx = int(np.argmin(costs))
         cheapest = candidates[cheapest_idx]
         cheapest.itinerary_type = "Cheapest Route"
 
         # 3. Balanced Route (Pareto Knee / Utopia distance)
-        # Normalize time and cost to [0, 1]
         t_min, t_max = float(np.min(times)), float(np.max(times))
         c_min, c_max = float(np.min(costs)), float(np.max(costs))
 
@@ -367,7 +416,6 @@ class MultiObjectiveOptimizer:
         norm_times = (times - t_min) / t_range
         norm_costs = (costs - c_min) / c_range
 
-        # Euclidean distance to the Utopia point (0, 0)
         utopia_distances = np.sqrt(norm_times**2 + norm_costs**2)
         balanced_idx = int(np.argmin(utopia_distances))
         balanced = candidates[balanced_idx]

@@ -50,6 +50,7 @@ class OptimizationRequest(BaseModel):
     max_speed_cap_mph: float = 75.0
     initial_soc_pct: float = 100.0
     min_safety_buffer_pct: float = 10.0
+    target_arrival_soc_pct: float = 20.0 # Ideal ending charge state (default 20%)
     ideal_time_min_minutes: float = 90.0
     ideal_time_max_minutes: float = 150.0
 
@@ -118,6 +119,7 @@ async def run_optimization(req: OptimizationRequest):
         speed_offset_mph=req.speed_offset_mph,
         max_speed_cap_mph=req.max_speed_cap_mph,
         min_safety_buffer_soc=req.min_safety_buffer_pct / 100.0,
+        target_arrival_soc=req.target_arrival_soc_pct / 100.0,
         ideal_time_min_bound=req.ideal_time_min_minutes,
         ideal_time_max_bound=req.ideal_time_max_minutes
     )
@@ -178,7 +180,8 @@ async def run_optimization(req: OptimizationRequest):
             "toll_cost": itin.toll_cost,
             "total_cost": itin.total_cost,
             "pareto_score": itin.pareto_score,
-            "ea_pass_recommendation": itin.ea_pass_recommendation,
+            "final_arrival_soc": itin.final_arrival_soc,
+            "membership_recommendations": itin.membership_recommendations,
             "stops": [
                 {
                     "station_id": s.station.id,

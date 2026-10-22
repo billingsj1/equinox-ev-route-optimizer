@@ -29,7 +29,7 @@ def run_cli():
 
     weather = WeatherConditions(temperature_f=68.0, road_condition="dry")
     payload = PayloadConfig(josh=True, courtney=True, asher=True, arno=True, gear_lbs=50.0)
-    profile = DrivingProfile(speed_offset_mph=5.0, max_speed_cap_mph=75.0, min_safety_buffer_soc=0.10)
+    profile = DrivingProfile(speed_offset_mph=5.0, max_speed_cap_mph=75.0, min_safety_buffer_soc=0.10, target_arrival_soc=0.20)
     toll_config = TollPassConfig(has_ezpass=True, has_nj_green_pass=True)
 
     results = opt.optimize(routes, weather, payload, profile, toll_config, initial_soc=1.00)
@@ -40,13 +40,18 @@ def run_cli():
         print(f"  Total Distance : {itin.total_distance_miles} miles")
         print(f"  Total Time     : {itin.total_time_hours} hrs (Driving: {itin.driving_time_hours}h, Charging: {itin.charging_time_hours}h)")
         print(f"  Total Cost     : ${itin.total_cost:.2f} (Charging: ${itin.charging_cost:.2f}, Tolls: ${itin.toll_cost:.2f})")
+        print(f"  Final Arrival  : {itin.final_arrival_soc}% SoC")
         print(f"  Charging Stops : {len(itin.stops)}")
         for idx, s in enumerate(itin.stops):
             print(f"    Stop {idx+1}: {s.station.name} ({s.network}, {s.station.power_kw}kW)")
             print(f"           Arrival SoC: {s.arrival_soc}%, Target: {s.target_soc}% | Added: {s.energy_added_kwh} kWh | Duration: {s.charge_duration_minutes} min | Cost: ${s.charging_cost:.2f}")
-        rec = itin.ea_pass_recommendation
-        if rec and rec.get("ea_kwh_used", 0) > 0:
-            print(f"  EA Pass+ Rec   : {'YES' if rec['worth_it'] else 'NO'} (Net benefit: ${rec['net_benefit']:.2f})")
+        recs = itin.membership_recommendations or {}
+        ea_rec = recs.get("electrify_america", {})
+        if ea_rec and ea_rec.get("kwh_used", 0) > 0:
+            print(f"  EA Pass+ Rec   : {'YES' if ea_rec['worth_it'] else 'NO'} (Net: ${ea_rec['net_benefit']:.2f} savings after $3.50 one-way fee)")
+        tesla_rec = recs.get("tesla", {})
+        if tesla_rec and tesla_rec.get("kwh_used", 0) > 0:
+            print(f"  Tesla Mem Rec  : {'YES' if tesla_rec['worth_it'] else 'NO'} (Net: ${tesla_rec['net_benefit']:.2f} savings after $6.50 one-way fee)")
 
 def run_scraper():
     from pipeline.scraper import PricingScraperPipeline

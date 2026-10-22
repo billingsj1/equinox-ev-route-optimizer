@@ -20,7 +20,8 @@ GRAVITY = 9.80665        # m/s^2
 class DrivingProfile:
     speed_offset_mph: float = 5.0     # e.g., +5 mph over posted limit
     max_speed_cap_mph: float = 75.0   # Hard ceiling speed cap
-    min_safety_buffer_soc: float = 0.10 # e.g., 10% min battery remaining
+    min_safety_buffer_soc: float = 0.10 # e.g., 10% min battery remaining during legs
+    target_arrival_soc: float = 0.20  # Ideal ending charge state at final destination (default 20%)
     ideal_time_between_stops_min: float = 120.0 # 2 hours default
     ideal_time_min_bound: float = 90.0
     ideal_time_max_bound: float = 150.0

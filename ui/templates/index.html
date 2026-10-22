@@ -134,10 +134,17 @@
           </div>
           <div>
             <div class="flex justify-between text-slate-400 mb-1">
-              <span>Min Safety Buffer (Arrival reserve)</span>
+              <span>Min Safety Buffer (En-route reserve)</span>
               <span id="bufferDisplay" class="font-mono text-amber-400">10% (8.5 kWh)</span>
             </div>
-            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'" class="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>Ideal Ending Charge State (Target Arrival)</span>
+              <span id="targetArrivalDisplay" class="font-mono text-cyan-400">20% (17.0 kWh)</span>
+            </div>
+            <input type="range" id="targetArrivalSlider" min="5" max="90" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
           </div>
           <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
@@ -262,7 +269,10 @@
             <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
               <i data-lucide="zap" class="w-3.5 h-3.5"></i> Fastest Route
             </span>
-            <span id="fastestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+            <div class="flex items-center gap-1.5">
+              <span id="fastestArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 20%</span>
+              <span id="fastestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+            </div>
           </div>
           <div class="text-2xl font-black text-white" id="fastestTime">4h 25m</div>
           <div class="text-xs text-slate-400 mt-1 flex justify-between">
@@ -277,7 +287,10 @@
             <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
               <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> Cheapest Route
             </span>
-            <span id="cheapestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+            <div class="flex items-center gap-1.5">
+              <span id="cheapestArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 20%</span>
+              <span id="cheapestStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+            </div>
           </div>
           <div class="text-2xl font-black text-white" id="cheapestTime">4h 42m</div>
           <div class="text-xs text-slate-400 mt-1 flex justify-between">
@@ -292,7 +305,10 @@
             <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
               <i data-lucide="scale" class="w-3.5 h-3.5"></i> Balanced (Pareto Knee)
             </span>
-            <span id="balancedStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+            <div class="flex items-center gap-1.5">
+              <span id="balancedArrivalBadge" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: 20%</span>
+              <span id="balancedStopsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">1 stop</span>
+            </div>
           </div>
           <div class="text-2xl font-black text-white" id="balancedTime">4h 42m</div>
           <div class="text-xs text-slate-400 mt-1 flex justify-between">
@@ -325,12 +341,21 @@
       <!-- Itinerary Detail & EA Pass Recommendation -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
         
-        <!-- Pass+ Recommendation Banner -->
-        <div id="eaBanner" class="p-3 rounded-lg bg-blue-950/40 border border-blue-800/60 flex items-start gap-3">
-          <i data-lucide="info" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
-          <div class="text-xs space-y-0.5">
-            <div class="font-semibold text-blue-200" id="eaTitle">Electrify America Pass+ Analysis</div>
-            <div class="text-slate-300" id="eaText">Evaluating if $7.00/mo membership discount saves money on this trip...</div>
+        <!-- Membership Analysis Banners (50% Round-Trip Allocation) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div id="eaBanner" class="p-3 rounded-lg bg-blue-950/40 border border-blue-800/60 flex items-start gap-3">
+            <i data-lucide="shield-check" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
+            <div class="text-xs space-y-0.5">
+              <div class="font-semibold text-blue-200" id="eaTitle">Electrify America Pass+</div>
+              <div class="text-slate-300" id="eaText">Evaluating $3.50 one-way allocated fee ($7/mo)...</div>
+            </div>
+          </div>
+          <div id="teslaBanner" class="p-3 rounded-lg bg-red-950/40 border border-red-800/60 flex items-start gap-3">
+            <i data-lucide="zap" class="w-5 h-5 text-red-400 shrink-0 mt-0.5"></i>
+            <div class="text-xs space-y-0.5">
+              <div class="font-semibold text-red-200" id="teslaTitle">Tesla Supercharger Membership</div>
+              <div class="text-slate-300" id="teslaText">Evaluating $6.50 one-way allocated fee ($12.99/mo)...</div>
+            </div>
           </div>
         </div>
 
@@ -481,6 +506,7 @@
         max_speed_cap_mph: parseFloat(document.getElementById('maxSpeedCap').value),
         initial_soc_pct: parseFloat(document.getElementById('startSocSlider').value),
         min_safety_buffer_pct: parseFloat(document.getElementById('bufferSlider').value),
+        target_arrival_soc_pct: parseFloat(document.getElementById('targetArrivalSlider').value),
         weather_mode: document.getElementById('weatherMode').value,
         temperature_f: parseFloat(document.getElementById('tempF').value),
         wind_speed_mph: parseFloat(document.getElementById('windSpeed').value),
@@ -518,18 +544,21 @@
       document.getElementById('fastestCost').innerText = '$' + itins.fastest.total_cost.toFixed(2);
       document.getElementById('fastestMiles').innerText = itins.fastest.total_distance_miles + ' mi';
       document.getElementById('fastestStopsBadge').innerText = itins.fastest.stops.length + ' stops';
+      document.getElementById('fastestArrivalBadge').innerText = 'Arr: ' + itins.fastest.final_arrival_soc + '%';
 
       // Card 2: Cheapest
       document.getElementById('cheapestTime').innerText = formatHours(itins.cheapest.total_time_hours);
       document.getElementById('cheapestCost').innerText = '$' + itins.cheapest.total_cost.toFixed(2);
       document.getElementById('cheapestMiles').innerText = itins.cheapest.total_distance_miles + ' mi';
       document.getElementById('cheapestStopsBadge').innerText = itins.cheapest.stops.length + ' stops';
+      document.getElementById('cheapestArrivalBadge').innerText = 'Arr: ' + itins.cheapest.final_arrival_soc + '%';
 
       // Card 3: Balanced
       document.getElementById('balancedTime').innerText = formatHours(itins.balanced.total_time_hours);
       document.getElementById('balancedCost').innerText = '$' + itins.balanced.total_cost.toFixed(2);
       document.getElementById('balancedMiles').innerText = itins.balanced.total_distance_miles + ' mi';
       document.getElementById('balancedStopsBadge').innerText = itins.balanced.stops.length + ' stops';
+      document.getElementById('balancedArrivalBadge').innerText = 'Arr: ' + itins.balanced.final_arrival_soc + '%';
 
       selectItinerary(currentItineraryKey);
     }
@@ -557,7 +586,7 @@
       const itin = optimizationData.itineraries[key];
       renderMapRoutes(itin);
       renderStopsTable(itin);
-      renderEABanner(itin);
+      renderMembershipBanners(itin);
     }
 
     function renderMapRoutes(selectedItin) {
@@ -622,20 +651,37 @@
       });
     }
 
-    function renderEABanner(itin) {
-      const rec = itin.ea_pass_recommendation;
-      const title = document.getElementById('eaTitle');
-      const text = document.getElementById('eaText');
+    function renderMembershipBanners(itin) {
+      const recs = itin.membership_recommendations || {};
+      const ea = recs.electrify_america;
+      const tesla = recs.tesla;
 
-      if (!rec || rec.ea_kwh_used === 0) {
-        title.innerText = "Electrify America Pass+ Not Needed";
-        text.innerText = "This itinerary does not use Pass+-eligible Electrify America stations, so no monthly pass is required.";
-      } else if (rec.worth_it) {
-        title.innerText = "✓ Electrify America Pass+ Recommended";
-        text.innerText = `You charge ${rec.ea_kwh_used} kWh at eligible EA stations. Subscribing to Pass+ ($7.00/mo) saves ~$${rec.estimated_savings.toFixed(2)}, netting you a profit of $${rec.net_benefit.toFixed(2)} on this trip!`;
+      // 1. EA Pass+ Banner
+      const eaTitle = document.getElementById('eaTitle');
+      const eaText = document.getElementById('eaText');
+      if (!ea || ea.kwh_used === 0) {
+        eaTitle.innerText = "EA Pass+ Not Needed";
+        eaText.innerText = "No Pass+-eligible Electrify America charging on this itinerary.";
+      } else if (ea.worth_it) {
+        eaTitle.innerText = `✓ EA Pass+ Recommended (Save $${ea.net_benefit.toFixed(2)})`;
+        eaText.innerText = `Charges ${ea.kwh_used} kWh. $3.50 round-trip split fee saves $${ea.estimated_savings.toFixed(2)} ($${ea.net_benefit.toFixed(2)} net profit).`;
       } else {
-        title.innerText = "Electrify America Pass+ Not Cost-Effective";
-        text.innerText = `You charge ${rec.ea_kwh_used} kWh at EA ($${rec.estimated_savings.toFixed(2)} savings vs $7.00 fee). Guest pricing is cheaper by $${Math.abs(rec.net_benefit).toFixed(2)}.`;
+        eaTitle.innerText = "EA Pass+ Not Cost-Effective";
+        eaText.innerText = `Charges ${ea.kwh_used} kWh. $${ea.estimated_savings.toFixed(2)} savings does not offset the $3.50 trip-allocated fee.`;
+      }
+
+      // 2. Tesla Supercharger Membership Banner
+      const teslaTitle = document.getElementById('teslaTitle');
+      const teslaText = document.getElementById('teslaText');
+      if (!tesla || tesla.kwh_used === 0) {
+        teslaTitle.innerText = "Tesla Membership Not Needed";
+        teslaText.innerText = "No Tesla Supercharger MagicDock stops on this itinerary.";
+      } else if (tesla.worth_it) {
+        teslaTitle.innerText = `✓ Tesla Member Recommended (Save $${tesla.net_benefit.toFixed(2)})`;
+        teslaText.innerText = `Charges ${tesla.kwh_used} kWh. $6.50 round-trip split fee saves $${tesla.estimated_savings.toFixed(2)} ($${tesla.net_benefit.toFixed(2)} net profit).`;
+      } else {
+        teslaTitle.innerText = "Tesla Member Not Cost-Effective";
+        teslaText.innerText = `Charges ${tesla.kwh_used} kWh. $${tesla.estimated_savings.toFixed(2)} savings does not offset the $6.50 trip-allocated fee.`;
       }
     }
 
