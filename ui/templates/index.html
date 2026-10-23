@@ -437,6 +437,21 @@
           </div>
         </div>
 
+        <!-- Route Speed Profile Banner -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-inner">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono font-bold text-xs shrink-0">
+              <i data-lucide="gauge" class="w-3.5 h-3.5"></i>
+            </div>
+            <div>
+              <span class="text-slate-400">Route Speed Limits:</span>
+              <span id="speedProfileAvg" class="text-white font-mono font-bold ml-1">--</span>
+              <span id="cruisingSpeedEff" class="text-emerald-400 font-mono text-[11px] ml-1.5 font-medium">--</span>
+            </div>
+          </div>
+          <div id="speedProfileBreakdown" class="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 flex-wrap">--</div>
+        </div>
+
         <!-- Charging Stops Table -->
         <div>
           <div class="flex items-center justify-between mb-2">
@@ -744,6 +759,148 @@
       return { matched: matched, total_dist: total_dist };
     }
 
+    // --- SPECIFIC SPEED LIMIT RESOLVER ---
+    // Pulls specific posted speed limits from OpenStreetMap/OSRM step metadata across Interstate corridors,
+    // state turnpikes, US divided expressways, urban beltways, and local access roads.
+    function resolveStepSpeedLimit(step) {
+      const ref = step.ref || '';
+      const name = step.name || '';
+      const dist_m = step.distance || 0;
+      const dur_s = step.duration || 0;
+      const osrm_mph = (dist_m / Math.max(0.1, dur_s)) * 2.23694;
+      const maneuver_type = (step.maneuver && step.maneuver.type) ? step.maneuver.type : '';
+
+      let lon = 0, lat = 0;
+      const coords = (step.geometry && step.geometry.coordinates) ? step.geometry.coordinates : [];
+      if (coords.length > 0) {
+        const midIdx = Math.floor(coords.length / 2);
+        lon = coords[midIdx][0];
+        lat = coords[midIdx][1];
+      } else if (step.maneuver && step.maneuver.location) {
+        lon = step.maneuver.location[0];
+        lat = step.maneuver.location[1];
+      }
+
+      const lowerName = name.toLowerCase();
+
+      // 1. Highway Ramps and Interchanges
+      if (maneuver_type.includes('ramp') || lowerName.includes('ramp') || lowerName.includes('exit')) {
+        return Math.min(45, Math.max(25, Math.round(osrm_mph / 5.0) * 5));
+      }
+
+      // 2. Interstate Freeways & Major Turnpikes (I-70, I-76, I-77, I-79, I-80, I-470, I-676, I-376)
+      if (ref.includes('I ') || ref.includes('I-') || (ref.startsWith('I') && /\d/.test(ref))) {
+        // Specific Urban Expressways & Beltway Bottlenecks
+        if (lowerName.includes('innerbelt') || lowerName.includes('downtown') || lowerName.includes('vine street') ||
+            lowerName.includes('airport expressway') || lowerName.includes('schuylkill') || lowerName.includes('pkwy')) {
+          return 55.0;
+        }
+
+        // State-by-State Specific Speed Limits
+        if (lon < -80.52) {
+          // Ohio
+          if (lon >= -83.08 && lon <= -82.95) {
+            return lowerName.includes('inner') ? 55.0 : 65.0; // Columbus Metro Area
+          }
+          return 70.0; // Ohio Rural Interstates (I-70, I-71, I-77)
+        } else if (lon >= -80.75 && lon < -80.52) {
+          // West Virginia (Wheeling & Northern Panhandle)
+          return (ref.includes('470') || lowerName.includes('tunnel')) ? 60.0 : 65.0;
+        } else if (lon >= -80.52 && lon <= -75.2) {
+          // Pennsylvania
+          if (lowerName.includes('turnpike') || ref.includes('76')) {
+            if (lon >= -75.4) return 55.0; // Approaching King of Prussia / Philadelphia
+            return 70.0; // PA Turnpike (I-76) Mainline posted limit is 70 mph
+          }
+          if (ref.includes('70')) {
+            return 65.0; // PA I-70 between WV border and New Stanton
+          }
+          if (ref.includes('79') || ref.includes('80')) {
+            return 70.0; // PA Rural I-79 / I-80
+          }
+          return 65.0;
+        } else if (lon > -75.2) {
+          // New Jersey
+          if (ref.includes('676') || ref.includes('76')) return 50.0; // Camden / Center City
+          return 65.0; // NJ Turnpike / Rural I-295
+        }
+        return 70.0;
+      }
+
+      // 3. Toll Expressways & Bypasses (e.g. PA 576 Southern Beltway, Mon-Fayette)
+      if (ref.includes('576') || lowerName.includes('turnpike') || lowerName.includes('toll')) {
+        return 65.0;
+      }
+
+      // 4. US Divided Highways (US-33, US-22, US-30, US-40, US-11)
+      if (ref.includes('US ') || ref.includes('US-')) {
+        if (lowerName.includes('pike') || lowerName.includes('boulevard') || lowerName.includes('avenue') || lowerName.includes('street')) {
+          return Math.min(45, Math.max(30, Math.round(osrm_mph / 5.0) * 5));
+        }
+        if (osrm_mph >= 48.0) {
+          return 60.0; // 4-lane divided rural expressway (US-22 / US-33)
+        }
+        return 50.0;
+      }
+
+      // 5. State Routes (PA, OH, WV, MD, NJ)
+      if (['PA ', 'OH ', 'WV ', 'MD ', 'NJ ', 'SR '].some(prefix => ref.includes(prefix))) {
+        if (osrm_mph >= 45.0) return 55.0;
+        return 45.0;
+      }
+
+      // 6. Local Streets, Commercial Strips, & Charger Access Roads
+      if (osrm_mph >= 35.0) return 45.0;
+      if (osrm_mph >= 25.0) return 35.0;
+      return 25.0;
+    }
+
+    // High-resolution interval physics simulator: slices leg across specific step speed limits
+    function simulateLegFromSteps(steps, start_mile, end_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed) {
+      if (!steps || steps.length === 0) {
+        return simulateLegPhysics(end_mile - start_mile, fallback_speed || 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+      }
+
+      let step_start = 0.0;
+      let total_kwh = 0.0;
+      let total_hours = 0.0;
+      let weighted_speed_sum = 0.0;
+      let total_slice_dist = 0.0;
+
+      for (let i = 0; i < steps.length; i++) {
+        const s = steps[i];
+        const step_len = s.distance_miles;
+        const step_end = step_start + step_len;
+
+        const ov_start = Math.max(start_mile, step_start);
+        const ov_end = Math.min(end_mile, step_end);
+        const ov_len = Math.max(0.0, ov_end - ov_start);
+
+        if (ov_len > 0.0001) {
+          const posted_speed = s.posted_speed || fallback_speed || 70.0;
+          const sliceSim = simulateLegPhysics(ov_len, posted_speed, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+          total_kwh += sliceSim.kwh;
+          total_hours += sliceSim.hours;
+          weighted_speed_sum += sliceSim.target_mph * ov_len;
+          total_slice_dist += ov_len;
+        }
+        step_start = step_end;
+      }
+
+      if (total_slice_dist <= 0.001) {
+        return simulateLegPhysics(Math.max(0.1, end_mile - start_mile), fallback_speed || 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+      }
+
+      const avg_target_mph = weighted_speed_sum / total_slice_dist;
+      return {
+        target_mph: Math.round(avg_target_mph * 10) / 10,
+        kwh: Math.max(0.2, total_kwh),
+        hours: total_hours,
+        mi_per_kwh: total_slice_dist / Math.max(0.1, total_kwh),
+        wh_per_mi: (total_kwh * 1000.0) / total_slice_dist
+      };
+    }
+
     // --- PHYSICS SIMULATION ENGINE (NREL FASTSim Road-Load Formulation) ---
     function simulateLegPhysics(distance_miles, base_speed_limit, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap) {
       const curb_kg = 2233.0;
@@ -877,10 +1034,10 @@
         const has_ezpass = document.getElementById('hasEzPass').checked;
         let baseToll = has_ezpass ? (destGeo.toll_ez || 0) : (destGeo.toll_cash || 0);
 
-        // Fetch Live Road Route via OSRM
+        // Fetch Live Road Route via OSRM with full steps & speed metadata
         let routesFound = false;
         try {
-          const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&alternatives=true`;
+          const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&alternatives=true&steps=true&annotations=speed,distance`;
           const osrmResp = await fetch(osrmUrl);
           if (osrmResp.ok) {
             const osrmData = await osrmResp.json();
@@ -891,12 +1048,49 @@
                 let toll = baseToll;
                 if (idx > 0 && toll > 0) toll = 0.0; // Alternative is often non-turnpike
 
+                // Parse specific step-by-step posted speed limits
+                const rawSteps = (r.legs && r.legs[0] && r.legs[0].steps) ? r.legs[0].steps : [];
+                const parsedSteps = rawSteps.map(s => {
+                  const d_mi = (s.distance || 0) * 0.000621371;
+                  const spd = resolveStepSpeedLimit(s);
+                  return {
+                    name: s.name || '',
+                    ref: s.ref || '',
+                    distance_miles: d_mi,
+                    posted_speed: spd,
+                    geometry: s.geometry,
+                    maneuver: s.maneuver
+                  };
+                });
+
+                // Calculate weighted speed limit & speed distribution profile
+                let weightedLimit = 70.0;
+                let speedDist = {};
+                const totalStepDist = parsedSteps.reduce((acc, s) => acc + s.distance_miles, 0);
+                if (totalStepDist > 0) {
+                  const sumSpdDist = parsedSteps.reduce((acc, s) => acc + (s.posted_speed * s.distance_miles), 0);
+                  weightedLimit = sumSpdDist / totalStepDist;
+                  parsedSteps.forEach(s => {
+                    const spdKey = Math.round(s.posted_speed);
+                    speedDist[spdKey] = (speedDist[spdKey] || 0) + s.distance_miles;
+                  });
+                }
+
+                // Format friendly speed breakdown
+                const speedSummaryParts = Object.keys(speedDist)
+                  .map(Number)
+                  .sort((a, b) => b - a)
+                  .filter(spd => (speedDist[spd] / totalStepDist) >= 0.03)
+                  .map(spd => `${spd} mph (${Math.round((speedDist[spd] / totalStepDist) * 100)}%)`);
+
                 return {
                   id: `osrm_${idx+1}`,
                   name: idx === 0 ? "Fastest Highway Corridor" : `Alternative Route ${idx+1}`,
                   distance: Math.round(miles * 10) / 10,
-                  base_speed_limit: 70.0,
-                  speed_mph: 70.0,
+                  base_speed_limit: Math.round(weightedLimit * 10) / 10,
+                  speed_mph: Math.round(weightedLimit * 10) / 10,
+                  steps: parsedSteps,
+                  speed_profile_text: speedSummaryParts.join(' · '),
                   toll: toll,
                   coordinates: r.geometry.coordinates,
                   origin: originGeo,
@@ -934,8 +1128,16 @@
           id: "sewickley_route",
           name: "I-70 East to I-79 North (Sewickley, PA)",
           distance: 172.0,
-          base_speed_limit: 70.0,
-          speed_mph: 70.0,
+          base_speed_limit: 60.0,
+          speed_mph: 60.0,
+          speed_profile_text: "70 mph I-70 (42%) · 60 mph US-22 (45%) · 65 mph PA-576 (3%) · 35-55 mph Local (10%)",
+          steps: [
+            { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+            { name: "East Freeway", ref: "I 70", distance_miles: 74.9, posted_speed: 70.0 },
+            { name: "Cadiz / Steubenville Expressway", ref: "US 22", distance_miles: 78.5, posted_speed: 60.0 },
+            { name: "Southern Beltway", ref: "PA 576", distance_miles: 4.4, posted_speed: 65.0 },
+            { name: "Local Access", ref: "PA 51", distance_miles: 12.7, posted_speed: 35.0 }
+          ],
           toll: 0.00,
           coordinates: [
             [originGeo.lon, originGeo.lat],
@@ -951,8 +1153,17 @@
           id: "carlisle_route",
           name: "I-70 East to PA Turnpike (Carlisle Exit 226)",
           distance: 348.0,
-          base_speed_limit: 70.0,
-          speed_mph: 70.0,
+          base_speed_limit: 68.5,
+          speed_mph: 68.5,
+          speed_profile_text: "70 mph Turnpike/I-70 (82%) · 65 mph I-470/PA (16%) · 35-55 mph Local (2%)",
+          steps: [
+            { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+            { name: "East Freeway", ref: "I 70", distance_miles: 118.5, posted_speed: 70.0 },
+            { name: "Wheeling Bypass", ref: "I 470", distance_miles: 20.1, posted_speed: 65.0 },
+            { name: "Eisenhower Highway", ref: "I 70", distance_miles: 57.3, posted_speed: 65.0 },
+            { name: "Pennsylvania Turnpike", ref: "I 76", distance_miles: 147.0, posted_speed: 70.0 },
+            { name: "Harrisburg Pike", ref: "US 11", distance_miles: 3.6, posted_speed: 35.0 }
+          ],
           toll: has_ezpass ? 19.50 : 39.00,
           coordinates: [
             [originGeo.lon, originGeo.lat],
@@ -1014,8 +1225,18 @@
             id: "pa_turnpike",
             name: "Route 1: I-70 to PA Turnpike (I-76 Mainline)",
             distance: 448.0,
-            base_speed_limit: 70.0,
-            speed_mph: 70.0,
+            base_speed_limit: 67.4,
+            speed_mph: 67.4,
+            speed_profile_text: "70 mph Turnpike (80%) · 65 mph (12%) · 50-55 mph Urban (4%) · 35-45 mph Arterial (4%)",
+            steps: [
+              { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+              { name: "East Freeway", ref: "I 70", distance_miles: 118.5, posted_speed: 70.0 },
+              { name: "Wheeling Bypass", ref: "I 470", distance_miles: 20.1, posted_speed: 70.0 },
+              { name: "Eisenhower Highway", ref: "I 70", distance_miles: 57.3, posted_speed: 65.0 },
+              { name: "Pennsylvania Turnpike", ref: "I 76", distance_miles: 235.0, posted_speed: 70.0 },
+              { name: "Schuylkill / Vine St", ref: "I 76; I 676", distance_miles: 12.0, posted_speed: 50.0 },
+              { name: "Marlton Pike", ref: "NJ 70", distance_miles: 8.3, posted_speed: 55.0 }
+            ],
             toll: has_ezpass ? 26.80 : 52.40,
             coordinates: [
               [originGeo.lon, originGeo.lat],
@@ -1039,8 +1260,16 @@
             id: "md_i68_alt",
             name: "Route 2: Maryland I-68 / I-70 Corridor (Toll-Free)",
             distance: 452.0,
-            base_speed_limit: 65.0,
-            speed_mph: 65.0,
+            base_speed_limit: 64.0,
+            speed_mph: 64.0,
+            speed_profile_text: "65 mph I-68 (75%) · 70 mph I-70 (18%) · 35-55 mph Arterial (7%)",
+            steps: [
+              { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+              { name: "East Freeway", ref: "I 70", distance_miles: 118.5, posted_speed: 70.0 },
+              { name: "National Freeway", ref: "I 68", distance_miles: 240.0, posted_speed: 65.0 },
+              { name: "Maryland I-70", ref: "I 70", distance_miles: 75.0, posted_speed: 70.0 },
+              { name: "Arterial / Local", ref: "US 40", distance_miles: 17.0, posted_speed: 45.0 }
+            ],
             toll: 0.00,
             coordinates: [
               [originGeo.lon, originGeo.lat],
@@ -1098,8 +1327,8 @@
         const routeStations = projection.matched;
         const total_miles = projection.total_dist || route.distance;
 
-        // 1. Check 0-Stop Candidate (Direct without charging)
-        const leg0 = simulateLegPhysics(total_miles, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+        // 1. Check 0-Stop Candidate (Direct without charging, evaluated across specific speed limits)
+        const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
         const rem_soc0 = start_soc - (leg0.kwh / 85.0);
         if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.01)) {
           candidates.push({
@@ -1204,9 +1433,8 @@
             // Detour energy consumption at local speeds
             const detourSim = simulateLegPhysics(detour_miles, 28.0, payload_lbs, temp_f, 0, 0, road_cond, 0, 35);
 
-            // Leg distance driving to this charger (includes half-detour to pull in)
-            const leg_dist = (st.mile - current_mile) + (detour_miles / 2.0);
-            const legSim = simulateLegPhysics(leg_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+            // Leg distance driving to this charger (simulated along specific segment speed limits)
+            const legSim = simulateLegFromSteps(route.steps, current_mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
 
             total_drive_hrs += legSim.hours + (detour_hours / 2.0);
             current_soc -= ((legSim.kwh + (detourSim.kwh / 2.0)) / 85.0);
@@ -1218,9 +1446,7 @@
             }
 
             const next_mile = (idx === stopsGroup.length - 1) ? total_miles : stopsGroup[idx + 1].mile;
-            const next_one_way = (idx === stopsGroup.length - 1) ? 0 : Math.max(0.1, stopsGroup[idx + 1].detour_mi || 0.1);
-            const next_dist = (next_mile - st.mile) + (detour_miles / 2.0) + next_one_way;
-            const nextLegSim = simulateLegPhysics(next_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+            const nextLegSim = simulateLegFromSteps(route.steps, st.mile, next_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
             const needed_next_soc = (nextLegSim.kwh + (detourSim.kwh / 2.0)) / 85.0;
 
             let target_soc = 0;
@@ -1259,9 +1485,8 @@
 
           if (valid) {
             const last_exit_detour = stopPlans.length > 0 ? (stopPlans[stopPlans.length - 1].detour_miles / 2.0) : 0;
-            const final_leg_dist = (total_miles - current_mile) + last_exit_detour;
-            const finalLegSim = simulateLegPhysics(final_leg_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
-            total_drive_hrs += finalLegSim.hours;
+            const finalLegSim = simulateLegFromSteps(route.steps, current_mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+            total_drive_hrs += finalLegSim.hours + (last_exit_detour / 28.0);
             current_soc -= (finalLegSim.kwh / 85.0);
 
             if (current_soc >= (target_arrival_soc - 0.015)) {
@@ -1420,6 +1645,24 @@
       renderMap(itin);
       renderTable(itin);
       renderBanners(itin);
+      renderSpeedProfile(itin);
+      lucide.createIcons();
+    }
+
+    function renderSpeedProfile(itin) {
+      const avgEl = document.getElementById('speedProfileAvg');
+      const effEl = document.getElementById('cruisingSpeedEff');
+      const breakdownEl = document.getElementById('speedProfileBreakdown');
+      if (!avgEl || !itin || !itin.route) return;
+
+      const offset = parseFloat(document.getElementById('speedOffset').value) || 0;
+      const cap = parseFloat(document.getElementById('maxSpeedCap').value) || 75;
+      const baseLimit = itin.route.base_speed_limit || 70.0;
+      const effCruising = Math.min(baseLimit + offset, cap);
+
+      avgEl.innerText = `${baseLimit.toFixed(1)} mph avg posted`;
+      effEl.innerText = `(Cruising at ~${effCruising.toFixed(0)} mph with ${offset >= 0 ? '+' : ''}${offset} offset, max cap ${cap})`;
+      breakdownEl.innerText = itin.route.speed_profile_text ? `Segments: ${itin.route.speed_profile_text}` : 'Segment speed limits applied';
     }
 
     function renderMap(itin) {
