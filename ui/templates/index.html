@@ -452,6 +452,7 @@
                 <tr class="border-b border-slate-800 text-slate-400 font-medium">
                   <th class="py-2 px-3">Stop # & Station</th>
                   <th class="py-2 px-3">Mile Marker</th>
+                  <th class="py-2 px-3">Highway Detour</th>
                   <th class="py-2 px-3">Power</th>
                   <th class="py-2 px-3">Arrival SoC</th>
                   <th class="py-2 px-3">Target SoC</th>
@@ -621,6 +622,48 @@
                 Math.cos(lat1 * Math.PI / 180.0) * Math.cos(lat2 * Math.PI / 180.0) *
                 Math.sin(dLon/2) * Math.sin(dLon/2);
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+        // Builds spurred polyline geometry explicitly routing to off-highway and plaza chargers
+    function buildSpurredCoordinates(mainCoords, stops) {
+      if (!stops || stops.length === 0) return mainCoords;
+      const result = [];
+      const sortedStops = [...stops].sort((a, b) => a.mile - b.mile);
+      let currentIdx = 0;
+
+      for (let i = 0; i < mainCoords.length; i++) {
+        result.push(mainCoords[i]);
+
+        if (currentIdx < sortedStops.length && i < mainCoords.length - 1) {
+          const st = sortedStops[currentIdx];
+          const ptA = mainCoords[i];
+          const ptB = mainCoords[i + 1];
+
+          const d_ab = haversineMiles(ptA[1], ptA[0], ptB[1], ptB[0]);
+          const d_ap = haversineMiles(ptA[1], ptA[0], st.station.lat, st.station.lon);
+          const d_bp = haversineMiles(ptB[1], ptB[0], st.station.lat, st.station.lon);
+
+          if (d_ab > 0.05 && d_ap < d_ab * 1.5 && d_bp < d_ab * 1.5) {
+            const frac = Math.max(0.0, Math.min(1.0, (Math.pow(d_ap, 2) - Math.pow(d_bp, 2) + Math.pow(d_ab, 2)) / (2 * Math.pow(d_ab, 2))));
+            const jLon = ptA[0] + frac * (ptB[0] - ptA[0]);
+            const jLat = ptA[1] + frac * (ptB[1] - ptA[1]);
+
+            // Splice spur into station and return to highway junction
+            result.push([jLon, jLat]);
+            result.push([st.station.lon, st.station.lat]);
+            result.push([jLon, jLat]);
+            currentIdx++;
+          }
+        }
+      }
+
+      while (currentIdx < sortedStops.length) {
+        const st = sortedStops[currentIdx];
+        result.push([st.station.lon, st.station.lat]);
+        currentIdx++;
+      }
+
+      return result;
     }
 
     // Projects all stations in database onto the active highway polyline
@@ -1116,11 +1159,21 @@
 
           for (let idx = 0; idx < stopsGroup.length; idx++) {
             const st = stopsGroup[idx];
-            const leg_dist = st.mile - current_mile;
+            // Detour calculation: off-highway ramps & local service road driving
+            const one_way_detour = Math.max(0.1, st.detour_mi || 0.1);
+            const detour_miles = Math.round(one_way_detour * 2.0 * 10) / 10;
+            const detour_hours = Math.max(0.035, detour_miles / 28.0); // ~28 mph local navigation
+            const detour_mins = Math.round(detour_hours * 60.0);
 
+            // Detour energy consumption at local speeds
+            const detourSim = simulateLegPhysics(detour_miles, 28.0, payload_lbs, temp_f, 0, 0, road_cond, 0, 35);
+
+            // Leg distance driving to this charger (includes half-detour to pull in)
+            const leg_dist = (st.mile - current_mile) + (detour_miles / 2.0);
             const legSim = simulateLegPhysics(leg_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
-            total_drive_hrs += legSim.hours;
-            current_soc -= (legSim.kwh / 85.0);
+
+            total_drive_hrs += legSim.hours + (detour_hours / 2.0);
+            current_soc -= ((legSim.kwh + (detourSim.kwh / 2.0)) / 85.0);
 
             // Buffer constraint
             if (current_soc < min_buffer_soc) {
@@ -1129,9 +1182,10 @@
             }
 
             const next_mile = (idx === stopsGroup.length - 1) ? total_miles : stopsGroup[idx + 1].mile;
-            const next_dist = next_mile - st.mile;
+            const next_one_way = (idx === stopsGroup.length - 1) ? 0 : Math.max(0.1, stopsGroup[idx + 1].detour_mi || 0.1);
+            const next_dist = (next_mile - st.mile) + (detour_miles / 2.0) + next_one_way;
             const nextLegSim = simulateLegPhysics(next_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
-            const needed_next_soc = nextLegSim.kwh / 85.0;
+            const needed_next_soc = (nextLegSim.kwh + (detourSim.kwh / 2.0)) / 85.0;
 
             let target_soc = 0;
             if (idx === stopsGroup.length - 1) {
@@ -1153,6 +1207,8 @@
               station: st,
               mile: st.mile,
               detour_mi: st.detour_mi || 0,
+              detour_miles: detour_miles,
+              detour_mins: detour_mins,
               arr_soc: Math.round(current_soc * 100),
               tgt_soc: Math.round(target_soc * 100),
               added_kwh: Math.round(ch.added_kwh * 10) / 10,
@@ -1166,7 +1222,8 @@
           }
 
           if (valid) {
-            const final_leg_dist = total_miles - current_mile;
+            const last_exit_detour = stopPlans.length > 0 ? (stopPlans[stopPlans.length - 1].detour_miles / 2.0) : 0;
+            const final_leg_dist = (total_miles - current_mile) + last_exit_detour;
             const finalLegSim = simulateLegPhysics(final_leg_dist, route.speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
             total_drive_hrs += finalLegSim.hours;
             current_soc -= (finalLegSim.kwh / 85.0);
@@ -1199,11 +1256,16 @@
                 adjusted_ch_cost -= tesla_net;
               }
 
+              const total_detour_miles = Math.round(stopPlans.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
+              const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
               const total_time = total_drive_hrs + total_ch_hrs;
               const total_cost = adjusted_ch_cost + route.toll;
 
               candidates.push({
                 route: route,
+                base_miles: total_miles,
+                total_actual_miles: total_actual_miles,
+                total_detour_miles: total_detour_miles,
                 drive_hours: total_drive_hrs,
                 ch_hours: total_ch_hrs,
                 total_hours: total_time,
@@ -1277,21 +1339,21 @@
       // Card 1: Fastest
       document.getElementById('fastestTime').innerText = formatHours(f.total_hours);
       document.getElementById('fastestCost').innerText = '$' + f.total_cost.toFixed(2);
-      document.getElementById('fastestMiles').innerText = Math.round(f.route.distance) + ' mi';
+      document.getElementById('fastestMiles').innerText = Math.round(f.total_actual_miles || f.route.distance) + ' mi' + (f.total_detour_miles > 0.4 ? ' (+' + f.total_detour_miles + ' mi)' : '');
       document.getElementById('fastestStopsBadge').innerText = f.stops.length + (f.stops.length === 1 ? ' stop' : ' stops');
       document.getElementById('fastestArrivalBadge').innerText = 'Arr: ' + f.final_soc + '%';
 
       // Card 2: Cheapest
       document.getElementById('cheapestTime').innerText = formatHours(c.total_hours);
       document.getElementById('cheapestCost').innerText = '$' + c.total_cost.toFixed(2);
-      document.getElementById('cheapestMiles').innerText = Math.round(c.route.distance) + ' mi';
+      document.getElementById('cheapestMiles').innerText = Math.round(c.total_actual_miles || c.route.distance) + ' mi' + (c.total_detour_miles > 0.4 ? ' (+' + c.total_detour_miles + ' mi)' : '');
       document.getElementById('cheapestStopsBadge').innerText = c.stops.length + (c.stops.length === 1 ? ' stop' : ' stops');
       document.getElementById('cheapestArrivalBadge').innerText = 'Arr: ' + c.final_soc + '%';
 
       // Card 3: Balanced
       document.getElementById('balancedTime').innerText = formatHours(b.total_hours);
       document.getElementById('balancedCost').innerText = '$' + b.total_cost.toFixed(2);
-      document.getElementById('balancedMiles').innerText = Math.round(b.route.distance) + ' mi';
+      document.getElementById('balancedMiles').innerText = Math.round(b.total_actual_miles || b.route.distance) + ' mi' + (b.total_detour_miles > 0.4 ? ' (+' + b.total_detour_miles + ' mi)' : '');
       document.getElementById('balancedStopsBadge').innerText = b.stops.length + (b.stops.length === 1 ? ' stop' : ' stops');
       document.getElementById('balancedArrivalBadge').innerText = 'Arr: ' + b.final_soc + '%';
 
@@ -1328,8 +1390,9 @@
       mapLayers.forEach(l => map.removeLayer(l));
       mapLayers = [];
 
-      // 1. Draw Route Polyline
-      const latlngs = itin.route.coordinates.map(pt => [pt[1], pt[0]]);
+      // 1. Immediately build & render the spurred polyline that diverts into each charger
+      const spurredCoords = buildSpurredCoordinates(itin.route.coordinates, itin.stops);
+      const latlngs = spurredCoords.map(pt => [pt[1], pt[0]]);
       const poly = L.polyline(latlngs, {
         color: '#10b981',
         weight: 5,
@@ -1337,8 +1400,35 @@
       }).addTo(map);
       mapLayers.push(poly);
 
-      // 2. Start Marker (Green Pin)
-      const startPt = latlngs[0];
+      // 2. Draw dedicated Charger Offshoot Spur Lines (dashed amber line from highway junction to charger)
+      itin.stops.forEach(s => {
+        if (s.station && s.station.lat && s.station.lon) {
+          let closestPt = itin.route.coordinates[0];
+          let minD = 9999;
+          itin.route.coordinates.forEach(pt => {
+            const d = haversineMiles(s.station.lat, s.station.lon, pt[1], pt[0]);
+            if (d < minD) {
+              minD = d;
+              closestPt = pt;
+            }
+          });
+
+          // Draw distinct dashed spur line from highway directly to charger pin
+          const spurLine = L.polyline([
+            [closestPt[1], closestPt[0]],
+            [s.station.lat, s.station.lon]
+          ], {
+            color: '#f59e0b',
+            weight: 3.5,
+            dashArray: '6, 6',
+            opacity: 0.95
+          }).addTo(map);
+          mapLayers.push(spurLine);
+        }
+      });
+
+      // 3. Start Marker (Green Pin "A")
+      const startPt = [itin.route.origin.lat, itin.route.origin.lon];
       const startIcon = L.divIcon({
         className: 'custom-endpoint-icon',
         html: '<div style="background:#10b981; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 0 8px rgba(16,185,129,0.8); font-size:10px;">A</div>',
@@ -1347,8 +1437,8 @@
       const startMarker = L.marker(startPt, { icon: startIcon }).bindPopup(`<b>Trip Origin:</b><br>${itin.route.origin.name}`).addTo(map);
       mapLayers.push(startMarker);
 
-      // 3. Destination Marker (Red Pin)
-      const endPt = latlngs[latlngs.length - 1];
+      // 4. Destination Marker (Red Pin "B")
+      const endPt = [itin.route.destination.lat, itin.route.destination.lon];
       const endIcon = L.divIcon({
         className: 'custom-endpoint-icon',
         html: '<div style="background:#ef4444; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 0 8px rgba(239,68,68,0.8); font-size:10px;">B</div>',
@@ -1357,19 +1447,20 @@
       const endMarker = L.marker(endPt, { icon: endIcon }).bindPopup(`<b>Trip Destination:</b><br>${itin.route.destination.name}<br>Estimated Arrival SoC: <b>${itin.final_soc}%</b>`).addTo(map);
       mapLayers.push(endMarker);
 
-      // 4. Numbered Stops Markers along Route
+      // 5. Numbered Stops Markers along Route
       itin.stops.forEach((s, idx) => {
         const stopIcon = L.divIcon({
           className: 'custom-stop-icon',
-          html: `<div style="background:#10b981; color:#022c22; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; font-weight:800; font-size:12px; box-shadow:0 0 10px rgba(16,185,129,0.8);">${idx+1}</div>`,
-          iconSize: [24, 24]
+          html: `<div style="background:#10b981; color:#022c22; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; font-weight:800; font-size:12px; box-shadow:0 0 10px rgba(16,185,129,0.8);">${idx+1}</div>`,
+          iconSize: [26, 26]
         });
 
+        const detourLabel = s.detour_miles <= 0.4 ? 'Plaza (Direct on travel lanes)' : `+${s.detour_miles} mi offshoot (~${s.detour_mins}m)`;
         const stopMarker = L.marker([s.station.lat, s.station.lon], { icon: stopIcon })
           .bindPopup(`
             <div style="font-family:sans-serif; font-size:12px; line-height:1.4;">
               <b>Stop #${idx+1}: ${s.station.name}</b><br>
-              <span style="color:#64748b;">Mile:</span> <b>Mile ${Math.round(s.mile)}</b><br>
+              <span style="color:#64748b;">Mile:</span> <b>Mile ${Math.round(s.mile)}</b> (${detourLabel})<br>
               <span style="color:#64748b;">Charge:</span> <b>${s.arr_soc}% &rarr; ${s.tgt_soc}%</b> (+${s.added_kwh} kWh)<br>
               <span style="color:#64748b;">Time:</span> <b>${s.mins} mins</b> | Cost: <b>$${s.cost.toFixed(2)}</b><br>
               ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Open on PlugShare</a>` : ''}
@@ -1377,6 +1468,11 @@
           `).addTo(map);
         mapLayers.push(stopMarker);
       });
+
+      // 6. Asynchronous high-resolution OSRM road geometry upgrade (visiting every charger waypoint)
+      if (itin.stops && itin.stops.length > 0) {
+        upgradePolylineWithOSRM(itin, poly);
+      }
 
       // 5. Draw all other nearby stations as small subtle dots
       ALL_STATIONS.forEach(s => {
@@ -1406,13 +1502,36 @@
       map.fitBounds(poly.getBounds(), { padding: [45, 45] });
     }
 
+        async function upgradePolylineWithOSRM(itin, currentPoly) {
+      if (itin.osrmGeometryLoaded) return;
+      try {
+        const pts = [
+          `${itin.route.origin.lon},${itin.route.origin.lat}`,
+          ...itin.stops.map(s => `${s.station.lon},${s.station.lat}`),
+          `${itin.route.destination.lon},${itin.route.destination.lat}`
+        ];
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pts.join(';')}?overview=full&geometries=geojson`;
+        const resp = await fetch(osrmUrl);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.routes && data.routes.length > 0) {
+            itin.osrmGeometryLoaded = true;
+            const detailedCoords = data.routes[0].geometry.coordinates.map(pt => [pt[1], pt[0]]);
+            currentPoly.setLatLngs(detailedCoords);
+          }
+        }
+      } catch (e) {
+        console.warn("Background OSRM waypoint query skipped:", e);
+      }
+    }
+
     function renderTable(itin) {
       const tbody = document.getElementById('stopsTableBody');
       tbody.innerHTML = '';
 
       if (itin.stops.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="10" class="py-4 text-center text-slate-400 font-sans italic">Direct route — No charging stops required! Battery has sufficient capacity to reach destination.</td>`;
+        row.innerHTML = `<td colspan="11" class="py-4 text-center text-slate-400 font-sans italic">Direct route — No charging stops required! Battery has sufficient capacity to reach destination.</td>`;
         tbody.appendChild(row);
         return;
       }
@@ -1421,14 +1540,19 @@
         const row = document.createElement('tr');
         row.className = "hover:bg-slate-800/40 transition cursor-pointer";
         row.onclick = () => {
-          map.setView([s.station.lat, s.station.lon], 12);
+          map.setView([s.station.lat, s.station.lon], 13);
         };
+        const detourBadge = (s.detour_miles <= 0.4)
+          ? '<span class="text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[10px]">Plaza (0 mi)</span>'
+          : `<span class="text-amber-400 font-mono font-medium">+${s.detour_miles} mi</span> <span class="text-slate-500 text-[10px]">(~${s.detour_mins}m)</span>`;
+
         row.innerHTML = `
           <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-1.5">
             <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-mono font-bold">${idx+1}</span>
             <span>${s.station.name}</span>
           </td>
           <td class="py-2.5 px-3 text-slate-300 font-mono">Mile ${Math.round(s.mile)}</td>
+          <td class="py-2.5 px-3 text-xs">${detourBadge}</td>
           <td class="py-2.5 px-3 text-slate-300">${s.station.kw} kW</td>
           <td class="py-2.5 px-3 text-amber-400 font-semibold">${s.arr_soc}%</td>
           <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.tgt_soc}%</td>
