@@ -13,9 +13,6 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     #map { height: 540px; border-radius: 0.75rem; }
-    .dark-tiles .leaflet-tile {
-      filter: brightness(0.75) invert(1) contrast(2.2) hue-rotate(200deg) saturate(0.25) brightness(0.85);
-    }
     .custom-stop-icon {
       background: #10b981;
       color: #0f172a;
@@ -409,14 +406,14 @@
             </h2>
           </div>
           <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Active Route</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Active Route</span>
             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> IONNA (10% GM)</span>
             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> EA</span>
             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Tesla CCS1</span>
             <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Applegreen</span>
           </div>
         </div>
-        <div id="map" class="dark-tiles"></div>
+        <div id="map" class="border border-slate-700/80 shadow-md"></div>
       </div>
 
       <!-- Itinerary Detail & Membership Banners -->
@@ -1394,8 +1391,8 @@
       const spurredCoords = buildSpurredCoordinates(itin.route.coordinates, itin.stops);
       const latlngs = spurredCoords.map(pt => [pt[1], pt[0]]);
       const poly = L.polyline(latlngs, {
-        color: '#10b981',
-        weight: 5,
+        color: '#2563eb',
+        weight: 5.5,
         opacity: 0.95
       }).addTo(map);
       mapLayers.push(poly);
