@@ -437,21 +437,6 @@
           </div>
         </div>
 
-        <!-- Route Speed Profile Banner -->
-        <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-inner">
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-mono font-bold text-xs shrink-0">
-              <i data-lucide="gauge" class="w-3.5 h-3.5"></i>
-            </div>
-            <div>
-              <span class="text-slate-400">Route Speed Limits:</span>
-              <span id="speedProfileAvg" class="text-white font-mono font-bold ml-1">--</span>
-              <span id="cruisingSpeedEff" class="text-emerald-400 font-mono text-[11px] ml-1.5 font-medium">--</span>
-            </div>
-          </div>
-          <div id="speedProfileBreakdown" class="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 flex-wrap">--</div>
-        </div>
-
         <!-- Charging Stops Table -->
         <div>
           <div class="flex items-center justify-between mb-2">
@@ -855,11 +840,15 @@
       return 25.0;
     }
 
-    // High-resolution interval physics simulator: slices leg across specific step speed limits
+    // High-resolution interval physics simulator: integrates specific posted speed limits,
+    // local road surface penalties, intersection traffic signal/stop cycles, and maneuver turns.
     function simulateLegFromSteps(steps, start_mile, end_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed) {
       if (!steps || steps.length === 0) {
         return simulateLegPhysics(end_mile - start_mile, fallback_speed || 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
       }
+
+      const curb_kg = 2233.0;
+      const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
 
       let step_start = 0.0;
       let total_kwh = 0.0;
@@ -878,10 +867,68 @@
 
         if (ov_len > 0.0001) {
           const posted_speed = s.posted_speed || fallback_speed || 70.0;
-          const sliceSim = simulateLegPhysics(ov_len, posted_speed, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
-          total_kwh += sliceSim.kwh;
-          total_hours += sliceSim.hours;
-          weighted_speed_sum += sliceSim.target_mph * ov_len;
+          const is_local = posted_speed <= 50.0;
+          const target_mph = Math.min(posted_speed + speed_offset, max_cap);
+          const v_ms = target_mph * 0.44704;
+          const slice_hours = ov_len / Math.max(15.0, target_mph);
+          const dist_m = ov_len * 1609.34;
+
+          // 1. Aerodynamic Drag
+          const temp_c = (temp_f - 32) * 5 / 9;
+          const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
+          const drag_area = 0.332 * 2.60;
+          const v_wind_ms = wind_speed * 0.44704;
+          const v_airspeed_ms = Math.max(5.0, v_ms + (v_wind_ms * Math.cos((wind_dir - 90) * Math.PI / 180)));
+          const f_aero = 0.5 * rho * drag_area * Math.pow(v_airspeed_ms, 2);
+
+          // 2. Rolling Resistance (Local roads have higher Crr due to surface texture)
+          let crr = is_local ? 0.0105 : 0.0095;
+          if (road_cond === "wet") crr *= 1.40;
+          else if (road_cond === "snow_ice") crr *= 2.20;
+          const f_rr = crr * total_mass_kg * 9.80665;
+
+          const steady_tractive_kwh = ((f_aero + f_rr) * 1.02 * dist_m) / 3.6e6 / 0.91;
+
+          // 3. Kinetic Stop-and-Go Inefficiency (Traffic Lights & Stop Signs on local roads)
+          let kinetic_kwh = 0.0;
+          let idle_hours = 0.0;
+          const num_intersections = (s.intersections && s.intersections.length) ? s.intersections.length : 0;
+          if (is_local && num_intersections > 0) {
+            // Approx 28% of intersections require a complete stop or heavy braking cycle
+            const stops = (ov_len / step_len) * num_intersections * 0.28;
+            const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
+            // 78% regenerative recovery, 91% drive inverter efficiency
+            const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
+            kinetic_kwh += (stops * cycle_loss) / 3.6e6;
+            idle_hours += (stops * 18.0) / 3600.0; // 18 seconds avg wait per stop
+          }
+
+          // 4. Maneuver Turns (Deceleration to 15 mph and acceleration)
+          const mType = (s.maneuver && s.maneuver.type) ? s.maneuver.type : '';
+          if (['turn', 'roundabout', 'on ramp', 'off ramp'].includes(mType)) {
+            const v_turn_ms = Math.min(v_ms, 15.0 * 0.44704);
+            const delta_ke_turn = 0.5 * total_mass_kg * Math.max(0.0, Math.pow(v_ms, 2) - Math.pow(v_turn_ms, 2));
+            kinetic_kwh += (delta_ke_turn * ((1.0 / 0.91) - 0.78)) / 3.6e6;
+          }
+
+          const step_tot_hours = slice_hours + idle_hours;
+
+          // 5. HVAC & Thermal Management
+          let hvac_kw = 0.35;
+          if (temp_f < 45) hvac_kw = Math.min(5.2, 0.45 + (0.09 * (45 - temp_f)));
+          else if (temp_f > 75) hvac_kw = Math.min(2.8, 0.40 + (0.06 * (temp_f - 75)));
+          const aux_kwh = (0.35 + hvac_kw) * step_tot_hours;
+
+          // 6. Battery Internal Resistance / Cold Efficiency
+          let batt_eff = 1.0;
+          if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.0045));
+          else if (temp_f < 55) batt_eff = 0.90 + ((temp_f - 32) / 23) * 0.10;
+
+          const slice_total_kwh = ((steady_tractive_kwh + kinetic_kwh) / batt_eff) + aux_kwh;
+
+          total_kwh += slice_total_kwh;
+          total_hours += step_tot_hours;
+          weighted_speed_sum += target_mph * ov_len;
           total_slice_dist += ov_len;
         }
         step_start = step_end;
@@ -898,6 +945,59 @@
         hours: total_hours,
         mi_per_kwh: total_slice_dist / Math.max(0.1, total_kwh),
         wh_per_mi: (total_kwh * 1000.0) / total_slice_dist
+      };
+    }
+
+    // Comprehensive Charger Detour Simulator: models off-ramp deceleration, local signals/stops,
+    // parking lot navigation, and highway on-ramp merge acceleration.
+    function simulateDetourPhysics(detour_miles, payload_lbs, temp_f, road_cond) {
+      const curb_kg = 2233.0;
+      const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
+      const v_mph = 28.0;
+      const v_ms = v_mph * 0.44704;
+      const hours = detour_miles / v_mph;
+      const dist_m = detour_miles * 1609.34;
+
+      // Local rolling resistance and aero at 28 mph
+      let crr = 0.0105;
+      if (road_cond === "wet") crr *= 1.40;
+      else if (road_cond === "snow_ice") crr *= 2.20;
+      const f_rr = crr * total_mass_kg * 9.80665;
+
+      const temp_c = (temp_f - 32) * 5 / 9;
+      const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
+      const f_aero = 0.5 * rho * (0.332 * 2.60) * Math.pow(v_ms, 2);
+      const steady_kwh = ((f_rr + f_aero) * dist_m) / 3.6e6 / 0.91;
+
+      // Stop-and-go intersection cycles (approx 2.2 stops per round-trip detour mile)
+      const num_stops = Math.max(1.5, detour_miles * 2.2);
+      const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
+      const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
+      const stops_kwh = (num_stops * cycle_loss) / 3.6e6;
+
+      // On-ramp merge acceleration (re-accelerating 5,100 lbs from 28 mph ramp to 70 mph highway)
+      const v_hwy_ms = 70.0 * 0.44704;
+      const ramp_ke = 0.5 * total_mass_kg * Math.max(0.0, Math.pow(v_hwy_ms, 2) - Math.pow(v_ms, 2));
+      const ramp_accel_kwh = (ramp_ke / 0.91) / 3.6e6;
+
+      // Traffic signal idle delay (~2.2 mins per detour mile)
+      const idle_hours = (detour_miles * 2.2) / 60.0;
+      const total_hours = hours + idle_hours;
+
+      let hvac_kw = 0.35;
+      if (temp_f < 45) hvac_kw = Math.min(5.2, 0.45 + (0.09 * (45 - temp_f)));
+      else if (temp_f > 75) hvac_kw = Math.min(2.8, 0.40 + (0.06 * (temp_f - 75)));
+      const aux_kwh = (0.35 + hvac_kw) * total_hours;
+
+      let batt_eff = 1.0;
+      if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.0045));
+      else if (temp_f < 55) batt_eff = 0.90 + ((temp_f - 32) / 23) * 0.10;
+
+      const total_kwh = ((steady_kwh + stops_kwh + ramp_accel_kwh) / batt_eff) + aux_kwh;
+      return {
+        kwh: total_kwh,
+        hours: total_hours,
+        mins: Math.round(total_hours * 60)
       };
     }
 
@@ -1424,14 +1524,12 @@
 
           for (let idx = 0; idx < stopsGroup.length; idx++) {
             const st = stopsGroup[idx];
-            // Detour calculation: off-highway ramps & local service road driving
+            // Detour calculation: off-highway ramps, local traffic lights, parking lots & on-ramp merge
             const one_way_detour = Math.max(0.1, st.detour_mi || 0.1);
             const detour_miles = Math.round(one_way_detour * 2.0 * 10) / 10;
-            const detour_hours = Math.max(0.035, detour_miles / 28.0); // ~28 mph local navigation
-            const detour_mins = Math.round(detour_hours * 60.0);
-
-            // Detour energy consumption at local speeds
-            const detourSim = simulateLegPhysics(detour_miles, 28.0, payload_lbs, temp_f, 0, 0, road_cond, 0, 35);
+            const detourSim = simulateDetourPhysics(detour_miles, payload_lbs, temp_f, road_cond);
+            const detour_hours = detourSim.hours;
+            const detour_mins = detourSim.mins;
 
             // Leg distance driving to this charger (simulated along specific segment speed limits)
             const legSim = simulateLegFromSteps(route.steps, current_mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
@@ -1645,24 +1743,7 @@
       renderMap(itin);
       renderTable(itin);
       renderBanners(itin);
-      renderSpeedProfile(itin);
       lucide.createIcons();
-    }
-
-    function renderSpeedProfile(itin) {
-      const avgEl = document.getElementById('speedProfileAvg');
-      const effEl = document.getElementById('cruisingSpeedEff');
-      const breakdownEl = document.getElementById('speedProfileBreakdown');
-      if (!avgEl || !itin || !itin.route) return;
-
-      const offset = parseFloat(document.getElementById('speedOffset').value) || 0;
-      const cap = parseFloat(document.getElementById('maxSpeedCap').value) || 75;
-      const baseLimit = itin.route.base_speed_limit || 70.0;
-      const effCruising = Math.min(baseLimit + offset, cap);
-
-      avgEl.innerText = `${baseLimit.toFixed(1)} mph avg posted`;
-      effEl.innerText = `(Cruising at ~${effCruising.toFixed(0)} mph with ${offset >= 0 ? '+' : ''}${offset} offset, max cap ${cap})`;
-      breakdownEl.innerText = itin.route.speed_profile_text ? `Segments: ${itin.route.speed_profile_text}` : 'Segment speed limits applied';
     }
 
     function renderMap(itin) {
