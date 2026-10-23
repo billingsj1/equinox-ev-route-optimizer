@@ -198,26 +198,26 @@
               <span>Starting Charge (Home departure)</span>
               <span id="startSocDisplay" class="font-mono text-emerald-400">100% (85.0 kWh)</span>
             </div>
-            <input type="range" id="startSocSlider" min="15" max="100" value="100" step="5" oninput="document.getElementById('startSocDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'; recomputeCurrentRoute()" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            <input type="range" id="startSocSlider" min="15" max="100" value="100" step="5" oninput="document.getElementById('startSocDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)';" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
           </div>
           <div>
             <div class="flex justify-between text-slate-400 mb-1">
               <span>Min Safety Buffer (En-route reserve)</span>
               <span id="bufferDisplay" class="font-mono text-amber-400">10% (8.5 kWh)</span>
             </div>
-            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'; recomputeCurrentRoute()" class="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)';" class="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
           </div>
           <div>
             <div class="flex justify-between text-slate-400 mb-1">
               <span>Ideal Ending Charge (Target Arrival SoC)</span>
               <span id="targetArrivalDisplay" class="font-mono text-cyan-400">20% (17.0 kWh)</span>
             </div>
-            <input type="range" id="targetArrivalSlider" min="5" max="80" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)'; recomputeCurrentRoute()" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            <input type="range" id="targetArrivalSlider" min="5" max="80" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)';" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
           </div>
           <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label class="text-slate-400 block mb-1">Speed Limit Offset</label>
-              <select id="speedOffset" onchange="updateTimeGapDisplays(parseInt(document.getElementById('minTimeSlider').value), parseInt(document.getElementById('maxTimeSlider').value)); recomputeCurrentRoute()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
+              <select id="speedOffset" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
                 <option value="0">+0 mph (Speed Limit)</option>
                 <option value="5" selected>+5 mph</option>
                 <option value="9">+9 mph</option>
@@ -226,7 +226,7 @@
             </div>
             <div>
               <label class="text-slate-400 block mb-1">Max Speed Cap</label>
-              <select id="maxSpeedCap" onchange="updateTimeGapDisplays(parseInt(document.getElementById('minTimeSlider').value), parseInt(document.getElementById('maxTimeSlider').value)); recomputeCurrentRoute()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
+              <select id="maxSpeedCap" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
                 <option value="70">70 mph</option>
                 <option value="75" selected>75 mph</option>
                 <option value="80">80 mph</option>
@@ -239,22 +239,22 @@
           <div class="border-t border-slate-800/80 pt-3 space-y-3">
             <div class="flex justify-between items-center text-xs">
               <span class="text-slate-300 font-medium">Driving Time Between Stops</span>
-              <span id="idealWindowBadge" class="font-mono text-[11px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">90 – 150 mins</span>
+              <span id="idealWindowBadge" class="font-mono text-[11px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">75 – 150 mins</span>
             </div>
 
             <div>
               <div class="flex justify-between text-slate-400 mb-1">
                 <span>Min Time Between Stops</span>
-                <span id="minTimeDisplay" class="font-mono text-emerald-400">90 mins (~105 mi)</span>
+                <span id="minTimeDisplay" class="font-mono text-emerald-400">75 mins (~94 mi)</span>
               </div>
-              <input type="range" id="minTimeSlider" min="30" max="120" value="90" step="5" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="minTimeSlider" min="30" max="120" value="75" step="5" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Lowering allows shorter legs to take advantage of cheaper charging stations.</span>
             </div>
 
             <div>
               <div class="flex justify-between text-slate-400 mb-1">
                 <span>Max Time Between Stops</span>
-                <span id="maxTimeDisplay" class="font-mono text-cyan-400">150 mins (~175 mi)</span>
+                <span id="maxTimeDisplay" class="font-mono text-cyan-400">150 mins (~188 mi)</span>
               </div>
               <input type="range" id="maxTimeSlider" min="90" max="240" value="150" step="10" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Maximum continuous driving stretch before requiring a rest/charge break.</span>
@@ -276,14 +276,14 @@
                 <span>Ambient Temp</span>
                 <span id="tempValDisplay" class="font-mono text-emerald-400">68°F</span>
               </div>
-              <input type="range" id="tempF" min="0" max="105" value="68" step="1" oninput="document.getElementById('tempValDisplay').innerText = this.value + '°F'; recomputeCurrentRoute()" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="tempF" min="0" max="105" value="68" step="1" oninput="document.getElementById('tempValDisplay').innerText = this.value + '°F'; updatePhysicsHUD();" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
             </div>
             <div>
               <label class="text-slate-400 block mb-1">Road Condition</label>
-              <select id="roadCond" onchange="recomputeCurrentRoute()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
+              <select id="roadCond" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
                 <option value="dry" selected>Dry Asphalt (Crr 0.0095)</option>
-                <option value="wet">Wet / Rain (Crr 0.0125)</option>
-                <option value="snow_ice">Snow / Ice (Crr 0.0185)</option>
+                <option value="wet">Wet / Rain (Crr 0.0135)</option>
+                <option value="snow_ice">Snow / Ice (Crr 0.0210)</option>
               </select>
             </div>
             <div>
@@ -291,11 +291,11 @@
                 <span>Wind Speed</span>
                 <span id="windValDisplay" class="font-mono text-blue-400">8 mph</span>
               </div>
-              <input type="range" id="windSpeed" min="0" max="40" value="8" step="1" oninput="document.getElementById('windValDisplay').innerText = this.value + ' mph'; recomputeCurrentRoute()" class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="windSpeed" min="0" max="40" value="8" step="1" oninput="document.getElementById('windValDisplay').innerText = this.value + ' mph'; updatePhysicsHUD();" class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
             </div>
             <div>
               <label class="text-slate-400 block mb-1">Wind Direction</label>
-              <select id="windDir" onchange="recomputeCurrentRoute()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
+              <select id="windDir" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
                 <option value="270" selected>West (Tailwind)</option>
                 <option value="90">East (Headwind)</option>
                 <option value="0">North (Crosswind)</option>
@@ -562,17 +562,23 @@
       if (document.getElementById('courtney').checked) payload_lbs += 130;
       if (document.getElementById('asher').checked) payload_lbs += 20;
       if (document.getElementById('arno').checked) payload_lbs += 50;
-      const gear = parseFloat(document.getElementById('gearSlider').value);
+      const gear = parseFloat(document.getElementById('gearSlider').value) || 0;
       payload_lbs += gear;
       document.getElementById('gearDisplay').innerText = gear + ' lbs';
 
       const total_lbs = (curb * 2.20462) + payload_lbs;
       const total_kg = total_lbs / 2.20462;
       document.getElementById('massDisplay').innerText = Math.round(total_lbs).toLocaleString() + ' lbs (' + Math.round(total_kg).toLocaleString() + ' kg)';
-      recomputeCurrentRoute();
+      updatePhysicsHUD();
     }
 
-    // Time Between Charging Stops Handlers
+    function updateSpeedAndGaps() {
+      const minVal = parseInt(document.getElementById('minTimeSlider').value) || 75;
+      const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 150;
+      updateTimeGapDisplays(minVal, maxVal);
+    }
+
+    // Time Between Charging Stops Handlers (Updates text only, no laggy recalculation)
     function handleMinTimeChange(val) {
       let minVal = parseInt(val);
       const maxSlider = document.getElementById('maxTimeSlider');
@@ -582,7 +588,6 @@
         maxSlider.value = maxVal;
       }
       updateTimeGapDisplays(minVal, maxVal);
-      recomputeCurrentRoute();
     }
 
     function handleMaxTimeChange(val) {
@@ -594,7 +599,6 @@
         minSlider.value = minVal;
       }
       updateTimeGapDisplays(minVal, maxVal);
-      recomputeCurrentRoute();
     }
 
     function updateTimeGapDisplays(minVal, maxVal) {
@@ -608,6 +612,31 @@
       document.getElementById('minTimeDisplay').innerText = `${minVal} mins (~${minMiles} mi)`;
       document.getElementById('maxTimeDisplay').innerText = `${maxVal} mins (~${maxMiles} mi)`;
       document.getElementById('idealWindowBadge').innerText = `${minVal} – ${maxVal} mins`;
+    }
+
+    // Fast Real-Time Physics HUD Monitor (<0.1ms computation)
+    function updatePhysicsHUD() {
+      let payload_lbs = 0;
+      if (document.getElementById('josh').checked) payload_lbs += 150;
+      if (document.getElementById('courtney').checked) payload_lbs += 130;
+      if (document.getElementById('asher').checked) payload_lbs += 20;
+      if (document.getElementById('arno').checked) payload_lbs += 50;
+      payload_lbs += parseFloat(document.getElementById('gearSlider').value) || 0;
+
+      const speed_offset = parseFloat(document.getElementById('speedOffset').value) || 0;
+      const max_cap = parseFloat(document.getElementById('maxSpeedCap').value) || 75;
+      const temp_f = parseFloat(document.getElementById('tempF').value);
+      const wind_speed = parseFloat(document.getElementById('windSpeed').value);
+      const wind_dir = parseFloat(document.getElementById('windDir').value);
+      const road_cond = document.getElementById('roadCond').value;
+
+      // Base highway limit is 70 mph
+      const sampleSim = simulateLegPhysics(100, 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+
+      document.getElementById('efficiencyBadge').innerText = `${sampleSim.mi_per_kwh.toFixed(2)} mi/kWh (${sampleSim.target_mph} mph)`;
+      document.getElementById('whPerMile').innerText = Math.round(sampleSim.wh_per_mi) + ' Wh/mi';
+      document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
+      document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
     }
 
     // --- GEODETIC & VECTOR PROJECTION ENGINE ---
@@ -716,54 +745,57 @@
     }
 
     // --- PHYSICS SIMULATION ENGINE (NREL FASTSim Road-Load Formulation) ---
-    function simulateLegPhysics(distance_miles, speed_mph, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap) {
+    function simulateLegPhysics(distance_miles, base_speed_limit, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap) {
       const curb_kg = 2233.0;
       const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
-      
-      const target_mph = Math.min(speed_mph + speed_offset, max_cap);
+
+      // Target cruising speed strictly governed by highway speed limit + offset, capped by max cap
+      const target_mph = Math.min(base_speed_limit + speed_offset, max_cap);
       const v_ms = target_mph * 0.44704;
       const hours = distance_miles / Math.max(20, target_mph);
       const dist_meters = distance_miles * 1609.34;
 
-      // 1. Aerodynamic Drag
+      // 1. Aerodynamic Drag: 0.5 * rho * Cd * A * v_air^2
       const temp_c = (temp_f - 32) * 5 / 9;
       const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
       const drag_area = 0.332 * 2.60;
-      
+
       const v_wind_ms = wind_speed * 0.44704;
       const v_airspeed_ms = Math.max(5, v_ms + (v_wind_ms * Math.cos((wind_dir - 90) * Math.PI / 180)));
       const f_aero = 0.5 * rho * drag_area * Math.pow(v_airspeed_ms, 2);
 
-      // 2. Rolling Resistance
+      // 2. Rolling Resistance: Crr * m * g
       let crr = 0.0095;
-      if (road_cond === "wet") crr = 0.0125;
-      if (road_cond === "snow_ice") crr = 0.0185;
+      if (road_cond === "wet") crr = 0.0135;
+      if (road_cond === "snow_ice") crr = 0.0210;
       const f_rr = crr * total_mass_kg * 9.80665;
 
-      // 3. Tractive mechanical work
-      const f_total = f_aero + f_rr;
+      // 3. Dynamic micro-acceleration & grade fluctuation overhead (3%)
+      const f_total = (f_aero + f_rr) * 1.03;
       let tractive_kwh = (f_total * dist_meters) / 3.6e6;
       tractive_kwh /= 0.91; // 91% traction inverter efficiency
 
-      // 4. Cabin HVAC Draw (Heat Pump + Resistive Assist in extreme cold)
+      // 4. Cabin HVAC Draw (Heat Pump + Resistive Assist in extreme cold) + Battery Conditioning
       let hvac_kw = 0.35;
-      if (temp_f < 40) {
-        hvac_kw = Math.min(4.8, 0.45 + (0.08 * (40 - temp_f)));
+      if (temp_f < 45) {
+        hvac_kw = Math.min(5.2, 0.45 + (0.09 * (45 - temp_f)));
       } else if (temp_f > 75) {
-        hvac_kw = Math.min(2.5, 0.40 + (0.05 * (temp_f - 75)));
+        hvac_kw = Math.min(2.8, 0.40 + (0.06 * (temp_f - 75)));
       }
       const aux_kwh = (0.35 + hvac_kw) * hours;
 
       // 5. Battery Internal Resistance / Electrochemical efficiency modifier
       let batt_eff = 1.0;
-      if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.004));
+      if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.0045));
       else if (temp_f < 55) batt_eff = 0.90 + ((temp_f - 32) / 23) * 0.10;
 
       const total_energy_kwh = (tractive_kwh / batt_eff) + aux_kwh;
       return {
+        target_mph: target_mph,
         kwh: Math.max(0.5, total_energy_kwh),
         hours: hours,
         mi_per_kwh: distance_miles / Math.max(0.1, total_energy_kwh),
+        wh_per_mi: (total_energy_kwh * 1000.0) / distance_miles,
         hvac_kw: hvac_kw,
         batt_eff: batt_eff
       };
@@ -863,7 +895,8 @@
                   id: `osrm_${idx+1}`,
                   name: idx === 0 ? "Fastest Highway Corridor" : `Alternative Route ${idx+1}`,
                   distance: Math.round(miles * 10) / 10,
-                  speed_mph: Math.min(72, Math.max(50, Math.round(miles / hours))),
+                  base_speed_limit: 70.0,
+                  speed_mph: 70.0,
                   toll: toll,
                   coordinates: r.geometry.coordinates,
                   origin: originGeo,
@@ -901,7 +934,8 @@
           id: "sewickley_route",
           name: "I-70 East to I-79 North (Sewickley, PA)",
           distance: 172.0,
-          speed_mph: 68.0,
+          base_speed_limit: 70.0,
+          speed_mph: 70.0,
           toll: 0.00,
           coordinates: [
             [originGeo.lon, originGeo.lat],
@@ -917,6 +951,7 @@
           id: "carlisle_route",
           name: "I-70 East to PA Turnpike (Carlisle Exit 226)",
           distance: 348.0,
+          base_speed_limit: 70.0,
           speed_mph: 70.0,
           toll: has_ezpass ? 19.50 : 39.00,
           coordinates: [
@@ -938,7 +973,8 @@
           id: "wv_i77",
           name: "I-77 South (WV Turnpike)",
           distance: 198.5,
-          speed_mph: 65.0,
+          base_speed_limit: 70.0,
+          speed_mph: 70.0,
           toll: has_ezpass ? 6.60 : 12.75,
           coordinates: [
             [originGeo.lon, originGeo.lat],
@@ -955,7 +991,8 @@
           id: "md_i68",
           name: "I-70 / I-68 Scenic Highway (Toll-Free)",
           distance: 356.0,
-          speed_mph: 65.0,
+          base_speed_limit: 70.0,
+          speed_mph: 70.0,
           toll: 0.00,
           coordinates: [
             [originGeo.lon, originGeo.lat],
@@ -977,6 +1014,7 @@
             id: "pa_turnpike",
             name: "Route 1: I-70 to PA Turnpike (I-76 Mainline)",
             distance: 448.0,
+            base_speed_limit: 70.0,
             speed_mph: 70.0,
             toll: has_ezpass ? 26.80 : 52.40,
             coordinates: [
@@ -1001,7 +1039,8 @@
             id: "md_i68_alt",
             name: "Route 2: Maryland I-68 / I-70 Corridor (Toll-Free)",
             distance: 452.0,
-            speed_mph: 64.0,
+            base_speed_limit: 65.0,
+            speed_mph: 65.0,
             toll: 0.00,
             coordinates: [
               [originGeo.lon, originGeo.lat],
@@ -1037,7 +1076,7 @@
       const target_arrival_soc = parseFloat(document.getElementById('targetArrivalSlider').value) / 100.0;
       const speed_offset = parseFloat(document.getElementById('speedOffset').value);
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
-      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 90);
+      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 75);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 150);
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
@@ -1045,9 +1084,9 @@
       const road_cond = document.getElementById('roadCond').value;
 
       // Update real-time physics HUD
-      const sampleSim = simulateLegPhysics(100, 68, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
-      document.getElementById('efficiencyBadge').innerText = sampleSim.mi_per_kwh.toFixed(2) + ' mi/kWh';
-      document.getElementById('whPerMile').innerText = Math.round((1000 / sampleSim.mi_per_kwh)) + ' Wh/mi';
+      const sampleSim = simulateLegPhysics(100, 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
+      document.getElementById('efficiencyBadge').innerText = `${sampleSim.mi_per_kwh.toFixed(2)} mi/kWh (${sampleSim.target_mph} mph)`;
+      document.getElementById('whPerMile').innerText = Math.round(sampleSim.wh_per_mi) + ' Wh/mi';
       document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
       document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
 
@@ -1604,7 +1643,8 @@
 
     window.onload = () => {
       initMap();
-      updateTimeGapDisplays(90, 150);
+      updateTimeGapDisplays(75, 150);
+      updatePhysicsHUD();
       handleSearchRoute();
       lucide.createIcons();
     };
