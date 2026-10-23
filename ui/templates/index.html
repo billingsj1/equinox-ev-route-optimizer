@@ -329,6 +329,18 @@
             <div>• 10% discount at IONNA stations (e.g. Cambridge, OH; Chester Springs, PA)</div>
             <div>• 10% discount at EVgo ($0 session fees)</div>
           </div>
+          <div class="border-t border-slate-800/80 pt-2.5 mt-2 space-y-1.5">
+            <span class="text-slate-300 font-medium block text-[11px]">Charging Memberships (Pre-Owned):</span>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="hasEaPass" onchange="recomputeCurrentRoute()" class="accent-emerald-500 rounded">
+              <span>Already have EA Pass+ ($0.45/kWh rate, $0 fee)</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="hasTeslaMember" onchange="recomputeCurrentRoute()" class="accent-emerald-500 rounded">
+              <span>Already have Tesla Member ($0.46/kWh rate, $0 fee)</span>
+            </label>
+            <div class="text-[10px] text-slate-500 italic leading-snug">When unchecked, optimizer automatically checks if adding a pass saves money on this trip, discounts rates, and adds the $3.50/$6.50 fee.</div>
+          </div>
         </div>
       </div>
 
@@ -463,6 +475,9 @@
               <tbody id="stopsTableBody" class="divide-y divide-slate-800/60 font-mono">
                 <!-- Dynamically populated -->
               </tbody>
+              <tfoot id="stopsTableFoot">
+                <!-- Populated dynamically with subtotal, membership fees, tolls, and grand total -->
+              </tfoot>
             </table>
           </div>
         </div>
@@ -1588,37 +1603,64 @@
             current_soc -= (finalLegSim.kwh / 85.0);
 
             if (current_soc >= (target_arrival_soc - 0.015)) {
-              // Membership ROI Analysis (50% round trip split)
-              let adjusted_ch_cost = total_ch_cost;
-              let ea_kwh = 0, ea_savings = 0, ea_worth = false, ea_net = 0;
-              let tesla_kwh = 0, tesla_savings = 0, tesla_worth = false, tesla_net = 0;
+              // Membership ROI Analysis (50% round trip split: EA Pass+ $3.50, Tesla $6.50)
+              const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
+              const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
+
+              let ea_kwh = 0, ea_gross_savings = 0;
+              let tesla_kwh = 0, tesla_gross_savings = 0;
 
               stopPlans.forEach(sp => {
                 if (sp.station.ea_pass) {
                   ea_kwh += sp.added_kwh;
-                  ea_savings += (sp.added_kwh * 0.15); // Pass+ saves ~15c/kWh
+                  // Standard EA is ~$0.56-$0.64, Pass+ is 25% discount (saves ~14-16c/kWh)
+                  ea_gross_savings += (sp.added_kwh * (sp.station.on * 0.25));
                 }
                 if (sp.station.network === "Tesla" && sp.station.mem_on) {
                   tesla_kwh += sp.added_kwh;
-                  tesla_savings += (sp.added_kwh * (sp.station.on - sp.station.mem_on));
+                  tesla_gross_savings += (sp.added_kwh * (sp.station.on - sp.station.mem_on));
                 }
               });
 
-              if (ea_savings > 3.50) {
-                ea_net = ea_savings - 3.50;
-                ea_worth = true;
-                adjusted_ch_cost -= ea_net;
-              }
-              if (tesla_savings > 6.50) {
-                tesla_net = tesla_savings - 6.50;
-                tesla_worth = true;
-                adjusted_ch_cost -= tesla_net;
-              }
+              // EA Pass+ decision: auto-activate if gross savings >= $3.50 or pre-owned
+              const ea_active = has_ea_preowned || (ea_gross_savings >= 3.50);
+              const ea_fee = has_ea_preowned ? 0.0 : (ea_active ? 3.50 : 0.0);
+              const ea_net = ea_gross_savings - ea_fee;
 
+              // Tesla Membership decision: auto-activate if gross savings >= $6.50 or pre-owned
+              const tesla_active = has_tesla_preowned || (tesla_gross_savings >= 6.50);
+              const tesla_fee = has_tesla_preowned ? 0.0 : (tesla_active ? 6.50 : 0.0);
+              const tesla_net = tesla_gross_savings - tesla_fee;
+
+              // Update each stop plan's actual charged rate and cost
+              let discounted_ch_cost = 0;
+              stopPlans.forEach(sp => {
+                let effective_rate = sp.station.on;
+                let badge = "";
+
+                if (sp.station.gm) {
+                  effective_rate *= (1.0 - sp.station.gm_pct);
+                  badge = "10% GM";
+                } else if (sp.station.ea_pass && ea_active) {
+                  effective_rate *= 0.75; // 25% Pass+ discount applied
+                  badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
+                } else if (sp.station.network === "Tesla" && tesla_active && sp.station.mem_on) {
+                  effective_rate = sp.station.mem_on;
+                  badge = has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)";
+                }
+
+                const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
+                sp.rate = effective_rate;
+                sp.cost = stopCost;
+                sp.badge = badge;
+                discounted_ch_cost += stopCost;
+              });
+
+              const membership_fees = Math.round((ea_fee + tesla_fee) * 100) / 100;
               const total_detour_miles = Math.round(stopPlans.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
               const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
               const total_time = total_drive_hrs + total_ch_hrs;
-              const total_cost = adjusted_ch_cost + route.toll;
+              const total_cost = Math.round((discounted_ch_cost + membership_fees + route.toll) * 100) / 100;
 
               candidates.push({
                 route: route,
@@ -1628,14 +1670,29 @@
                 drive_hours: total_drive_hrs,
                 ch_hours: total_ch_hrs,
                 total_hours: total_time,
-                ch_cost: adjusted_ch_cost,
+                ch_cost: Math.round(discounted_ch_cost * 100) / 100,
+                membership_fees: membership_fees,
                 toll_cost: route.toll,
                 total_cost: total_cost,
                 final_soc: Math.round(current_soc * 100),
                 stops: stopPlans,
                 memberships: {
-                  ea: { kwh: Math.round(ea_kwh), worth: ea_worth, net: Math.round(ea_net * 100) / 100 },
-                  tesla: { kwh: Math.round(tesla_kwh), worth: tesla_worth, net: Math.round(tesla_net * 100) / 100 }
+                  ea: {
+                    kwh: Math.round(ea_kwh * 10) / 10,
+                    active: ea_active,
+                    pre_owned: has_ea_preowned,
+                    fee: ea_fee,
+                    savings: Math.round(ea_gross_savings * 100) / 100,
+                    net: Math.round(ea_net * 100) / 100
+                  },
+                  tesla: {
+                    kwh: Math.round(tesla_kwh * 10) / 10,
+                    active: tesla_active,
+                    pre_owned: has_tesla_preowned,
+                    fee: tesla_fee,
+                    savings: Math.round(tesla_gross_savings * 100) / 100,
+                    net: Math.round(tesla_net * 100) / 100
+                  }
                 }
               });
             }
@@ -1918,14 +1975,48 @@
           <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.tgt_soc}%</td>
           <td class="py-2.5 px-3 text-slate-300">${s.added_kwh} kWh</td>
           <td class="py-2.5 px-3 text-slate-200 font-semibold">${s.mins} min</td>
-          <td class="py-2.5 px-3 text-slate-400">$${s.rate.toFixed(2)}</td>
-          <td class="py-2.5 px-3 text-emerald-400 font-semibold">$${s.cost.toFixed(2)}</td>
+          <td class="py-2.5 px-3 font-mono">
+            <div>$${s.rate.toFixed(2)}/kWh</div>
+            ${s.badge ? `<div class="text-[10px] font-sans font-bold text-emerald-400">${s.badge}</div>` : ''}
+          </td>
+          <td class="py-2.5 px-3 text-emerald-400 font-semibold font-mono">$${s.cost.toFixed(2)}</td>
           <td class="py-2.5 px-3">
             ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" onclick="event.stopPropagation()" class="text-blue-400 hover:text-blue-300 underline font-sans text-[11px]">View</a>` : '-'}
           </td>
         `;
         tbody.appendChild(row);
       });
+
+      // Render Cost Summary Footer
+      const tfoot = document.getElementById('stopsTableFoot');
+      if (tfoot) {
+        let feeLabels = [];
+        if (itin.memberships.ea.active && !itin.memberships.ea.pre_owned) feeLabels.push('EA Pass+ (+$3.50)');
+        if (itin.memberships.tesla.active && !itin.memberships.tesla.pre_owned) feeLabels.push('Tesla Member (+$6.50)');
+
+        tfoot.innerHTML = `
+          <tr class="border-t border-slate-700 bg-slate-950/60 font-mono text-xs">
+            <td colspan="7" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
+            <td colspan="4" class="py-2.5 px-3 text-white font-semibold">$${itin.ch_cost.toFixed(2)}</td>
+          </tr>
+          ${itin.membership_fees > 0 ? `
+          <tr class="bg-slate-950/60 font-mono text-xs">
+            <td colspan="7" class="py-1.5 px-3 text-right text-amber-400/90 font-sans">+ One-Way Membership Fees (${feeLabels.join(', ')}):</td>
+            <td colspan="4" class="py-1.5 px-3 text-amber-400 font-semibold">+$${itin.membership_fees.toFixed(2)}</td>
+          </tr>` : ''}
+          <tr class="bg-slate-950/60 font-mono text-xs">
+            <td colspan="7" class="py-1.5 px-3 text-right text-slate-400 font-sans">Highway Tolls:</td>
+            <td colspan="4" class="py-1.5 px-3 text-slate-300 font-semibold">$${itin.toll_cost.toFixed(2)}</td>
+          </tr>
+          <tr class="text-sm font-bold border-t border-slate-800 bg-slate-900/80">
+            <td colspan="7" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
+            <td colspan="4" class="py-2.5 px-3 text-emerald-400 text-base font-mono">
+              $${itin.total_cost.toFixed(2)}
+              ${itin.memberships.ea.active && !itin.memberships.ea.pre_owned && itin.memberships.ea.net > 0 ? `<span class="block text-[11px] text-emerald-300 font-sans font-normal">(Net Pass+ Savings: $${itin.memberships.ea.net.toFixed(2)})</span>` : ''}
+            </td>
+          </tr>
+        `;
+      }
     }
 
     function renderBanners(itin) {
@@ -1937,12 +2028,15 @@
       if (!ea || ea.kwh === 0) {
         eaTitle.innerText = "EA Pass+ Not Needed";
         eaText.innerText = "No Pass+-eligible Electrify America charging stops on this itinerary.";
-      } else if (ea.worth) {
-        eaTitle.innerText = `✓ EA Pass+ Recommended (Save $${ea.net.toFixed(2)})`;
-        eaText.innerText = `Charges ${ea.kwh} kWh at EA. The $3.50 one-way allocated fee saves money ($${ea.net.toFixed(2)} net profit).`;
+      } else if (ea.pre_owned) {
+        eaTitle.innerText = "✓ EA Pass+ Applied (Pre-Owned)";
+        eaText.innerText = `25% Pass+ discount active on ${ea.kwh} kWh charged at EA ($0 added fee).`;
+      } else if (ea.active) {
+        eaTitle.innerText = `✓ EA Pass+ Recommended (Save $${ea.net.toFixed(2)} Net)`;
+        eaText.innerText = `Charges ${ea.kwh} kWh at EA. The $3.50 one-way fee is added, rates drop by 25% to ~$0.45/kWh, yielding $${ea.net.toFixed(2)} net savings.`;
       } else {
         eaTitle.innerText = "EA Pass+ Not Cost-Effective";
-        eaText.innerText = `Charges ${ea.kwh} kWh at EA. Savings do not offset the $3.50 trip-allocated fee.`;
+        eaText.innerText = `Charges only ${ea.kwh} kWh at EA. Gross savings ($${ea.savings.toFixed(2)}) do not offset the $3.50 trip fee. Standard guest rates applied.`;
       }
 
       const teslaTitle = document.getElementById('teslaTitle');
@@ -1950,12 +2044,15 @@
       if (!tesla || tesla.kwh === 0) {
         teslaTitle.innerText = "Tesla Membership Not Needed";
         teslaText.innerText = "No Tesla Supercharger MagicDock stops on this itinerary.";
-      } else if (tesla.worth) {
-        teslaTitle.innerText = `✓ Tesla Member Recommended (Save $${tesla.net.toFixed(2)})`;
-        teslaText.innerText = `Charges ${tesla.kwh} kWh at Tesla. The $6.50 one-way allocated fee saves money ($${tesla.net.toFixed(2)} net profit).`;
+      } else if (tesla.pre_owned) {
+        teslaTitle.innerText = "✓ Tesla Member Applied (Pre-Owned)";
+        teslaText.innerText = `Member rate ($0.46/kWh) active on ${tesla.kwh} kWh charged at Tesla ($0 added fee).`;
+      } else if (tesla.active) {
+        teslaTitle.innerText = `✓ Tesla Member Recommended (Save $${tesla.net.toFixed(2)} Net)`;
+        teslaText.innerText = `Charges ${tesla.kwh} kWh at Tesla. The $6.50 one-way fee is added, rates drop to $0.46/kWh, yielding $${tesla.net.toFixed(2)} net savings.`;
       } else {
         teslaTitle.innerText = "Tesla Member Not Cost-Effective";
-        teslaText.innerText = `Charges ${tesla.kwh} kWh at Tesla. Savings do not offset the $6.50 trip-allocated fee.`;
+        teslaText.innerText = `Charges only ${tesla.kwh} kWh at Tesla. Gross savings ($${tesla.savings.toFixed(2)}) do not offset the $6.50 trip fee. Standard guest rates applied.`;
       }
     }
 
