@@ -133,21 +133,21 @@
       "NACS"
     ],
     "rate_regular": {
-      "off_peak": 0.63,
-      "on_peak": 0.63
+      "off_peak": 0.56,
+      "on_peak": 0.56
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
     "membership_rate": {
-      "off_peak": 0.46,
-      "on_peak": 0.46
+      "off_peak": 0.41,
+      "on_peak": 0.41
     },
     "tou_hours": {
       "off_peak": "22:00-10:00",
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://www.plugshare.com/location/39934"
+    "plugshare_url": "https://www.tesla.com/findus?bounds=40.04563516929346%2C-78.9947205390625%2C39.98943325885038%2C-79.1595154609375&search=Somerset%2C%20PA%2015501&location=somersetsupercharger&functionType=party"
   },
   {
     "id": "ag-somerset-pa",
@@ -282,21 +282,21 @@
       "NACS"
     ],
     "rate_regular": {
-      "off_peak": 0.64,
-      "on_peak": 0.64
+      "off_peak": 0.56,
+      "on_peak": 0.56
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
     "membership_rate": {
-      "off_peak": 0.46,
-      "on_peak": 0.46
+      "off_peak": 0.41,
+      "on_peak": 0.41
     },
     "tou_hours": {
       "off_peak": "22:00-10:00",
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://www.plugshare.com/location/711338"
+    "plugshare_url": "https://www.tesla.com/findus?bounds=40.1641541900422%2C-77.79653640087889%2C39.939723054403245%2C-78.12543959912108&search=Fort%20Littleton%2C%20PA&location=26674&functionType=party"
   },
   {
     "id": "fe-newburg-pa",
