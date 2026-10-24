@@ -237,3 +237,34 @@ async def run_optimization(req: OptimizationRequest):
         },
         "routes": routes_geojson
     }
+
+
+from pipeline.scraper import PricingScraperPipeline
+
+class UpdatePriceRequest(BaseModel):
+    station_id: str
+    price: float
+
+class PullOcmRequest(BaseModel):
+    api_key: Optional[str] = "3e165280-87eb-4a3d-8741-7d80903bb87b"
+    states: Optional[List[str]] = ["OH", "PA", "NJ", "WV", "MD"]
+
+@app.post("/api/stations/pull-ocm")
+async def pull_ocm_stations(req: PullOcmRequest):
+    pipeline = PricingScraperPipeline(ocm_key=req.api_key)
+    updated = await pipeline.pull_ocm_stations(states=req.states)
+    return {"status": "ok", "count": len(updated), "stations": updated}
+
+@app.post("/api/stations/refresh-prices")
+async def refresh_prices():
+    pipeline = PricingScraperPipeline()
+    updated = await pipeline.refresh_prices()
+    return {"status": "ok", "count": len(updated), "stations": updated}
+
+@app.post("/api/stations/update-price")
+async def update_single_price(req: UpdatePriceRequest):
+    pipeline = PricingScraperPipeline()
+    st = pipeline.update_single_station_price(req.station_id, req.price)
+    if st:
+        return {"status": "ok", "station": st}
+    return JSONResponse(status_code=404, content={"status": "error", "message": "Station not found"})

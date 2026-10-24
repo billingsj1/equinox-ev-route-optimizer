@@ -597,5 +597,341 @@
     },
     "session_fee": 0.0,
     "plugshare_url": "https://www.plugshare.com/location/1483639"
+  },
+  {
+    "id": "electrify-america-492938",
+    "name": "Electrify America - Menards - Kent, OH",
+    "network": "Electrify America",
+    "city": "Kent",
+    "state": "OH",
+    "latitude": 41.1017,
+    "longitude": -81.38692,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.45,
+      "on_peak": 0.45
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/492549",
+    "price_verified": false,
+    "ocm_id": 492549
+  },
+  {
+    "id": "ionna-480702",
+    "name": "IONNA - IONNA Rechargery (Cambridge, OH)",
+    "network": "IONNA",
+    "city": "Cambridge",
+    "state": "OH",
+    "latitude": 39.99581,
+    "longitude": -81.57388,
+    "power_kw": 400,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/480313",
+    "price_verified": false,
+    "ocm_id": 480313
+  },
+  {
+    "id": "evgo-512543",
+    "name": "EVgo - Bustleton Ave",
+    "network": "EVgo",
+    "city": "Philadelphia",
+    "state": "PA",
+    "latitude": 40.10156,
+    "longitude": -75.03018,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/512154",
+    "price_verified": false,
+    "ocm_id": 512154
+  },
+  {
+    "id": "electrify-america-488824",
+    "name": "Electrify America - IKEA Electrify America",
+    "network": "Electrify America",
+    "city": "Conshohocken",
+    "state": "PA",
+    "latitude": 40.09432,
+    "longitude": -75.3084,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.45,
+      "on_peak": 0.45
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.electrifyamerica.com/locate-charger/pa/conshohocken/400-alan-wood-rd/240235/",
+    "price_verified": false,
+    "ocm_id": 488435
+  },
+  {
+    "id": "ionna-488823",
+    "name": "IONNA - IONNA Rechargery (Bensalem, PA)",
+    "network": "IONNA",
+    "city": "Bensalem",
+    "state": "PA",
+    "latitude": 40.13058,
+    "longitude": -74.92337,
+    "power_kw": 400,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.ionna.com/rechargery/bensalem-pa-rechargery-relay-bristol-rd/",
+    "price_verified": false,
+    "ocm_id": 488434
+  },
+  {
+    "id": "electrify-america-488822",
+    "name": "Electrify America - Wakefern Shoprite",
+    "network": "Electrify America",
+    "city": "Yardley",
+    "state": "PA",
+    "latitude": 40.19879,
+    "longitude": -74.86407,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.45,
+      "on_peak": 0.45
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.electrifyamerica.com/locate-charger/pa/yardley/1603-big-oak-road/240432/",
+    "price_verified": false,
+    "ocm_id": 488433
+  },
+  {
+    "id": "applegreen-500190",
+    "name": "Applegreen - Grover Cleveland Service Area",
+    "network": "Applegreen",
+    "city": "Sewaren",
+    "state": "NJ",
+    "latitude": 40.55605,
+    "longitude": -74.26407,
+    "power_kw": 400,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/499801",
+    "price_verified": false,
+    "ocm_id": 499801
+  },
+  {
+    "id": "ionna-499856",
+    "name": "IONNA - IONNA Rechargery (Kendall Park, NJ)",
+    "network": "IONNA",
+    "city": "Kendall Park",
+    "state": "NJ",
+    "latitude": 40.43286,
+    "longitude": -74.5476,
+    "power_kw": 400,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.ionna.com/rechargery/south-brunswick-nj-rechargery-wawa-rt-27/",
+    "price_verified": false,
+    "ocm_id": 499467
+  },
+  {
+    "id": "applegreen-497664",
+    "name": "Applegreen - Alexander Hamilton Travel Plaza",
+    "network": "Applegreen",
+    "city": "Secacus",
+    "state": "NJ",
+    "latitude": 40.76998,
+    "longitude": -74.06463,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/497275",
+    "price_verified": false,
+    "ocm_id": 497275
+  },
+  {
+    "id": "chargepoint-488215",
+    "name": "ChargePoint - Roy Rogers - Thurmont, MD",
+    "network": "ChargePoint",
+    "city": "Thurmont",
+    "state": "MD",
+    "latitude": 39.61279,
+    "longitude": -77.42016,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/487826",
+    "price_verified": false,
+    "ocm_id": 487826
+  },
+  {
+    "id": "electrify-america-481024",
+    "name": "Electrify America - Royal Farms",
+    "network": "Electrify America",
+    "city": "Windsor Mill",
+    "state": "MD",
+    "latitude": 39.35416,
+    "longitude": -76.75822,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.45,
+      "on_peak": 0.45
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/480635",
+    "price_verified": false,
+    "ocm_id": 480635
+  },
+  {
+    "id": "mercedes-benz-479322",
+    "name": "Mercedes-Benz - MB - Clarksburg Premium Outlets",
+    "network": "Mercedes-Benz",
+    "city": "Clarksburg",
+    "state": "MD",
+    "latitude": 39.22939,
+    "longitude": -77.28528,
+    "power_kw": 400,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.5,
+      "on_peak": 0.5
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://openchargemap.org/site/poi/details/478933",
+    "price_verified": false,
+    "ocm_id": 478933
   }
 ]
