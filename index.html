@@ -1198,17 +1198,38 @@
       };
     }
 
-    // Comprehensive Charger Detour Simulator: models off-ramp deceleration, local signals/stops,
-    // parking lot navigation, and highway on-ramp merge acceleration.
-    function simulateDetourPhysics(detour_miles, payload_lbs, temp_f, road_cond) {
+    // Helper: Identify on-highway service plazas (PA/WV/NJ Turnpike plazas) vs off-highway exits
+    function isServicePlaza(st) {
+      if (!st) return false;
+      const name = (st.name || '').toLowerCase();
+      const plug = (st.plug || '').toLowerCase();
+      return (
+        name.includes('service plaza') ||
+        name.includes('travel plaza') ||
+        name.includes('turnpike') ||
+        name.includes('blue mountain') ||
+        name.includes('waterfall') ||
+        name.includes('sideling hill') ||
+        name.includes('bowmansville') ||
+        name.includes('lawn') ||
+        name.includes('highspire') ||
+        name.includes('beckley') ||
+        name.includes('bluestone') ||
+        (st.network === 'Applegreen' && (st.detour_mi || 0) < 0.45)
+      );
+    }
+
+    // Comprehensive Charger Detour Simulator: models highway service plazas vs off-ramp street exits,
+    // intersection signals, parking lot navigation, and on-ramp merge acceleration.
+    function simulateDetourPhysics(detour_miles, is_plaza, payload_lbs, temp_f, road_cond) {
       const curb_kg = 2233.0;
       const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
-      const v_mph = 28.0;
+      const v_mph = is_plaza ? 20.0 : 28.0;
       const v_ms = v_mph * 0.44704;
       const hours = detour_miles / v_mph;
       const dist_m = detour_miles * 1609.34;
 
-      // Local rolling resistance and aero at 28 mph
+      // Local rolling resistance and aero at 20-28 mph
       let crr = 0.0105;
       if (road_cond === "wet") crr *= 1.40;
       else if (road_cond === "snow_ice") crr *= 2.20;
@@ -1219,19 +1240,19 @@
       const f_aero = 0.5 * rho * (0.332 * 2.60) * Math.pow(v_ms, 2);
       const steady_kwh = ((f_rr + f_aero) * dist_m) / 3.6e6 / 0.91;
 
-      // Stop-and-go intersection cycles (approx 2.2 stops per round-trip detour mile)
-      const num_stops = Math.max(1.5, detour_miles * 2.2);
+      // Stop-and-go intersection cycles (service plazas: 1 parking stop; off-highway exits: 2-3 intersection stops)
+      const num_stops = is_plaza ? 1.0 : Math.max(2.0, detour_miles * 2.2);
       const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
       const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
       const stops_kwh = (num_stops * cycle_loss) / 3.6e6;
 
-      // On-ramp merge acceleration (re-accelerating 5,100 lbs from 28 mph ramp to 70 mph highway)
+      // On-ramp merge acceleration (re-accelerating 5,100 lbs from ramp to 70 mph highway)
       const v_hwy_ms = 70.0 * 0.44704;
       const ramp_ke = 0.5 * total_mass_kg * Math.max(0.0, Math.pow(v_hwy_ms, 2) - Math.pow(v_ms, 2));
       const ramp_accel_kwh = (ramp_ke / 0.91) / 3.6e6;
 
-      // Traffic signal idle delay (~2.2 mins per detour mile)
-      const idle_hours = (detour_miles * 2.2) / 60.0;
+      // Idle delay (plazas: ~1.2 mins pedestrian/stall entry; off-highway: traffic lights + turns ~2.5 mins/mi)
+      const idle_hours = is_plaza ? (1.2 / 60.0) : (Math.max(2.0, detour_miles * 2.4) / 60.0);
       const total_hours = hours + idle_hours;
 
       let hvac_kw = 0.35;
@@ -1774,12 +1795,21 @@
 
           for (let idx = 0; idx < stopsGroup.length; idx++) {
             const st = stopsGroup[idx];
-            // Detour calculation: off-highway ramps, local traffic lights, parking lots & on-ramp merge
-            const one_way_detour = Math.max(0.1, st.detour_mi || 0.1);
-            const detour_miles = Math.round(one_way_detour * 2.0 * 10) / 10;
-            const detourSim = simulateDetourPhysics(detour_miles, payload_lbs, temp_f, road_cond);
+            // Detour calculation: Service Plazas (~0.5 mi, 3m) vs Off-Highway Exits (ramps + lights + surface streets)
+            const isPlaza = isServicePlaza(st);
+            let detour_miles = 0.5;
+            let detour_mins = 2.8;
+            if (isPlaza) {
+              detour_miles = 0.5; // Service plaza loop off/on mainline
+              detour_mins = 2.8;  // Plaza ramp deceleration, 20 mph ring road, merge acceleration
+            } else {
+              // Off-highway: off-ramp (0.4 mi) + cross-track street + retail parking lot + signals/turns + on-ramp (0.4 mi)
+              const one_way = Math.max(0.15, st.detour_mi || 0.2);
+              detour_miles = Math.round((0.8 + (2.0 * one_way)) * 10) / 10;
+              detour_mins = Math.round((3.2 + (detour_miles / 28.0 * 60.0) + (1.2 * Math.max(1, detour_miles * 0.8))) * 10) / 10;
+            }
+            const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
             const detour_hours = detourSim.hours;
-            const detour_mins = detourSim.mins;
 
             // Leg distance driving to this charger (simulated along specific segment speed limits)
             const legSim = simulateLegFromSteps(route.steps, current_mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
@@ -1810,19 +1840,31 @@
             if (st.gm) rate *= (1.0 - st.gm_pct); // 10% GM EV discount
 
             const ch = calculateCharging(current_soc, target_soc, st.kw, rate);
-            total_ch_hrs += (ch.mins / 60.0);
+
+            // Session Setup & Teardown Time:
+            // GM "Plug and Go" (IONNA, EVgo): ~2.0 mins (park, plug in, auto ISO 15118 handshake)
+            // Other networks (EA, Applegreen, Tesla, ChargePoint): ~4.5 mins (locate stall, phone app / card tap, authorization, cable stow)
+            const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo");
+            const setup_mins = has_plug_and_go ? 2.0 : 4.5;
+            const total_stop_mins = Math.round(ch.mins + setup_mins);
+
+            total_ch_hrs += (total_stop_mins / 60.0);
             total_ch_cost += ch.cost;
 
             stopPlans.push({
               station: st,
               mile: st.mile,
+              is_plaza: isPlaza,
               detour_mi: st.detour_mi || 0,
               detour_miles: detour_miles,
               detour_mins: detour_mins,
               arr_soc: Math.round(current_soc * 100),
               tgt_soc: Math.round(target_soc * 100),
               added_kwh: Math.round(ch.added_kwh * 10) / 10,
-              mins: Math.round(ch.mins),
+              charge_mins: Math.round(ch.mins),
+              setup_mins: setup_mins,
+              has_plug_and_charge: has_plug_and_go,
+              mins: total_stop_mins,
               cost: Math.round(ch.cost * 100) / 100,
               rate: rate
             });
@@ -2111,14 +2153,14 @@
           iconSize: [26, 26]
         });
 
-        const detourLabel = s.detour_miles <= 0.4 ? 'Plaza (Direct on travel lanes)' : `+${s.detour_miles} mi offshoot (~${s.detour_mins}m)`;
+        const detourLabel = s.is_plaza ? 'Turnpike Service Plaza (~2.8m loop)' : `+${s.detour_miles} mi exit detour (~${s.detour_mins}m)`;
         const stopMarker = L.marker([s.station.lat, s.station.lon], { icon: stopIcon })
           .bindPopup(`
             <div style="font-family:sans-serif; font-size:12px; line-height:1.4;">
               <b>Stop #${idx+1}: ${s.station.name}</b><br>
               <span style="color:#64748b;">Mile:</span> <b>Mile ${Math.round(s.mile)}</b> (${detourLabel})<br>
               <span style="color:#64748b;">Charge:</span> <b>${s.arr_soc}% &rarr; ${s.tgt_soc}%</b> (+${s.added_kwh} kWh)<br>
-              <span style="color:#64748b;">Time:</span> <b>${s.mins} mins</b> | Cost: <b>$${s.cost.toFixed(2)}</b><br>
+              <span style="color:#64748b;">Total Dwell:</span> <b>${s.mins} mins</b> (${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}) | Cost: <b>$${s.cost.toFixed(2)}</b><br>
               ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Open on PlugShare</a>` : ''}
             </div>
           `).addTo(map);
@@ -2171,14 +2213,35 @@
           ...itin.stops.map(s => `${s.station.lon},${s.station.lat}`),
           `${itin.route.destination.lon},${itin.route.destination.lat}`
         ];
-        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pts.join(';')}?overview=full&geometries=geojson`;
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pts.join(';')}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
         const resp = await fetch(osrmUrl);
         if (resp.ok) {
           const data = await resp.json();
           if (data && data.routes && data.routes.length > 0) {
+            const r0 = data.routes[0];
             itin.osrmGeometryLoaded = true;
-            const detailedCoords = data.routes[0].geometry.coordinates.map(pt => [pt[1], pt[0]]);
+
+            // Exact road network distance and driving time through all off-ramps & charging stalls
+            const exact_miles = Math.round((r0.distance * 0.000621371) * 10) / 10;
+            const exact_drive_hours = r0.duration / 3600.0;
+            itin.total_actual_miles = exact_miles;
+            itin.drive_hours = exact_drive_hours;
+            itin.total_hours = exact_drive_hours + itin.ch_hours;
+
+            // Exact leg arrival distances
+            if (r0.legs && r0.legs.length === (itin.stops.length + 1)) {
+              let cumMile = 0;
+              for (let i = 0; i < itin.stops.length; i++) {
+                cumMile += (r0.legs[i].distance * 0.000621371);
+                itin.stops[i].mile = Math.round(cumMile * 10) / 10;
+              }
+            }
+
+            const detailedCoords = r0.geometry.coordinates.map(pt => [pt[1], pt[0]]);
             currentPoly.setLatLngs(detailedCoords);
+
+            // Re-render summary cards and stop table with exact OSRM driving metrics
+            renderResultsUI();
           }
         }
       } catch (e) {
@@ -2203,9 +2266,9 @@
         row.onclick = () => {
           map.setView([s.station.lat, s.station.lon], 13);
         };
-        const detourBadge = (s.detour_miles <= 0.4)
-          ? '<span class="text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[10px]">Plaza (0 mi)</span>'
-          : `<span class="text-amber-400 font-mono font-medium">+${s.detour_miles} mi</span> <span class="text-slate-500 text-[10px]">(~${s.detour_mins}m)</span>`;
+        const detourBadge = s.is_plaza
+          ? '<span class="text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[10px] inline-flex items-center gap-1"><i data-lucide="coffee" class="w-3 h-3 text-emerald-400"></i>Plaza (~3m loop)</span>'
+          : `<span class="text-amber-400 font-mono font-medium">+${s.detour_miles} mi</span> <span class="text-slate-500 text-[10px]">(~${s.detour_mins}m exit)</span>`;
 
         row.innerHTML = `
           <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-1.5">
@@ -2218,7 +2281,12 @@
           <td class="py-2.5 px-3 text-amber-400 font-semibold">${s.arr_soc}%</td>
           <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.tgt_soc}%</td>
           <td class="py-2.5 px-3 text-slate-300">${s.added_kwh} kWh</td>
-          <td class="py-2.5 px-3 text-slate-200 font-semibold">${s.mins} min</td>
+          <td class="py-2.5 px-3 text-slate-200 font-semibold">
+            <div>${s.mins} min total</div>
+            <div class="text-[10px] text-slate-400 font-normal font-mono">
+              ${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? '<span class="text-cyan-400 font-sans font-semibold">Plug &amp; Go</span>' : 'setup'}
+            </div>
+          </td>
           <td class="py-2.5 px-3 font-mono">
             <div>$${s.rate.toFixed(2)}/kWh</div>
             ${s.badge ? `<div class="text-[10px] font-sans font-bold text-emerald-400">${s.badge}</div>` : ''}

@@ -195,7 +195,12 @@ class MultiObjectiveOptimizer:
                     session_fee=station.session_fee
                 )
 
-                charge_dur_hours = charge_res["duration_minutes"] / 60.0
+                # Session Setup & Plugin Time:
+                # GM "Plug and Go" (IONNA, EVgo): ~2.0 mins auto-handshake
+                # Standard networks (EA, Applegreen, Tesla, ChargePoint): ~4.5 mins app/card auth & cable stow
+                setup_mins = 2.0 if (station.gm_discount_eligible or station.network.lower() in ["ionna", "evgo"]) else 4.5
+                total_stop_mins = charge_res["duration_minutes"] + setup_mins
+                charge_dur_hours = total_stop_mins / 60.0
                 total_charging_hours += charge_dur_hours
                 total_charging_cost += charge_res["cost"]
                 elapsed_trip_hours += charge_dur_hours
@@ -206,7 +211,7 @@ class MultiObjectiveOptimizer:
                     arrival_soc=round(current_soc * 100, 1),
                     target_soc=round(target_soc * 100, 1),
                     energy_added_kwh=charge_res["energy_added_kwh"],
-                    charge_duration_minutes=charge_res["duration_minutes"],
+                    charge_duration_minutes=round(total_stop_mins, 1),
                     charging_cost=charge_res["cost"],
                     rate_per_kwh=effective_rate,
                     network=station.network,
