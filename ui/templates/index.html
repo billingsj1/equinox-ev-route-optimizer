@@ -57,7 +57,7 @@
     <div class="flex items-center space-x-4">
       <div id="liveMassBadge" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700 text-slate-300 flex items-center gap-1.5">
         <i data-lucide="scale" class="w-4 h-4 text-emerald-400"></i>
-        <span>Vehicle Mass: <b id="massDisplay" class="text-white">5,323 lbs</b> (2,414 kg)</span>
+        <span>Vehicle Mass: <b id="massDisplay" class="text-white">5,373 lbs</b> (2,437 kg)</span>
       </div>
       <button onclick="handleSearchRoute()" id="searchBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition shadow-lg shadow-emerald-500/20 cursor-pointer">
         <i data-lucide="search" class="w-4 h-4"></i>
@@ -125,32 +125,7 @@
         </div>
       </div>
 
-      <!-- Real-Time Efficiency & Physics Monitor -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-2 flex items-center justify-between">
-          <span class="flex items-center gap-2">
-            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
-            Physical Highway Consumption
-          </span>
-          <span id="efficiencyBadge" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">2.95 mi/kWh</span>
-        </h2>
-        <div class="grid grid-cols-3 gap-2 text-center text-xs mt-2">
-          <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">Energy Rate</span>
-            <span id="whPerMile" class="font-mono font-bold text-white text-xs">339 Wh/mi</span>
-          </div>
-          <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">Aux + HVAC Draw</span>
-            <span id="hvacDraw" class="font-mono font-bold text-cyan-400 text-xs">0.35 kW</span>
-          </div>
-          <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">Battery Usable</span>
-            <span id="batteryTempFactor" class="font-mono font-bold text-emerald-400 text-xs">85.0 kWh</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Payload Weight Toggles -->
+            <!-- Payload Weight Toggles -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
         <h2 class="text-sm font-semibold text-white mb-3 flex items-center justify-between">
           <span class="flex items-center gap-2">
@@ -180,9 +155,9 @@
         <div>
           <div class="flex justify-between text-xs text-slate-400 mb-1">
             <span>Cargo / Gear Weight</span>
-            <span id="gearDisplay" class="font-mono text-emerald-400">50 lbs</span>
+            <span id="gearDisplay" class="font-mono text-emerald-400">100 lbs</span>
           </div>
-          <input type="range" id="gearSlider" min="0" max="100" value="50" step="5" oninput="updateMass()" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          <input type="range" id="gearSlider" min="0" max="250" value="100" step="5" oninput="updateMass()" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
         </div>
       </div>
 
@@ -219,8 +194,8 @@
               <label class="text-slate-400 block mb-1">Speed Limit Offset</label>
               <select id="speedOffset" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
                 <option value="0">+0 mph (Speed Limit)</option>
-                <option value="5" selected>+5 mph</option>
-                <option value="9">+9 mph</option>
+                <option value="5">+5 mph</option>
+                <option value="10" selected>+10 mph</option>
                 <option value="15">+15 mph</option>
               </select>
             </div>
@@ -263,7 +238,99 @@
         </div>
       </div>
 
-      <!-- Weather & Environmental Modifiers -->
+      <!-- Advanced Settings & Diagnostics (Collapsible / Hidden by default) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+        
+        <!-- Collapsible Toggle Header Button -->
+        <button type="button" onclick="toggleAdvancedSettings()" class="w-full p-4 flex items-center justify-between text-left hover:bg-slate-800/40 transition">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4 text-blue-400"></i>
+            </div>
+            <div>
+              <div class="text-sm font-semibold text-white flex items-center gap-2">
+                <span>Advanced Settings</span>
+                <span id="advancedBadge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">Hidden</span>
+              </div>
+              <div class="text-[11px] text-slate-400">Physics HUD, Tolls, Weather & Station Scraper</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-slate-400">
+            <span class="text-xs hidden sm:inline" id="advancedToggleText">Expand</span>
+            <i id="advancedChevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
+          </div>
+        </button>
+
+        <!-- Hidden by default collapsible body -->
+        <div id="advancedContent" class="hidden border-t border-slate-800/80 p-4 space-y-4 bg-slate-950/30">
+          
+          <!-- 1. Physical Highway Consumption Metrics -->
+          <!-- Real-Time Efficiency & Physics Monitor -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-2">
+            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+            Physical Highway Consumption
+          </span>
+          <span id="efficiencyBadge" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">2.95 mi/kWh</span>
+        </h2>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs mt-2">
+          <div class="p-2 rounded bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">Energy Rate</span>
+            <span id="whPerMile" class="font-mono font-bold text-white text-xs">339 Wh/mi</span>
+          </div>
+          <div class="p-2 rounded bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">Aux + HVAC Draw</span>
+            <span id="hvacDraw" class="font-mono font-bold text-cyan-400 text-xs">0.35 kW</span>
+          </div>
+          <div class="p-2 rounded bg-slate-950 border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">Battery Usable</span>
+            <span id="batteryTempFactor" class="font-mono font-bold text-emerald-400 text-xs">85.0 kWh</span>
+          </div>
+        </div>
+      </div>
+
+          <!-- 2. Tolls & OEM Perks -->
+          <!-- Toll Pass & Perks -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+          <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
+          Tolls & OEM Perks
+        </h2>
+        <div class="space-y-2 text-xs">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="hasEzPass" checked class="accent-emerald-500 rounded">
+            <span>E-ZPass Equipped (PA/NJ/WV preferred rates)</span>
+          </label>
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="hasNjGreenPass" checked class="accent-emerald-500 rounded">
+            <span>NJ Turnpike EV Green Pass (10% off off-peak)</span>
+          </label>
+          <div class="p-2 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+            <div class="flex items-center gap-1.5 text-emerald-300 font-medium">
+              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              <span>GM Ultium Perks Active:</span>
+            </div>
+            <div>• 10% discount at IONNA stations (e.g. Cambridge, OH; Chester Springs, PA)</div>
+            <div>• 10% discount at EVgo ($0 session fees)</div>
+          </div>
+          <div class="border-t border-slate-800/80 pt-2.5 mt-2 space-y-1.5">
+            <span class="text-slate-300 font-medium block text-[11px]">Charging Memberships (Pre-Owned):</span>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="hasEaPass" class="accent-emerald-500 rounded">
+              <span>Already have EA Pass+ ($0.45/kWh rate, $0 fee)</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" id="hasTeslaMember" class="accent-emerald-500 rounded">
+              <span>Already have Tesla Member ($0.46/kWh rate, $0 fee)</span>
+            </label>
+            <div class="text-[10px] text-slate-500 italic leading-snug">When unchecked, optimizer automatically checks if adding a pass saves money on this trip, discounts rates, and adds the $3.50/$6.50 fee.</div>
+          </div>
+        </div>
+      </div>
+
+          <!-- 3. Weather & Environmental Modifiers -->
+          <!-- Weather & Environmental Modifiers -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
         <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
           <i data-lucide="cloud-sun" class="w-4 h-4 text-emerald-400"></i>
@@ -306,45 +373,8 @@
         </div>
       </div>
 
-      <!-- Toll Pass & Perks -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-          <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
-          Tolls & OEM Perks
-        </h2>
-        <div class="space-y-2 text-xs">
-          <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="hasEzPass" checked class="accent-emerald-500 rounded">
-            <span>E-ZPass Equipped (PA/NJ/WV preferred rates)</span>
-          </label>
-          <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="hasNjGreenPass" checked class="accent-emerald-500 rounded">
-            <span>NJ Turnpike EV Green Pass (10% off off-peak)</span>
-          </label>
-          <div class="p-2 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-            <div class="flex items-center gap-1.5 text-emerald-300 font-medium">
-              <i data-lucide="check" class="w-3.5 h-3.5"></i>
-              <span>GM Ultium Perks Active:</span>
-            </div>
-            <div>• 10% discount at IONNA stations (e.g. Cambridge, OH; Chester Springs, PA)</div>
-            <div>• 10% discount at EVgo ($0 session fees)</div>
-          </div>
-          <div class="border-t border-slate-800/80 pt-2.5 mt-2 space-y-1.5">
-            <span class="text-slate-300 font-medium block text-[11px]">Charging Memberships (Pre-Owned):</span>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" id="hasEaPass" class="accent-emerald-500 rounded">
-              <span>Already have EA Pass+ ($0.45/kWh rate, $0 fee)</span>
-            </label>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" id="hasTeslaMember" class="accent-emerald-500 rounded">
-              <span>Already have Tesla Member ($0.46/kWh rate, $0 fee)</span>
-            </label>
-            <div class="text-[10px] text-slate-500 italic leading-snug">When unchecked, optimizer automatically checks if adding a pass saves money on this trip, discounts rates, and adds the $3.50/$6.50 fee.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Station & Price Scraper Manager Card -->
+          <!-- 4. Station & Price Scraper -->
+          <!-- Station & Price Scraper Manager Card -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-white flex items-center gap-2">
@@ -395,6 +425,9 @@
         <!-- Scraper Notification / Status Alert -->
         <div id="scraperStatusBox" class="hidden text-xs rounded-lg p-2.5 bg-slate-950 border border-slate-800 space-y-2">
           <!-- Populated dynamically with alerts & unverified station inputs -->
+        </div>
+      </div>
+
         </div>
       </div>
 
@@ -754,7 +787,7 @@
     }
 
     function updateTimeGapDisplays(minVal, maxVal) {
-      const speedOffset = parseFloat(document.getElementById('speedOffset').value) || 5;
+      const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const maxCap = parseFloat(document.getElementById('maxSpeedCap').value) || 75;
       const avgMph = Math.min(70 + speedOffset, maxCap);
 
@@ -775,7 +808,7 @@
       if (document.getElementById('arno').checked) payload_lbs += 50;
       payload_lbs += parseFloat(document.getElementById('gearSlider').value) || 0;
 
-      const speed_offset = parseFloat(document.getElementById('speedOffset').value) || 0;
+      const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value) || 75;
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
@@ -1774,7 +1807,7 @@
       const start_soc = parseFloat(document.getElementById('startSocSlider').value) / 100.0;
       const min_buffer_soc = parseFloat(document.getElementById('bufferSlider').value) / 100.0;
       const target_arrival_soc = parseFloat(document.getElementById('targetArrivalSlider').value) / 100.0;
-      const speed_offset = parseFloat(document.getElementById('speedOffset').value);
+      const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
       const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 75);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 150);
@@ -3126,6 +3159,34 @@
         renderUnverifiedStations();
         recomputeCurrentRoute();
       }
+    }
+
+    function toggleAdvancedSettings() {
+      const content = document.getElementById('advancedContent');
+      const chevron = document.getElementById('advancedChevron');
+      const toggleText = document.getElementById('advancedToggleText');
+      const badge = document.getElementById('advancedBadge');
+      if (!content) return;
+
+      const isHidden = content.classList.contains('hidden');
+      if (isHidden) {
+        content.classList.remove('hidden');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+        if (toggleText) toggleText.innerText = 'Collapse';
+        if (badge) {
+          badge.innerText = 'Expanded';
+          badge.className = 'text-[10px] bg-blue-950/60 text-blue-300 border border-blue-800/50 px-2 py-0.5 rounded-full font-mono';
+        }
+      } else {
+        content.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+        if (toggleText) toggleText.innerText = 'Expand';
+        if (badge) {
+          badge.innerText = 'Hidden';
+          badge.className = 'text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono';
+        }
+      }
+      lucide.createIcons();
     }
 
 window.onload = () => {

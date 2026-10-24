@@ -18,7 +18,7 @@ GRAVITY = 9.80665        # m/s^2
 
 @dataclass
 class DrivingProfile:
-    speed_offset_mph: float = 5.0     # e.g., +5 mph over posted limit
+    speed_offset_mph: float = 10.0    # e.g., +10 mph over posted limit
     max_speed_cap_mph: float = 75.0   # Hard ceiling speed cap
     min_safety_buffer_soc: float = 0.10 # e.g., 10% min battery remaining during legs
     target_arrival_soc: float = 0.20  # Ideal ending charge state at final destination (default 20%)
