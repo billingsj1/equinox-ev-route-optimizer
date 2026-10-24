@@ -597,6 +597,41 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 18
       }).addTo(map);
+
+      renderStandaloneStationMarkers();
+    }
+
+    function renderStandaloneStationMarkers() {
+      if (!map) return;
+      if (calculatedResults && currentItineraryKey && calculatedResults[currentItineraryKey]) {
+        return; // renderMap handles markers when active route exists
+      }
+      mapLayers.forEach(l => map.removeLayer(l));
+      mapLayers = [];
+      ALL_STATIONS.forEach(s => {
+        if (!s || s.lat == null || s.lon == null) return;
+        const isVerified = (s.price_verified !== false && s.on != null && s.on > 0);
+        const color = NETWORK_COLORS[s.network] || "#64748b";
+        const rateText = isVerified ? `$${s.on.toFixed(2)}/kWh` : '<span style="color:#f59e0b; font-weight:600;">Unverified / Not priced</span>';
+        const dot = L.circleMarker([s.lat, s.lon], {
+          radius: isVerified ? 5 : 4,
+          fillColor: isVerified ? color : "#475569",
+          color: isVerified ? "#ffffff" : "#94a3b8",
+          weight: 1,
+          opacity: isVerified ? 0.85 : 0.5,
+          fillOpacity: isVerified ? 0.8 : 0.4
+        }).bindPopup(`
+          <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
+            <b>${s.name}</b><br>
+            <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
+            <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
+            ${s.gm && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+            ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
+            ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect / PlugShare</a>` : ''}
+          </div>
+        `).addTo(map);
+        mapLayers.push(dot);
+      });
     }
 
     function setQuickDest(addr) {
@@ -744,16 +779,30 @@
     // Projects all stations in database onto the active highway polyline
     function matchStationsToPolyline(coords) {
       const cum_dist = [0.0];
-      for (let i = 1; i < coords.length; i++) {
-        const d = haversineMiles(coords[i-1][1], coords[i-1][0], coords[i][1], coords[i][0]);
-        cum_dist.push(cum_dist[cum_dist.length - 1] + d);
+      let min_c_lat = 999, max_c_lat = -999, min_c_lon = 999, max_c_lon = -999;
+      for (let i = 0; i < coords.length; i++) {
+        const c_lon = coords[i][0], c_lat = coords[i][1];
+        if (c_lat < min_c_lat) min_c_lat = c_lat;
+        if (c_lat > max_c_lat) max_c_lat = c_lat;
+        if (c_lon < min_c_lon) min_c_lon = c_lon;
+        if (c_lon > max_c_lon) max_c_lon = c_lon;
+        if (i > 0) {
+          const d = haversineMiles(coords[i-1][1], coords[i-1][0], coords[i][1], coords[i][0]);
+          cum_dist.push(cum_dist[cum_dist.length - 1] + d);
+        }
       }
       const total_dist = cum_dist[cum_dist.length - 1];
+      // Fast corridor bounding-box filter (~15 miles buffer)
+      const b_lat_min = min_c_lat - 0.22, b_lat_max = max_c_lat + 0.22;
+      const b_lon_min = min_c_lon - 0.25, b_lon_max = max_c_lon + 0.25;
 
       const matched = [];
       ALL_STATIONS.forEach(s => {
         // Exclude unverified stations or stations without verified prices from routing candidate stops
         if (s.price_verified === false || s.on == null || s.on <= 0) {
+          return;
+        }
+        if (s.lat < b_lat_min || s.lat > b_lat_max || s.lon < b_lon_min || s.lon > b_lon_max) {
           return;
         }
         let min_dist = 9999.0;
@@ -1933,25 +1982,29 @@
         upgradePolylineWithOSRM(itin, poly);
       }
 
-      // 5. Draw all other nearby stations as small subtle dots
+      // 5. Draw all stations as interactive markers on the map
       ALL_STATIONS.forEach(s => {
-        const isUsed = itin.stops.some(sp => sp.station.id === s.id);
+        if (!s || s.lat == null || s.lon == null) return;
+        const isUsed = itin.stops && itin.stops.some(sp => sp.station && sp.station.id === s.id);
         if (!isUsed) {
+          const isVerified = (s.price_verified !== false && s.on != null && s.on > 0);
           const color = NETWORK_COLORS[s.network] || "#64748b";
+          const rateText = isVerified ? `$${s.on.toFixed(2)}/kWh` : '<span style="color:#f59e0b; font-weight:600;">Unverified / Not priced</span>';
           const dot = L.circleMarker([s.lat, s.lon], {
-            radius: 5,
-            fillColor: color,
-            color: "#ffffff",
+            radius: isVerified ? 5 : 4,
+            fillColor: isVerified ? color : "#475569",
+            color: isVerified ? "#ffffff" : "#94a3b8",
             weight: 1,
-            opacity: 0.8,
-            fillOpacity: 0.8
+            opacity: isVerified ? 0.85 : 0.5,
+            fillOpacity: isVerified ? 0.8 : 0.4
           }).bindPopup(`
-            <div style="font-family:sans-serif; font-size:11px;">
+            <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
               <b>${s.name}</b><br>
-              Network: ${s.network} (${s.kw} kW)<br>
-              Rate: $${s.on.toFixed(2)}/kWh<br>
-              ${s.gm ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
-              ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; text-decoration:underline;">PlugShare</a>` : ''}
+              <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
+              <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
+              ${s.gm && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+              ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
+              ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect / PlugShare</a>` : ''}
             </div>
           `).addTo(map);
           mapLayers.push(dot);
@@ -2295,6 +2348,7 @@
 
       updateStationManagerBadge();
       renderUnverifiedStations();
+      renderStandaloneStationMarkers();
     }
 
     function saveStationsToStorage() {
