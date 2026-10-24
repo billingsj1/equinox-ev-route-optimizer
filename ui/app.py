@@ -74,10 +74,11 @@ class OptimizationRequest(BaseModel):
 @app.get("/api/index", response_class=HTMLResponse)
 async def serve_index():
     candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public", "index.html"),
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.html"),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "index.html"),
+        os.path.join(os.getcwd(), "public", "index.html"),
         os.path.join(os.getcwd(), "index.html"),
-        os.path.join(os.getcwd(), "ui", "templates", "index.html"),
     ]
     for p in candidates:
         if os.path.exists(p):
@@ -86,18 +87,7 @@ async def serve_index():
                     return HTMLResponse(content=f.read())
             except Exception:
                 pass
-    return HTMLResponse(
-        content='''<!DOCTYPE html>
-<html>
-<head>
-  <meta http-equiv="refresh" content="0; url=/">
-  <script>window.location.href = "/";</script>
-</head>
-<body>
-  <p>Loading <a href="/">Equinox EV Route Optimizer</a>...</p>
-</body>
-</html>'''
-    )
+    return HTMLResponse(content="""<!DOCTYPE html><html><head><title>Equinox EV Route Optimizer</title></head><body style='font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; text-align: center;'><h2>Equinox EV Route Optimizer API is active.</h2><p><a href='/' style='color: #10b981;'>Click here to return to dashboard</a></p></body></html>""")
 
 @app.get("/api/stations")
 async def get_stations():

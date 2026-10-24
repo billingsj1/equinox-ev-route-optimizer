@@ -1,0 +1,621 @@
+[
+  {
+    "id": "ionna-cambridge-oh",
+    "name": "IONNA - Cambridge, OH",
+    "network": "IONNA",
+    "city": "Cambridge",
+    "state": "OH",
+    "latitude": 40.0345,
+    "longitude": -81.5833,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.39,
+      "on_peak": 0.39
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.35,
+      "on_peak": 0.35
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/",
+    "price_verified": true
+  },
+  {
+    "id": "mb-washington-pa",
+    "name": "Mercedes-Benz HPC - Washington, PA",
+    "network": "Mercedes-Benz",
+    "city": "Washington",
+    "state": "PA",
+    "latitude": 40.174,
+    "longitude": -80.2462,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.44,
+      "on_peak": 0.44
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.44,
+      "on_peak": 0.44
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/",
+    "price_verified": true
+  },
+  {
+    "id": "ea-belle-vernon-pa",
+    "name": "Electrify America - Belle Vernon, PA",
+    "network": "Electrify America",
+    "city": "Belle Vernon",
+    "state": "PA",
+    "latitude": 40.1265,
+    "longitude": -79.8695,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "CHAdeMO"
+    ],
+    "rate_regular": {
+      "off_peak": 0.4,
+      "on_peak": 0.6
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.3,
+      "on_peak": 0.45
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://dcfctracker.com/stations/237974",
+    "price_verified": true
+  },
+  {
+    "id": "ea-new-stanton-pa",
+    "name": "Sheetz / Electrify America - New Stanton, PA",
+    "network": "Electrify America",
+    "city": "New Stanton",
+    "state": "PA",
+    "latitude": 40.2187,
+    "longitude": -79.6103,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.54,
+      "on_peak": 0.54
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.54,
+      "on_peak": 0.54
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/549749",
+    "price_verified": true
+  },
+  {
+    "id": "tesla-somerset-pa",
+    "name": "Tesla Supercharger (+CCS1 MagicDock) - Somerset, PA",
+    "network": "Tesla",
+    "city": "Somerset",
+    "state": "PA",
+    "latitude": 40.0084,
+    "longitude": -79.0781,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.56,
+      "on_peak": 0.56
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.41,
+      "on_peak": 0.41
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.tesla.com/findus?bounds=40.04563516929346%2C-78.9947205390625%2C39.98943325885038%2C-79.1595154609375&search=Somerset%2C%20PA%2015501&location=somersetsupercharger&functionType=party",
+    "price_verified": true
+  },
+  {
+    "id": "ag-somerset-pa",
+    "name": "Applegreen Electric - Somerset, PA (PA Turnpike)",
+    "network": "Applegreen",
+    "city": "Somerset",
+    "state": "PA",
+    "latitude": 40.015,
+    "longitude": -79.07,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/892354",
+    "price_verified": true
+  },
+  {
+    "id": "ea-bedford-pa",
+    "name": "Electrify America - Bedford, PA",
+    "network": "Electrify America",
+    "city": "Bedford",
+    "state": "PA",
+    "latitude": 40.0187,
+    "longitude": -78.5039,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.6,
+      "on_peak": 0.6
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.45,
+      "on_peak": 0.45
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/186738",
+    "price_verified": true
+  },
+  {
+    "id": "ag-bedford-pa",
+    "name": "Applegreen Electric - Bedford, PA (PA Turnpike)",
+    "network": "Applegreen",
+    "city": "Bedford",
+    "state": "PA",
+    "latitude": 40.021,
+    "longitude": -78.498,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/1820129",
+    "price_verified": true
+  },
+  {
+    "id": "ag-waterfall-pa",
+    "name": "Applegreen Electric - Blue Mountain / Waterfall, PA (PA Turnpike)",
+    "network": "Applegreen",
+    "city": "Waterfall",
+    "state": "PA",
+    "latitude": 40.155,
+    "longitude": -78.14,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.55,
+      "on_peak": 0.55
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://dcfctracker.com/stations/451875",
+    "price_verified": true
+  },
+  {
+    "id": "tesla-fort-littleton-pa",
+    "name": "Tesla Supercharger (+CCS1 MagicDock) - Fort Littleton, PA",
+    "network": "Tesla",
+    "city": "Fort Littleton",
+    "state": "PA",
+    "latitude": 40.0495,
+    "longitude": -77.962,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.56,
+      "on_peak": 0.56
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.41,
+      "on_peak": 0.41
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.tesla.com/findus?bounds=40.1641541900422%2C-77.79653640087889%2C39.939723054403245%2C-78.12543959912108&search=Fort%20Littleton%2C%20PA&location=26674&functionType=party",
+    "price_verified": true
+  },
+  {
+    "id": "fe-newburg-pa",
+    "name": "Francis Energy - Newburg, PA",
+    "network": "Francis Energy",
+    "city": "Newburg",
+    "state": "PA",
+    "latitude": 40.134,
+    "longitude": -77.556,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.54,
+      "on_peak": 0.54
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.54,
+      "on_peak": 0.54
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/1093182",
+    "price_verified": true
+  },
+  {
+    "id": "ag-newburg-pa",
+    "name": "Applegreen Electric - Newburg, PA (PA Turnpike)",
+    "network": "Applegreen",
+    "city": "Newburg",
+    "state": "PA",
+    "latitude": 40.135,
+    "longitude": -77.55,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/743932",
+    "price_verified": true
+  },
+  {
+    "id": "ea-carlisle-pa",
+    "name": "Electrify America - Carlisle, PA",
+    "network": "Electrify America",
+    "city": "Carlisle",
+    "state": "PA",
+    "latitude": 40.2014,
+    "longitude": -77.1889,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.44,
+      "on_peak": 0.64
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.33,
+      "on_peak": 0.48
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/552335",
+    "price_verified": true
+  },
+  {
+    "id": "ag-middletown-pa",
+    "name": "Applegreen Electric - Middletown, PA (PA Turnpike)",
+    "network": "Applegreen",
+    "city": "Middletown",
+    "state": "PA",
+    "latitude": 40.1989,
+    "longitude": -76.7314,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/631745",
+    "price_verified": true
+  },
+  {
+    "id": "ionna-chester-springs-pa",
+    "name": "IONNA - Chester Springs, PA",
+    "network": "IONNA",
+    "city": "Chester Springs",
+    "state": "PA",
+    "latitude": 40.0934,
+    "longitude": -75.6268,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.35,
+      "on_peak": 0.35
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.32,
+      "on_peak": 0.32
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/1451631",
+    "price_verified": true
+  },
+  {
+    "id": "cp-frostburg-md",
+    "name": "ChargePoint - Frostburg, MD",
+    "network": "ChargePoint",
+    "city": "Frostburg",
+    "state": "MD",
+    "latitude": 39.6582,
+    "longitude": -78.9284,
+    "power_kw": 125,
+    "connectors": [
+      "CCS1",
+      "CHAdeMO"
+    ],
+    "rate_regular": {
+      "off_peak": 0.34,
+      "on_peak": 0.34
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.34,
+      "on_peak": 0.34
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/338694",
+    "price_verified": true
+  },
+  {
+    "id": "cp-hancock-md",
+    "name": "ChargePoint - Hancock, MD",
+    "network": "ChargePoint",
+    "city": "Hancock",
+    "state": "MD",
+    "latitude": 39.6998,
+    "longitude": -78.1797,
+    "power_kw": 125,
+    "connectors": [
+      "CCS1",
+      "CHAdeMO"
+    ],
+    "rate_regular": {
+      "off_peak": 0.4,
+      "on_peak": 0.4
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.34,
+      "on_peak": 0.34
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://driver.chargepoint.com/stations/13210691",
+    "price_verified": true
+  },
+  {
+    "id": "ea-hagerstown-md",
+    "name": "Electrify America - Hagerstown, MD",
+    "network": "Electrify America",
+    "city": "Hagerstown",
+    "state": "MD",
+    "latitude": 39.6418,
+    "longitude": -77.72,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1"
+    ],
+    "rate_regular": {
+      "off_peak": 0.56,
+      "on_peak": 0.56
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": true,
+    "membership_rate": {
+      "off_peak": 0.42,
+      "on_peak": 0.42
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/169554",
+    "price_verified": true
+  },
+  {
+    "id": "ionna-frederick-md",
+    "name": "IONNA - Frederick, MD",
+    "network": "IONNA",
+    "city": "Frederick",
+    "state": "MD",
+    "latitude": 39.4143,
+    "longitude": -77.4105,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.39,
+      "on_peak": 0.39
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.35,
+      "on_peak": 0.35
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/1449991",
+    "price_verified": true
+  },
+  {
+    "id": "ionna-elkton-md",
+    "name": "IONNA - Elkton, MD",
+    "network": "IONNA",
+    "city": "Elkton",
+    "state": "MD",
+    "latitude": 39.6068,
+    "longitude": -75.8333,
+    "power_kw": 150,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.39,
+      "on_peak": 0.39
+    },
+    "gm_discount_eligible": true,
+    "gm_discount_pct": 0.1,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.35,
+      "on_peak": 0.35
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.plugshare.com/location/1483639",
+    "price_verified": true
+  }
+]
