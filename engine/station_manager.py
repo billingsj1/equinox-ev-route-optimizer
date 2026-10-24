@@ -36,9 +36,9 @@ class ChargingStation:
 
 class StationManager:
     def __init__(self, data_file_path: Optional[str] = None):
-        self.data_file_path = data_file_path or os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "data", "initial_prices.json"
-        )
+        prices_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "prices.json")
+        initial_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "initial_prices.json")
+        self.data_file_path = data_file_path or (prices_path if os.path.exists(prices_path) else initial_path)
         self.stations: List[ChargingStation] = []
         self.load_stations()
 
@@ -58,8 +58,20 @@ class StationManager:
             has_ccs1 = any("ccs" in c.lower() for c in connectors)
 
             if power_kw >= 100 and has_ccs1:
-                rate_reg = item.get("rate_regular", {})
-                rate_mem = item.get("membership_rate", {})
+                # Exclude unverified stations without confirmed pricing from route optimization
+                if not item.get("price_verified", True):
+                    continue
+
+                rate_reg = item.get("rate_regular") or {}
+                on_peak = rate_reg.get("on_peak")
+                if on_peak is None or float(on_peak) <= 0:
+                    continue
+                off_peak = rate_reg.get("off_peak") if rate_reg.get("off_peak") is not None else on_peak
+
+                rate_mem = item.get("membership_rate") or {}
+                mem_on = rate_mem.get("on_peak") if rate_mem.get("on_peak") is not None else on_peak
+                mem_off = rate_mem.get("off_peak") if rate_mem.get("off_peak") is not None else off_peak
+
                 self.stations.append(ChargingStation(
                     id=item.get("id"),
                     name=item.get("name"),
@@ -70,13 +82,13 @@ class StationManager:
                     longitude=float(item.get("longitude")),
                     power_kw=power_kw,
                     connectors=connectors,
-                    rate_off_peak=float(rate_reg.get("off_peak", 0.45)),
-                    rate_on_peak=float(rate_reg.get("on_peak", 0.45)),
+                    rate_off_peak=float(off_peak),
+                    rate_on_peak=float(on_peak),
                     gm_discount_eligible=bool(item.get("gm_discount_eligible", False)),
                     gm_discount_pct=float(item.get("gm_discount_pct", 0.0)),
                     ea_pass_eligible=bool(item.get("ea_pass_eligible", False)),
-                    membership_rate_off_peak=float(rate_mem.get("off_peak", 0.45)),
-                    membership_rate_on_peak=float(rate_mem.get("on_peak", 0.45)),
+                    membership_rate_off_peak=float(mem_off),
+                    membership_rate_on_peak=float(mem_on),
                     session_fee=float(item.get("session_fee", 0.0)),
                     plugshare_url=item.get("plugshare_url", "")
                 ))

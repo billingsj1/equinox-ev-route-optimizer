@@ -253,18 +253,29 @@ class PullOcmRequest(BaseModel):
 async def pull_ocm_stations(req: PullOcmRequest):
     pipeline = PricingScraperPipeline(ocm_key=req.api_key)
     updated = await pipeline.pull_ocm_stations(states=req.states)
+    station_manager.load_stations()
     return {"status": "ok", "count": len(updated), "stations": updated}
 
 @app.post("/api/stations/refresh-prices")
 async def refresh_prices():
     pipeline = PricingScraperPipeline()
     updated = await pipeline.refresh_prices()
+    station_manager.load_stations()
     return {"status": "ok", "count": len(updated), "stations": updated}
+
+@app.post("/api/stations/reset")
+@app.post("/api/stations/clear")
+async def reset_stations():
+    pipeline = PricingScraperPipeline()
+    baseline = pipeline.reset_to_baseline()
+    station_manager.load_stations()
+    return {"status": "ok", "count": len(baseline), "stations": baseline}
 
 @app.post("/api/stations/update-price")
 async def update_single_price(req: UpdatePriceRequest):
     pipeline = PricingScraperPipeline()
     st = pipeline.update_single_station_price(req.station_id, req.price)
     if st:
+        station_manager.load_stations()
         return {"status": "ok", "station": st}
     return JSONResponse(status_code=404, content={"status": "error", "message": "Station not found"})
