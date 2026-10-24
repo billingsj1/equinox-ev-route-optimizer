@@ -1,8 +1,9 @@
 """
-Orchestrator for automated CPO discovery and live price scraping pipeline.
+Orchestrator for automated CPO discovery and real station-specific price scraper pipeline.
 Discovers stations via Open Charge Map (OCM) in OH, PA, NJ, WV, MD (CCS1 >= 100 kW),
-scrapes network pricing (IONNA, Mercedes-Benz HPC, ChargePoint live API, DCFC Tracker for EA/Applegreen/EVgo/Francis),
-persists verified rates, and flags unverified stations for manual inspection.
+scrapes station-specific pricing from DCFC Tracker, IONNA, Mercedes-Benz HPC, and ChargePoint live endpoints,
+persists verified rates with direct inspection URLs, and flags unverified stations for manual entry.
+Never uses synthetic flat network tariffs.
 """
 import asyncio
 import json
@@ -25,16 +26,18 @@ logger = logging.getLogger("pricing_pipeline")
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 PRICES_JSON = os.path.join(DATA_DIR, "prices.json")
 INITIAL_PRICES_JSON = os.path.join(DATA_DIR, "initial_prices.json")
+SCRAPED_PRICES_JSON = os.path.join(DATA_DIR, "scraped_prices.json")
 PRICES_DB = os.path.join(DATA_DIR, "prices.db")
 
-NETWORK_TARIFFS = {
-    "IONNA": {"off": 0.39, "on": 0.39, "gm": True, "gm_pct": 0.10, "ea_pass": False},
-    "Mercedes-Benz": {"off": 0.44, "on": 0.44, "gm": False, "ea_pass": False},
-    "Electrify America": {"off": 0.56, "on": 0.56, "gm": False, "ea_pass": True},
-    "Applegreen": {"off": 0.55, "on": 0.55, "gm": False, "ea_pass": False},
-    "ChargePoint": {"off": 0.40, "on": 0.40, "gm": False, "ea_pass": False},
-    "EVgo": {"off": 0.46, "on": 0.56, "gm": True, "gm_pct": 0.10, "ea_pass": False},
-    "Francis Energy": {"off": 0.54, "on": 0.54, "gm": False, "ea_pass": False}
+# Known manually verified station tariffs
+MANUALLY_VERIFIED_OVERRIDES = {
+    "cp-hancock-md": {"price": 0.40, "url": "https://driver.chargepoint.com/stations/13210691"},
+    "ag-waterfall-pa": {"price": 0.55, "url": "https://dcfctracker.com/stations/451875"},
+    "ea-belle-vernon-pa": {"price": 0.60, "url": "https://dcfctracker.com/stations/237974"},
+    "ionna-cambridge-oh": {"price": 0.39, "url": "https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/"},
+    "mb-washington-pa": {"price": 0.44, "url": "https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/"},
+    "tesla-somerset-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://www.tesla.com/findus?bounds=40.04563516929346%2C-78.9947205390625%2C39.98943325885038%2C-79.1595154609375&search=Somerset%2C%20PA%2015501&location=somersetsupercharger&functionType=party"},
+    "tesla-fort-littleton-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://www.tesla.com/findus?bounds=40.1641541900422%2C-77.79653640087889%2C39.939723054403245%2C-78.12543959912108&search=Fort%20Littleton%2C%20PA&location=26674&functionType=party"}
 }
 
 def haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -118,6 +121,12 @@ class PricingScraperPipeline:
                 return json.load(f)
         return []
 
+    def load_scraped_database(self) -> Dict[str, Any]:
+        if os.path.exists(SCRAPED_PRICES_JSON):
+            with open(SCRAPED_PRICES_JSON, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return {"dcfc": [], "ionna": [], "mercedes": []}
+
     def load_existing_stations(self) -> Dict[str, Dict[str, Any]]:
         stations = {}
         for path in [INITIAL_PRICES_JSON, PRICES_JSON]:
@@ -146,14 +155,74 @@ class PricingScraperPipeline:
         logger.info(f"Database reset to baseline ({len(baseline)} stations).")
         return baseline
 
+    def match_station_price(
+        self,
+        st_id: str,
+        network: str,
+        state: str,
+        city: str,
+        title: str,
+        address: str,
+        lat: Optional[float],
+        lon: Optional[float],
+        usage_cost: Optional[str],
+        scraped_db: Dict[str, Any]
+    ) -> Tuple[Optional[float], Optional[str]]:
+        """
+        Matches station against real scraped sources with NO synthetic guessing.
+        Returns (price, source_url) or (None, fallback_url).
+        """
+        # 1. Check manually verified overrides
+        if st_id in MANUALLY_VERIFIED_OVERRIDES:
+            ov = MANUALLY_VERIFIED_OVERRIDES[st_id]
+            return ov["price"], ov["url"]
+
+        # 2. Check IONNA real scraped stations
+        if network == "IONNA" and lat is not None and lon is not None:
+            for ion in scraped_db.get("ionna", []):
+                if haversine_miles(lat, lon, ion["lat"], ion["lon"]) < 1.0:
+                    return ion["price"], ion["url"]
+
+        # 3. Check DCFC Tracker real scraped stations (network + state + address / name match)
+        line_clean = (address or "").lower()
+        town_clean = (city or "").lower()
+        title_clean = (title or "").lower()
+        st_upper = (state or "").strip().upper()
+
+        for d in scraped_db.get("dcfc", []):
+            if d.get("state") == st_upper and (d.get("network", "").lower() == network.lower() or network.lower() in d.get("network", "").lower()):
+                d_name = d.get("name", "").lower()
+                d_addr = d.get("address", "").lower()
+
+                # Match by street address number
+                addr_nums = re.findall(r'\b\d{3,5}\b', line_clean)
+                if addr_nums and any(num in d_addr for num in addr_nums):
+                    return d["price"], d["url"]
+
+                # Match by exact town in name
+                if town_clean and len(town_clean) > 3 and town_clean in d_name:
+                    return d["price"], d["url"]
+
+                # Match title words
+                title_words = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', title_clean) if w not in ["station", "supercharger", "charger", "fast"]]
+                if title_words and any(w in d_name for w in title_words):
+                    return d["price"], d["url"]
+
+        # 4. Check OCM UsageCost field
+        if usage_cost:
+            m = re.search(r'\$?(\d+\.\d{2})', usage_cost)
+            if m:
+                val = float(m.group(1))
+                if 0.10 <= val <= 1.50:
+                    return val, None
+
+        return None, None
+
     async def pull_ocm_stations(self, states: List[str] = None) -> List[Dict[str, Any]]:
         existing = self.load_existing_stations()
         ocm_items = await self.ocm_client.discover_chargers_for_states(states=states)
         added_count = 0
-
-        ionna_tariffs = await self.ionna_adapter.fetch_prices_for_bounding_box(37.0, -85.0, 42.5, -73.5)
-        mercedes_tariffs = await self.mercedes_adapter.fetch_prices_for_bounding_box(37.0, -85.0, 42.5, -73.5)
-        dcfc_records = await self.dcfc_adapter.fetch_prices_for_states(["pa", "oh", "md", "nj", "wv"])
+        scraped_db = self.load_scraped_database()
 
         for item in ocm_items:
             addr = item.get("AddressInfo", {})
@@ -201,33 +270,23 @@ class PricingScraperPipeline:
                 if p and p > max_kw:
                     max_kw = float(p)
 
-            # AUTOMATIC PRICE DISCOVERY:
+            st_id = f"{network.lower().replace(' ', '-')}-{addr.get('ID', item.get('ID'))}"
+            city = addr.get("Town", "")
+            state = (addr.get("StateOrProvince", "")).strip().upper()
+            title = addr.get("Title", "Station")
+            line1 = addr.get("AddressLine1", "")
+            uc = item.get("UsageCost")
+
+            # Try ChargePoint live lookup if ChargePoint
             verified_price: Optional[float] = None
-            source_url = addr.get("RelatedURL") or f"https://openchargemap.org/site/poi/details/{item.get('ID')}"
+            source_url: Optional[str] = None
 
-            # 1. Match against IONNA
-            if network == "IONNA":
-                for it in ionna_tariffs:
-                    if haversine_miles(it.latitude, it.longitude, lat, lon) < 1.0:
-                        verified_price = it.rate_on_peak
-                        source_url = it.plugshare_url
-                        break
-
-            # 2. Match against Mercedes
-            elif network == "Mercedes-Benz":
-                for mb in mercedes_tariffs:
-                    if haversine_miles(mb.latitude, mb.longitude, lat, lon) < 1.0:
-                        verified_price = mb.rate_on_peak
-                        source_url = mb.plugshare_url
-                        break
-
-            # 3. Match against ChargePoint
-            elif network == "ChargePoint":
+            if network == "ChargePoint":
                 try:
-                    cp_results = await self.chargepoint_adapter.fetch_prices_for_bounding_box(
+                    cp_list = await self.chargepoint_adapter.fetch_prices_for_bounding_box(
                         lat - 0.05, lon - 0.05, lat + 0.05, lon + 0.05
                     )
-                    for cp in cp_results:
+                    for cp in cp_list:
                         if haversine_miles(cp.latitude, cp.longitude, lat, lon) < 0.5:
                             verified_price = cp.rate_on_peak
                             source_url = cp.plugshare_url
@@ -235,44 +294,24 @@ class PricingScraperPipeline:
                 except Exception:
                     pass
 
-            # 4. Match against DCFC Tracker
-            if verified_price is None and dcfc_records:
-                city_clean = (addr.get("Town") or "").strip().lower()
-                for rec in dcfc_records:
-                    if network.lower() in rec["network"].lower() or rec["network"].lower() in network.lower():
-                        if city_clean and (city_clean in rec["name"].lower() or city_clean in rec["address"].lower()):
-                            verified_price = rec["price"]
-                            source_url = rec["url"]
-                            break
-
-            # 5. Check UsageCost field
             if verified_price is None:
-                uc = item.get("UsageCost") or ""
-                m = re.search(r'\$?(\d+\.\d{2})', uc)
-                if m:
-                    p = float(m.group(1))
-                    if 0.10 <= p <= 1.50:
-                        verified_price = p
+                verified_price, source_url = self.match_station_price(
+                    st_id, network, state, city, title, line1, lat, lon, uc, scraped_db
+                )
 
-            # 6. Fallback to verified network published tariff
-            if verified_price is None and network in NETWORK_TARIFFS:
-                verified_price = NETWORK_TARIFFS[network]["on"]
-                state_code = (addr.get("StateOrProvince") or "").strip().upper()
-                if network == "Electrify America" and state_code == "PA":
-                    verified_price = 0.60
-                elif network == "Mercedes-Benz" and state_code == "OH":
-                    verified_price = 0.40
+            # Fallback inspection URL
+            if not source_url:
+                source_url = addr.get("RelatedURL") or f"https://openchargemap.org/site/poi/details/{item.get('ID')}"
 
-            st_id = f"{network.lower().replace(' ', '-')}-{addr.get('ID', item.get('ID'))}"
             is_verified = (verified_price is not None)
             rate_val = verified_price if is_verified else None
 
             new_station = {
                 "id": st_id,
-                "name": f"{network} - {addr.get('Title', 'Station')}",
+                "name": f"{network} - {title}",
                 "network": network,
-                "city": addr.get("Town", ""),
-                "state": addr.get("StateOrProvince", "").strip().upper(),
+                "city": city,
+                "state": state,
                 "latitude": round(lat, 5),
                 "longitude": round(lon, 5),
                 "power_kw": max_kw,
@@ -306,78 +345,37 @@ class PricingScraperPipeline:
 
     async def refresh_prices(self) -> List[Dict[str, Any]]:
         existing = self.load_existing_stations()
-
-        ionna_tariffs = await self.ionna_adapter.fetch_prices_for_bounding_box(37.0, -85.0, 42.5, -73.5)
-        for it in ionna_tariffs:
-            for ex in existing.values():
-                if ex.get("network") == "IONNA":
-                    if haversine_miles(it.latitude, it.longitude, ex["latitude"], ex["longitude"]) < 1.0:
-                        ex["rate_regular"]["off_peak"] = it.rate_off_peak
-                        ex["rate_regular"]["on_peak"] = it.rate_on_peak
-                        ex["price_verified"] = True
-                        ex["plugshare_url"] = it.plugshare_url
-
-        mercedes_tariffs = await self.mercedes_adapter.fetch_prices_for_bounding_box(37.0, -85.0, 42.5, -73.5)
-        for mb in mercedes_tariffs:
-            for ex in existing.values():
-                if ex.get("network") == "Mercedes-Benz":
-                    if haversine_miles(mb.latitude, mb.longitude, ex["latitude"], ex["longitude"]) < 1.0:
-                        ex["rate_regular"]["off_peak"] = mb.rate_off_peak
-                        ex["rate_regular"]["on_peak"] = mb.rate_on_peak
-                        ex["price_verified"] = True
-                        ex["plugshare_url"] = mb.plugshare_url
-
-        dcfc_records = await self.dcfc_adapter.fetch_prices_for_states(["pa", "oh", "md", "nj", "wv"])
-        for rec in dcfc_records:
-            for ex in existing.values():
-                if ex.get("network", "").lower() in rec["network"].lower():
-                    city = (ex.get("city") or "").strip().lower()
-                    if city and (city in rec["name"].lower() or city in rec["address"].lower()):
-                        ex["rate_regular"]["off_peak"] = rec["price"]
-                        ex["rate_regular"]["on_peak"] = rec["price"]
-                        ex["price_verified"] = True
-                        ex["plugshare_url"] = rec["url"]
+        scraped_db = self.load_scraped_database()
+        refreshed_count = 0
 
         for ex in existing.values():
-            if ex.get("network") == "ChargePoint" and not ex.get("price_verified"):
-                try:
-                    cp_list = await self.chargepoint_adapter.fetch_prices_for_bounding_box(
-                        ex["latitude"] - 0.05, ex["longitude"] - 0.05,
-                        ex["latitude"] + 0.05, ex["longitude"] + 0.05
-                    )
-                    for cp in cp_list:
-                        if haversine_miles(cp.latitude, cp.longitude, ex["latitude"], ex["longitude"]) < 0.5:
-                            ex["rate_regular"]["off_peak"] = cp.rate_off_peak
-                            ex["rate_regular"]["on_peak"] = cp.rate_on_peak
-                            ex["price_verified"] = True
-                            ex["plugshare_url"] = cp.plugshare_url
-                            break
-                except Exception:
-                    pass
+            st_id = ex["id"]
+            net = ex.get("network", "Other")
+            st = ex.get("state", "")
+            city = ex.get("city", "")
+            name = ex.get("name", "")
+            lat = ex.get("latitude")
+            lon = ex.get("longitude")
 
-        # Infallible fallback resolver: ensure NO station on a target network is left unverified
-        for ex in existing.values():
-            if not ex.get("price_verified") or ex.get("rate_regular", {}).get("on_peak") is None:
-                net = ex.get("network")
-                if net in NETWORK_TARIFFS:
-                    tar = NETWORK_TARIFFS[net]
-                    price = tar["on"]
-                    if net == "Electrify America" and ex.get("state") == "PA":
-                        price = 0.60
-                    elif net == "Mercedes-Benz" and ex.get("state") == "OH":
-                        price = 0.40
-                    ex["rate_regular"]["off_peak"] = price
-                    ex["rate_regular"]["on_peak"] = price
-                    ex["price_verified"] = True
-                    if ex.get("ea_pass_eligible"):
-                        ex["membership_rate"]["off_peak"] = round(price * 0.75, 2)
-                        ex["membership_rate"]["on_peak"] = round(price * 0.75, 2)
+            price, url = self.match_station_price(
+                st_id, net, st, city, name, "", lat, lon, None, scraped_db
+            )
+            if price is not None:
+                ex["rate_regular"]["off_peak"] = price
+                ex["rate_regular"]["on_peak"] = price
+                ex["price_verified"] = True
+                if url:
+                    ex["plugshare_url"] = url
+                if ex.get("ea_pass_eligible"):
+                    ex["membership_rate"]["off_peak"] = round(price * 0.75, 2)
+                    ex["membership_rate"]["on_peak"] = round(price * 0.75, 2)
+                refreshed_count += 1
 
         final_list = list(existing.values())
         with open(PRICES_JSON, "w", encoding="utf-8") as f:
             json.dump(final_list, f, indent=2)
         self._save_to_sqlite(final_list)
-        logger.info(f"Refreshed pricing for {len(final_list)} stations.")
+        logger.info(f"Refreshed pricing for {refreshed_count} stations.")
         return final_list
 
     def update_single_station_price(self, station_id: str, new_price: float) -> Optional[Dict[str, Any]]:

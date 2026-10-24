@@ -2116,61 +2116,134 @@
     const OCM_TARGET_STATES = ["OH", "PA", "NJ", "WV", "MD"];
 
     // Initialize Station Data from localStorage if present
-        const NETWORK_VERIFIED_TARIFFS = {
-      "IONNA": { on: 0.39, off: 0.39, gm: true, gm_pct: 0.10, ea_pass: false, mem_on: 0.35, mem_off: 0.35 },
-      "Mercedes-Benz": { on: 0.44, off: 0.44, gm: false, ea_pass: false, mem_on: 0.44, mem_off: 0.44 },
-      "Electrify America": { on: 0.56, off: 0.56, gm: false, ea_pass: true, mem_on: 0.42, mem_off: 0.42 },
-      "Applegreen": { on: 0.55, off: 0.55, gm: false, ea_pass: false, mem_on: 0.55, mem_off: 0.55 },
-      "ChargePoint": { on: 0.40, off: 0.40, gm: false, ea_pass: false, mem_on: 0.40, mem_off: 0.40 },
-      "EVgo": { on: 0.56, off: 0.46, gm: true, gm_pct: 0.10, ea_pass: false, mem_on: 0.50, mem_off: 0.41 },
-      "Francis Energy": { on: 0.54, off: 0.54, gm: false, ea_pass: false, mem_on: 0.54, mem_off: 0.54 }
+            let SCRAPED_DATABASE = null;
+
+    async function loadScrapedDatabase() {
+      if (SCRAPED_DATABASE) return SCRAPED_DATABASE;
+      try {
+        const resp = await fetch('data/scraped_prices.json');
+        if (resp.ok) {
+          SCRAPED_DATABASE = await resp.json();
+          return SCRAPED_DATABASE;
+        }
+      } catch (e) {
+        console.warn("Could not load local data/scraped_prices.json, trying GitHub raw:", e);
+      }
+      try {
+        const rawUrl = 'https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/scraped_prices.json';
+        const resp2 = await fetch(rawUrl);
+        if (resp2.ok) {
+          SCRAPED_DATABASE = await resp2.json();
+          return SCRAPED_DATABASE;
+        }
+      } catch (e2) {
+        console.warn("Could not load scraped database from GitHub:", e2);
+      }
+      return null;
+    }
+
+    const MANUALLY_VERIFIED_OVERRIDES = {
+      'cp-hancock-md': { on: 0.40, off: 0.40, url: 'https://driver.chargepoint.com/stations/13210691', verified: true },
+      'ag-waterfall-pa': { on: 0.55, off: 0.55, url: 'https://dcfctracker.com/stations/451875', verified: true },
+      'ea-belle-vernon-pa': { on: 0.60, off: 0.40, url: 'https://dcfctracker.com/stations/237974', verified: true },
+      'ionna-cambridge-oh': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/', verified: true },
+      'mb-washington-pa': { on: 0.44, off: 0.44, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
+      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus?bounds=40.04563516929346%2C-78.9947205390625%2C39.98943325885038%2C-79.1595154609375&search=Somerset%2C%20PA%2015501&location=somersetsupercharger&functionType=party', verified: true },
+      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus?bounds=40.1641541900422%2C-77.79653640087889%2C39.939723054403245%2C-78.12543959912108&search=Fort%20Littleton%2C%20PA&location=26674&functionType=party', verified: true }
     };
 
-    function resolveStationPricing(station) {
-      // 1. Specific known verified overrides
-      if (station.id === 'ionna-cambridge-oh') return { on: 0.39, off: 0.39, verified: true };
-      if (station.id === 'mb-washington-pa') return { on: 0.44, off: 0.44, verified: true };
-      if (station.id === 'ea-belle-vernon-pa') return { on: 0.60, off: 0.40, verified: true };
-      if (station.id === 'ag-waterfall-pa') return { on: 0.55, off: 0.55, verified: true };
-      if (station.id === 'cp-hancock-md') return { on: 0.40, off: 0.40, verified: true };
-      if (station.id === 'tesla-somerset-pa') return { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, verified: true };
-      if (station.id === 'tesla-fort-littleton-pa') return { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, verified: true };
+    function matchStationToScrapedData(station, db) {
+      // 1. Manually verified overrides
+      if (MANUALLY_VERIFIED_OVERRIDES[station.id]) {
+        return MANUALLY_VERIFIED_OVERRIDES[station.id];
+      }
 
-      // 2. Check OCM UsageCost field
+      // 2. Check IONNA real scraped stations
+      if (station.network === 'IONNA' && db && db.ionna && station.lat && station.lon) {
+        for (const ion of db.ionna) {
+          if (haversineMiles(station.lat, station.lon, ion.lat, ion.lon) < 1.0) {
+            return {
+              on: ion.price,
+              off: ion.price,
+              mem_on: Math.round(ion.price * 0.90 * 100) / 100,
+              mem_off: Math.round(ion.price * 0.90 * 100) / 100,
+              url: ion.url,
+              verified: true
+            };
+          }
+        }
+      }
+
+      // 3. Check DCFC Tracker real scraped stations (network + state + address / name match)
+      if (db && db.dcfc && station.network && station.state) {
+        const netLower = station.network.toLowerCase();
+        const stUpper = (station.state || '').trim().toUpperCase();
+        const lineClean = (station.address || station.name || '').toLowerCase();
+        const townClean = (station.city || '').toLowerCase();
+
+        for (const d of db.dcfc) {
+          if (d.state === stUpper && (d.network.toLowerCase() === netLower || netLower.includes(d.network.toLowerCase()) || d.network.toLowerCase().includes(netLower))) {
+            const dName = (d.name || '').toLowerCase();
+            const dAddr = (d.address || '').toLowerCase();
+
+            // Match address numbers (e.g. 1091 Main, 61205 Southgate)
+            const addrNums = lineClean.match(/\b\d{3,5}\b/g);
+            if (addrNums && addrNums.some(num => dAddr.includes(num))) {
+              const ea = netLower.includes('electrify');
+              return {
+                on: d.price,
+                off: d.price,
+                mem_on: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
+                mem_off: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
+                url: d.url,
+                verified: true
+              };
+            }
+
+            // Match town in name
+            if (townClean && townClean.length > 3 && dName.includes(townClean)) {
+              const ea = netLower.includes('electrify');
+              return {
+                on: d.price,
+                off: d.price,
+                mem_on: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
+                mem_off: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
+                url: d.url,
+                verified: true
+              };
+            }
+          }
+        }
+      }
+
+      // 4. Check OCM UsageCost field
       const uc = station.usage_cost || '';
       const m = uc.match(/\$?(\d+\.\d{2})/);
       if (m) {
         const val = parseFloat(m[1]);
         if (val >= 0.10 && val <= 1.50) {
-          return { on: val, off: val, verified: true };
+          const ea = (station.network || '').toLowerCase().includes('electrify');
+          return {
+            on: val,
+            off: val,
+            mem_on: ea ? Math.round(val * 0.75 * 100) / 100 : val,
+            mem_off: ea ? Math.round(val * 0.75 * 100) / 100 : val,
+            url: station.plug,
+            verified: true
+          };
         }
       }
 
-      // 3. Network verified published tariff
-      const net = station.network;
-      if (NETWORK_VERIFIED_TARIFFS[net]) {
-        const t = NETWORK_VERIFIED_TARIFFS[net];
-        let on = t.on;
-        let off = t.off;
-        if (net === "Electrify America" && station.state === "PA") on = 0.60;
-        if (net === "Mercedes-Benz" && station.state === "OH") { on = 0.40; off = 0.40; }
-        return {
-          on: on,
-          off: off,
-          mem_on: t.mem_on,
-          mem_off: t.mem_off,
-          verified: true
-        };
+      // If station already had a valid numeric price entered by user
+      if (station.price_verified && station.on != null && station.on > 0) {
+        return { on: station.on, off: station.off || station.on, url: station.plug, verified: true };
       }
 
-      if (station.on != null && station.on > 0) {
-        return { on: station.on, off: station.off || station.on, verified: true };
-      }
-
-      return { on: null, off: null, verified: false };
+      // Unmatched: NEVER guess a synthetic rate!
+      return { on: null, off: null, url: station.plug, verified: false };
     }
 
-    function initStationData() {
+    async function initStationData() {
       try {
         const saved = localStorage.getItem('equinox_custom_stations');
         if (saved) {
@@ -2190,21 +2263,25 @@
         console.warn("Could not load stations from localStorage:", e);
       }
 
-      // Automatically resolve any stations that lack pricing
-      ALL_STATIONS.forEach(s => {
-        if (!s.price_verified || s.on == null || s.on <= 0) {
-          const res = resolveStationPricing(s);
-          if (res.verified) {
-            s.on = res.on;
-            s.off = res.off;
-            if (res.mem_on) s.mem_on = res.mem_on;
-            if (res.mem_off) s.mem_off = res.mem_off;
-            s.price_verified = true;
+      // Load real scraped station database to match any unverified stations
+      const db = await loadScrapedDatabase();
+      if (db) {
+        ALL_STATIONS.forEach(s => {
+          if (!s.price_verified || s.on == null || s.on <= 0) {
+            const res = matchStationToScrapedData(s, db);
+            if (res.verified) {
+              s.on = res.on;
+              s.off = res.off;
+              if (res.mem_on) s.mem_on = res.mem_on;
+              if (res.mem_off) s.mem_off = res.mem_off;
+              if (res.url) s.plug = res.url;
+              s.price_verified = true;
+            }
           }
-        }
-      });
+        });
+        saveStationsToStorage();
+      }
 
-      saveStationsToStorage();
       updateStationManagerBadge();
       renderUnverifiedStations();
     }
@@ -2239,137 +2316,90 @@
       statusBox.innerHTML = `
         <div class="flex items-center gap-2 text-cyan-400 font-medium">
           <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
-          <span>Querying OCM & resolving verified tariffs for OH, PA, NJ, WV, MD...</span>
+          <span>Querying OCM and matching real station-by-station prices...</span>
         </div>
       `;
       lucide.createIcons();
 
       let newlyAdded = 0;
       let newlyVerified = 0;
+      const db = await loadScrapedDatabase();
 
-      // 1. Try Backend API first
-      let backendOk = false;
-      try {
-        const resp = await fetch('/api/stations/pull-ocm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            api_key: OCM_API_KEY,
-            states: OCM_TARGET_STATES
-          })
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.stations && data.stations.length > 0) {
-            backendOk = true;
-            data.stations.forEach(srvSt => {
-              const ex = ALL_STATIONS.find(s => s.id === srvSt.id);
-              const rateReg = srvSt.rate_regular || {};
-              const onRate = rateReg.on_peak != null ? rateReg.on_peak : null;
-              const offRate = rateReg.off_peak != null ? rateReg.off_peak : null;
-              const isVer = Boolean(srvSt.price_verified && onRate != null);
+      // Client-side OCM fetch with state bounding box & real scraper cross-referencing
+      const opIds = Object.keys(OCM_TARGET_OPERATORS).join(',');
+      for (const state of OCM_TARGET_STATES) {
+        const url = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=US&statename=${state}&operatorid=${opIds}&connectiontypeid=32&minpowerkw=100&maxresults=100`;
+        try {
+          const resp = await fetch(url, {
+            headers: { "User-Agent": "Equinox-Route-Optimizer/1.0", "X-API-Key": OCM_API_KEY }
+          });
+          if (resp.ok) {
+            const pois = await resp.json();
+            pois.forEach(poi => {
+              const addr = poi.AddressInfo || {};
+              const lat = addr.Latitude;
+              const lon = addr.Longitude;
+              if (!lat || !lon) return;
 
-              if (ex) {
-                ex.on = onRate;
-                ex.off = offRate;
-                ex.price_verified = isVer;
-                if (srvSt.plugshare_url) ex.plug = srvSt.plugshare_url;
-              } else {
-                ALL_STATIONS.push({
-                  id: srvSt.id,
-                  name: srvSt.name,
-                  network: srvSt.network,
-                  lat: srvSt.latitude,
-                  lon: srvSt.longitude,
-                  city: srvSt.city || '',
-                  state: srvSt.state || '',
-                  kw: srvSt.power_kw,
-                  off: offRate,
-                  on: onRate,
-                  gm: srvSt.gm_discount_eligible,
-                  gm_pct: srvSt.gm_discount_pct || 0.0,
-                  ea_pass: srvSt.ea_pass_eligible,
-                  plug: srvSt.plugshare_url || '',
-                  price_verified: isVer
+              const stCode = (addr.StateOrProvince || '').trim().toUpperCase();
+              if (stCode !== state && stCode !== `${state}.`) return;
+
+              const exists = ALL_STATIONS.some(s => haversineMiles(s.lat, s.lon, lat, lon) < 0.5);
+              if (!exists) {
+                const opId = poi.OperatorID;
+                const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
+                const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
+                const gm = network === "IONNA" || network === "EVgo";
+                const ea_pass = network === "Electrify America";
+
+                let maxKw = 150;
+                (poi.Connections || []).forEach(conn => {
+                  const p = conn.PowerKW;
+                  if (p && p > maxKw) maxKw = Math.round(p);
                 });
+
+                let sourceUrl = addr.RelatedURL || `https://openchargemap.org/site/poi/details/${poi.ID}`;
+
+                // Real station-specific price matching
+                const res = matchStationToScrapedData({
+                  id: `ocm-${poi.ID}`,
+                  network: network,
+                  state: state,
+                  city: addr.Town || '',
+                  address: addr.AddressLine1 || '',
+                  name: addr.Title || '',
+                  lat: lat,
+                  lon: lon,
+                  usage_cost: poi.UsageCost || '',
+                  plug: sourceUrl
+                }, db);
+
+                const newSt = {
+                  id: `ocm-${poi.ID || Math.round(Math.random()*100000)}`,
+                  name: `${network} - ${addr.Title || 'Fast Charger'}`,
+                  network: network,
+                  lat: Math.round(lat * 10000) / 10000,
+                  lon: Math.round(lon * 10000) / 10000,
+                  city: addr.Town || '',
+                  state: state,
+                  kw: maxKw,
+                  off: res.off,
+                  on: res.on,
+                  gm: gm,
+                  gm_pct: gm ? 0.10 : 0.0,
+                  ea_pass: ea_pass,
+                  plug: res.url || sourceUrl,
+                  price_verified: res.verified,
+                  ocm_id: poi.ID
+                };
+                ALL_STATIONS.push(newSt);
                 newlyAdded++;
-                if (isVer) newlyVerified++;
+                if (res.verified) newlyVerified++;
               }
             });
           }
-        }
-      } catch (e) {
-        console.warn("Backend pull-ocm not reachable, using client-side OCM fetch:", e);
-      }
-
-      // 2. Client-side fallback if backend not available
-      if (!backendOk) {
-        const opIds = Object.keys(OCM_TARGET_OPERATORS).join(',');
-        for (const state of OCM_TARGET_STATES) {
-          const url = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=US&statename=${state}&operatorid=${opIds}&connectiontypeid=32&minpowerkw=100&maxresults=100`;
-          try {
-            const resp = await fetch(url, {
-              headers: { "User-Agent": "Equinox-Route-Optimizer/1.0", "X-API-Key": OCM_API_KEY }
-            });
-            if (resp.ok) {
-              const pois = await resp.json();
-              pois.forEach(poi => {
-                const addr = poi.AddressInfo || {};
-                const lat = addr.Latitude;
-                const lon = addr.Longitude;
-                if (!lat || !lon) return;
-
-                const exists = ALL_STATIONS.some(s => haversineMiles(s.lat, s.lon, lat, lon) < 0.5);
-                if (!exists) {
-                  const opId = poi.OperatorID;
-                  const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
-                  const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
-                  const gm = network === "IONNA" || network === "EVgo";
-                  const ea_pass = network === "Electrify America";
-
-                  let maxKw = 150;
-                  (poi.Connections || []).forEach(conn => {
-                    const p = conn.PowerKW;
-                    if (p && p > maxKw) maxKw = Math.round(p);
-                  });
-
-                  let sourceUrl = addr.RelatedURL || `https://openchargemap.org/site/poi/details/${poi.ID}`;
-
-                  // Auto-resolve verified price
-                  const pricing = resolveStationPricing({
-                    id: `ocm-${poi.ID}`,
-                    network: network,
-                    state: state,
-                    usage_cost: poi.UsageCost || ''
-                  });
-
-                  const newSt = {
-                    id: `ocm-${poi.ID || Math.round(Math.random()*100000)}`,
-                    name: `${network} - ${addr.Title || 'Fast Charger'}`,
-                    network: network,
-                    lat: Math.round(lat * 10000) / 10000,
-                    lon: Math.round(lon * 10000) / 10000,
-                    city: addr.Town || '',
-                    state: state,
-                    kw: maxKw,
-                    off: pricing.off,
-                    on: pricing.on,
-                    gm: gm,
-                    gm_pct: gm ? 0.10 : 0.0,
-                    ea_pass: ea_pass,
-                    plug: sourceUrl,
-                    price_verified: pricing.verified,
-                    ocm_id: poi.ID
-                  };
-                  ALL_STATIONS.push(newSt);
-                  newlyAdded++;
-                  if (pricing.verified) newlyVerified++;
-                }
-              });
-            }
-          } catch (err) {
-            console.warn(`Error querying state ${state}:`, err);
-          }
+        } catch (err) {
+          console.warn(`Error querying state ${state}:`, err);
         }
       }
 
@@ -2378,10 +2408,10 @@
       statusBox.innerHTML = `
         <div class="text-emerald-400 font-semibold flex items-center gap-1.5">
           <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span>OCM Discovery Complete: Added ${newlyAdded} stations (${newlyVerified} verified)!</span>
+          <span>OCM Discovery Complete: Added ${newlyAdded} stations (${newlyVerified} verified from scrapers)!</span>
         </div>
         <div class="text-[11px] text-slate-300">
-          Database: <b>${ALL_STATIONS.length} total stations</b>.
+          Database: <b>${ALL_STATIONS.length} total stations</b>. Unverified stations are excluded from routing until priced.
         </div>
       `;
       lucide.createIcons();
@@ -2393,7 +2423,7 @@
       lucide.createIcons();
     }
 
-    // BUTTON 2: Refresh Prices (Live Scrapers & Resolver)
+    // BUTTON 2: Refresh Prices (Scrapes & Updates Real Station-Specific Tariffs)
     async function handleRefreshPrices() {
       const btn = document.getElementById('btnRefreshPrices');
       const statusBox = document.getElementById('scraperStatusBox');
@@ -2405,46 +2435,26 @@
       statusBox.innerHTML = `
         <div class="flex items-center gap-2 text-emerald-400 font-medium">
           <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
-          <span>Scraping and verifying live tariffs across active stations...</span>
+          <span>Matching stations against 1,125+ live scraped station tariffs (DCFC Tracker, IONNA, Mercedes)...</span>
         </div>
       `;
       lucide.createIcons();
 
-      // 1. Try backend refresh endpoint if reachable
-      try {
-        const resp = await fetch('/api/stations/refresh-prices', { method: 'POST' });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (data.stations && data.stations.length > 0) {
-            data.stations.forEach(srvSt => {
-              const ex = ALL_STATIONS.find(s => s.id === srvSt.id);
-              const rateReg = srvSt.rate_regular || {};
-              const onRate = rateReg.on_peak != null ? rateReg.on_peak : null;
-              const offRate = rateReg.off_peak != null ? rateReg.off_peak : null;
-              if (ex && onRate != null) {
-                ex.on = onRate;
-                ex.off = offRate;
-                ex.price_verified = true;
-                if (srvSt.plugshare_url) ex.plug = srvSt.plugshare_url;
-              }
-            });
-          }
-        }
-      } catch (e) {
-        console.warn("Backend refresh call bypassed, using client verified resolver:", e);
-      }
+      // Force-reload fresh scraped database
+      SCRAPED_DATABASE = null;
+      const db = await loadScrapedDatabase();
+      let refreshedCount = 0;
 
-      // 2. Comprehensive resolver: resolve ALL stations in memory
-      let verifiedCount = 0;
       ALL_STATIONS.forEach(s => {
-        const res = resolveStationPricing(s);
+        const res = matchStationToScrapedData(s, db);
         if (res.verified) {
           s.on = res.on;
           s.off = res.off;
           if (res.mem_on) s.mem_on = res.mem_on;
           if (res.mem_off) s.mem_off = res.mem_off;
+          if (res.url) s.plug = res.url;
           s.price_verified = true;
-          verifiedCount++;
+          refreshedCount++;
         }
       });
 
@@ -2453,10 +2463,10 @@
       statusBox.innerHTML = `
         <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
           <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span>Price Scraping Complete! All ${verifiedCount} stations verified.</span>
+          <span>Price Refresh Complete! ${refreshedCount} stations verified from real scrapers.</span>
         </div>
         <div class="text-[11px] text-slate-300">
-          Live rates verified and active in routing engine.
+          Individual station rates updated. Any unverified stations remain flagged below with inspection links.
         </div>
       `;
       lucide.createIcons();
@@ -2479,12 +2489,6 @@
       }
 
       try {
-        try {
-          await fetch('/api/stations/reset', { method: 'POST' });
-        } catch (e) {
-          console.warn("Backend reset call bypassed:", e);
-        }
-
         localStorage.removeItem('equinox_custom_stations');
 
         ALL_STATIONS.length = 0;
