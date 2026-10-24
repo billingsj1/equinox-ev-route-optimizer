@@ -2089,7 +2089,7 @@
       mapLayers = [];
 
       // 1. Immediately build & render the spurred polyline that diverts into each charger
-      const spurredCoords = buildSpurredCoordinates(itin.route.coordinates, itin.stops);
+      const spurredCoords = itin.osrmDetailedCoords || buildSpurredCoordinates(itin.route.coordinates, itin.stops);
       const latlngs = spurredCoords.map(pt => [pt[1], pt[0]]);
       const poly = L.polyline(latlngs, {
         color: '#2563eb',
@@ -2205,7 +2205,7 @@
       map.fitBounds(poly.getBounds(), { padding: [45, 45] });
     }
 
-        async function upgradePolylineWithOSRM(itin, currentPoly) {
+    async function upgradePolylineWithOSRM(itin, currentPoly) {
       if (itin.osrmGeometryLoaded) return;
       try {
         const pts = [
@@ -2221,14 +2221,26 @@
             const r0 = data.routes[0];
             itin.osrmGeometryLoaded = true;
 
-            // Exact road network distance and driving time through all off-ramps & charging stalls
+            // Physical road network distance through all off-ramps & charging stalls
             const exact_miles = Math.round((r0.distance * 0.000621371) * 10) / 10;
-            const exact_drive_hours = r0.duration / 3600.0;
             itin.total_actual_miles = exact_miles;
-            itin.drive_hours = exact_drive_hours;
-            itin.total_hours = exact_drive_hours + itin.ch_hours;
 
-            // Exact leg arrival distances
+            // Maintain calibrated vehicle highway physics (posted speed limits + offset + cap)
+            // rather than raw OSRM demo durations which average ~50 mph on US freeways.
+            const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 5;
+            const maxCap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
+            const cruisingSpeed = Math.min((itin.route.speed_mph || 70) + speedOffset, maxCap);
+
+            // Reconcile driving time with physical OSRM road distance
+            const baselineEstimated = (itin.base_miles || itin.route.distance) + (itin.total_detour_miles || 0);
+            const roadDeltaMiles = exact_miles - baselineEstimated;
+            if (roadDeltaMiles > 0) {
+              const deltaHours = roadDeltaMiles / cruisingSpeed;
+              itin.drive_hours = Math.round((itin.drive_hours + deltaHours) * 100) / 100;
+              itin.total_hours = Math.round((itin.drive_hours + itin.ch_hours) * 100) / 100;
+            }
+
+            // Exact leg arrival distances from OSRM
             if (r0.legs && r0.legs.length === (itin.stops.length + 1)) {
               let cumMile = 0;
               for (let i = 0; i < itin.stops.length; i++) {
@@ -2238,10 +2250,28 @@
             }
 
             const detailedCoords = r0.geometry.coordinates.map(pt => [pt[1], pt[0]]);
+            itin.osrmDetailedCoords = detailedCoords;
             currentPoly.setLatLngs(detailedCoords);
 
-            // Re-render summary cards and stop table with exact OSRM driving metrics
-            renderResultsUI();
+            // Update itinerary card summaries without triggering recursive map re-renders
+            if (calculatedResults) {
+              const f = calculatedResults.fastest;
+              const c = calculatedResults.cheapest;
+              const b = calculatedResults.balanced;
+              if (f && document.getElementById('fastestTime')) {
+                document.getElementById('fastestTime').innerText = formatHours(f.total_hours);
+                document.getElementById('fastestMiles').innerText = Math.round(f.total_actual_miles || f.route.distance) + ' mi' + (f.total_detour_miles > 0.4 ? ' (+' + f.total_detour_miles + ' mi)' : '');
+              }
+              if (c && document.getElementById('cheapestTime')) {
+                document.getElementById('cheapestTime').innerText = formatHours(c.total_hours);
+                document.getElementById('cheapestMiles').innerText = Math.round(c.total_actual_miles || c.route.distance) + ' mi' + (c.total_detour_miles > 0.4 ? ' (+' + c.total_detour_miles + ' mi)' : '');
+              }
+              if (b && document.getElementById('balancedTime')) {
+                document.getElementById('balancedTime').innerText = formatHours(b.total_hours);
+                document.getElementById('balancedMiles').innerText = Math.round(b.total_actual_miles || b.route.distance) + ' mi' + (b.total_detour_miles > 0.4 ? ' (+' + b.total_detour_miles + ' mi)' : '');
+              }
+            }
+            renderTable(itin);
           }
         }
       } catch (e) {
