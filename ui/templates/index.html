@@ -403,6 +403,52 @@
     <!-- RIGHT MAIN CONTENT: Pareto Itineraries & Map -->
     <div class="lg:col-span-8 space-y-6">
       
+      <!-- Direct Non-Stop Baseline & Max Duration Tolerance Filter Bar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        <!-- Left: Quickest Non-Stop Driving Baseline -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <i data-lucide="gauge" class="w-5 h-5 text-emerald-400"></i>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+              <span>Quickest Non-Stop Driving Baseline</span>
+              <span class="text-[10px] text-slate-500 font-normal hidden sm:inline">(Pure road travel without charging)</span>
+            </div>
+            <div class="flex items-center gap-2.5 mt-0.5">
+              <span id="nonStopDuration" class="text-xl font-black text-white font-mono">--</span>
+              <span class="text-slate-600">|</span>
+              <span id="nonStopDistance" class="text-xs text-slate-300 font-mono">-- mi</span>
+              <span id="nonStopSpeed" class="text-[11px] text-emerald-400 font-mono bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-800/40">-- mph avg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Max Duration Route Comparison Tolerance Slider -->
+        <div class="bg-slate-950/70 border border-slate-800/80 px-4 py-2.5 rounded-lg flex-1 md:max-w-md">
+          <div class="flex items-center justify-between text-xs mb-1.5">
+            <span class="text-slate-300 font-semibold flex items-center gap-1.5">
+              <i data-lucide="timer" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Max Route Duration Cap:</span>
+            </span>
+            <span id="maxTimePenaltyBadge" class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">+10% (max --)</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="text-[10px] text-slate-500 font-mono">0%</span>
+            <input type="range" id="maxDurationToleranceSlider" min="0" max="30" step="1" value="10" 
+              class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+              oninput="onDurationToleranceChange(this.value)">
+            <span class="text-[10px] text-slate-500 font-mono">+30%</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1 flex justify-between">
+            <span>Excludes routes taking &gt; <b id="maxTolerancePctText" class="text-cyan-300 font-semibold">+10%</b> over fastest</span>
+            <span class="text-slate-500">Default: 10%</span>
+          </div>
+        </div>
+
+      </div>
+
       <!-- 3 Pareto Route Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
@@ -1687,6 +1733,37 @@
       }
     }
 
+    function onDurationToleranceChange(val) {
+      const pct = parseFloat(val);
+      try {
+        localStorage.setItem('equinox_max_duration_tolerance', pct.toString());
+      } catch (e) {}
+      const maxTolText = document.getElementById('maxTolerancePctText');
+      if (maxTolText) maxTolText.innerText = `+${pct}%`;
+
+      if (calculatedResults && calculatedResults.fastest) {
+        const maxAllowed = calculatedResults.fastest.total_hours * (1.0 + (pct / 100.0));
+        const badge = document.getElementById('maxTimePenaltyBadge');
+        if (badge) badge.innerText = `+${pct}% (max ${formatHours(maxAllowed)})`;
+      }
+
+      if (activeRoutesData && activeRoutesData.length > 0) {
+        planOptimalTrip();
+      }
+    }
+
+    function initDurationTolerance() {
+      try {
+        const saved = localStorage.getItem('equinox_max_duration_tolerance');
+        if (saved !== null) {
+          const slider = document.getElementById('maxDurationToleranceSlider');
+          if (slider) slider.value = saved;
+          const maxTolText = document.getElementById('maxTolerancePctText');
+          if (maxTolText) maxTolText.innerText = `+${saved}%`;
+        }
+      } catch (e) {}
+    }
+
     // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---
     function recomputeCurrentRoute() {
       if (!activeRoutesData || activeRoutesData.length === 0) {
@@ -1718,6 +1795,23 @@
       document.getElementById('whPerMile').innerText = Math.round(sampleSim.wh_per_mi) + ' Wh/mi';
       document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
       document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
+
+      // Compute Quickest Non-Stop Driving Baseline across active highway corridors
+      let fastestNonStop = null;
+      activeRoutesData.forEach(route => {
+        const sim = simulateLegFromSteps(
+          route.steps, 0, route.distance,
+          payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph
+        );
+        if (!fastestNonStop || sim.hours < fastestNonStop.hours) {
+          fastestNonStop = {
+            hours: sim.hours,
+            distance: route.distance,
+            avg_speed: route.distance / Math.max(0.1, sim.hours),
+            route_name: route.name
+          };
+        }
+      });
 
       const candidates = [];
 
@@ -2016,23 +2110,31 @@
         alertBanner.classList.add('hidden');
       }
 
-      // 1. FASTEST ROUTE (Min total duration)
+      // 1. FASTEST ROUTE (Min total duration with charging stops)
       candidates.sort((a, b) => a.total_hours - b.total_hours);
       const fastest = candidates[0];
 
-      // 2. CHEAPEST ROUTE (Min combined cost)
-      candidates.sort((a, b) => a.total_cost - b.total_cost);
-      const cheapest = candidates[0];
+      // Max Duration Tolerance Filter (Default 10% over fastest route)
+      const maxToleranceSlider = document.getElementById('maxDurationToleranceSlider');
+      const maxTolerancePct = maxToleranceSlider ? parseFloat(maxToleranceSlider.value) : 10.0;
+      const maxAllowedHours = fastest.total_hours * (1.0 + (maxTolerancePct / 100.0));
 
-      // 3. BALANCED ROUTE (Pareto Knee / Utopia Distance)
-      const min_t = Math.min(...candidates.map(c => c.total_hours));
-      const max_t = Math.max(...candidates.map(c => c.total_hours));
-      const min_c = Math.min(...candidates.map(c => c.total_cost));
-      const max_c = Math.max(...candidates.map(c => c.total_cost));
+      // Eligible comparison candidates: must not exceed fastest duration by more than maxTolerancePct
+      const eligibleCandidates = candidates.filter(c => c.total_hours <= (maxAllowedHours + 0.001));
+      const candidatesByCost = [...eligibleCandidates].sort((a, b) => a.total_cost - b.total_cost);
 
-      let best_balanced = candidates[0];
+      // 2. CHEAPEST ROUTE (Min combined cost within duration tolerance)
+      const cheapest = candidatesByCost[0] || fastest;
+
+      // 3. BALANCED ROUTE (Pareto Knee / Utopia Distance within duration tolerance)
+      const min_t = fastest.total_hours;
+      const max_t = Math.max(...eligibleCandidates.map(c => c.total_hours));
+      const min_c = Math.min(...eligibleCandidates.map(c => c.total_cost));
+      const max_c = Math.max(...eligibleCandidates.map(c => c.total_cost));
+
+      let best_balanced = eligibleCandidates[0] || fastest;
       let min_dist = 999;
-      candidates.forEach(c => {
+      eligibleCandidates.forEach(c => {
         const norm_t = (c.total_hours - min_t) / Math.max(0.01, max_t - min_t);
         const norm_c = (c.total_cost - min_c) / Math.max(0.01, max_c - min_c);
         const dist = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
@@ -2049,7 +2151,10 @@
       calculatedResults = {
         fastest: fastest,
         cheapest: cheapest,
-        balanced: best_balanced
+        balanced: best_balanced,
+        nonStop: fastestNonStop,
+        maxAllowedHours: maxAllowedHours,
+        maxTolerancePct: maxTolerancePct
       };
 
       renderResultsUI();
@@ -2059,6 +2164,29 @@
       if (!calculatedResults) return;
 
       const f = calculatedResults.fastest;
+      const c = calculatedResults.cheapest;
+      const b = calculatedResults.balanced;
+
+      // Update Quickest Non-Stop Driving Baseline
+      if (calculatedResults.nonStop) {
+        const ns = calculatedResults.nonStop;
+        const durEl = document.getElementById('nonStopDuration');
+        const distEl = document.getElementById('nonStopDistance');
+        const spdEl = document.getElementById('nonStopSpeed');
+        if (durEl) durEl.innerText = formatHours(ns.hours);
+        if (distEl) distEl.innerText = `${Math.round(ns.distance)} mi`;
+        if (spdEl) spdEl.innerText = `${Math.round(ns.avg_speed)} mph avg`;
+      }
+
+      // Update Max Duration Tolerance Badge
+      const maxTimeBadge = document.getElementById('maxTimePenaltyBadge');
+      if (maxTimeBadge && calculatedResults.maxAllowedHours) {
+        maxTimeBadge.innerText = `+${calculatedResults.maxTolerancePct}% (max ${formatHours(calculatedResults.maxAllowedHours)})`;
+      }
+      const maxTolText = document.getElementById('maxTolerancePctText');
+      if (maxTolText && calculatedResults.maxTolerancePct !== undefined) {
+        maxTolText.innerText = `+${calculatedResults.maxTolerancePct}%`;
+      }
       const c = calculatedResults.cheapest;
       const b = calculatedResults.balanced;
 
@@ -3080,6 +3208,7 @@
 
 window.onload = () => {
       initStationData();
+      initDurationTolerance();
       initMap();
       updateTimeGapDisplays(75, 150);
       updatePhysicsHUD();

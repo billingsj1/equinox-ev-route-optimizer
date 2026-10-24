@@ -319,14 +319,15 @@ class MultiObjectiveOptimizer:
         payload: PayloadConfig,
         profile: DrivingProfile,
         toll_config: TollPassConfig,
-        initial_soc: float = 1.00
-    ) -> Dict[str, Itinerary]:
+        initial_soc: float = 1.00,
+        max_duration_tolerance_pct: float = 0.10
+    ) -> Dict[str, Any]:
         """
         Runs combinatorial search across valid charger stops, builds the Pareto frontier,
         and returns exactly three itineraries:
         1. Fastest
-        2. Cheapest
-        3. Balanced (Knee / Elbow point on Pareto frontier)
+        2. Cheapest (within max_duration_tolerance_pct over Fastest)
+        3. Balanced (Knee / Elbow point on Pareto frontier within max_duration_tolerance_pct)
         """
         candidates: List[Itinerary] = []
 
@@ -406,29 +407,45 @@ class MultiObjectiveOptimizer:
         fastest = candidates[fastest_idx]
         fastest.itinerary_type = "Fastest Route"
 
-        # 2. Cheapest Route
-        cheapest_idx = int(np.argmin(costs))
+        # Apply maximum duration tolerance cap (default 10% over fastest route)
+        max_allowed_time = fastest.total_time_hours * (1.0 + max_duration_tolerance_pct)
+        eligible_indices = [i for i, c in enumerate(candidates) if c.total_time_hours <= (max_allowed_time + 1e-4)]
+        if not eligible_indices:
+            eligible_indices = [fastest_idx]
+
+        # 2. Cheapest Route (within duration tolerance)
+        cheapest_idx = min(eligible_indices, key=lambda i: candidates[i].total_cost)
         cheapest = candidates[cheapest_idx]
         cheapest.itinerary_type = "Cheapest Route"
 
-        # 3. Balanced Route (Pareto Knee / Utopia distance)
-        t_min, t_max = float(np.min(times)), float(np.max(times))
-        c_min, c_max = float(np.min(costs)), float(np.max(costs))
+        # 3. Balanced Route (Pareto Knee / Utopia distance within duration tolerance)
+        eligible_times = np.array([candidates[i].total_time_hours for i in eligible_indices])
+        eligible_costs = np.array([candidates[i].total_cost for i in eligible_indices])
+
+        t_min, t_max = float(np.min(eligible_times)), float(np.max(eligible_times))
+        c_min, c_max = float(np.min(eligible_costs)), float(np.max(eligible_costs))
 
         t_range = max(0.01, t_max - t_min)
         c_range = max(0.01, c_max - c_min)
 
-        norm_times = (times - t_min) / t_range
-        norm_costs = (costs - c_min) / c_range
+        norm_times = (eligible_times - t_min) / t_range
+        norm_costs = (eligible_costs - c_min) / c_range
 
         utopia_distances = np.sqrt(norm_times**2 + norm_costs**2)
-        balanced_idx = int(np.argmin(utopia_distances))
+        balanced_rel_idx = int(np.argmin(utopia_distances))
+        balanced_idx = eligible_indices[balanced_rel_idx]
         balanced = candidates[balanced_idx]
         balanced.itinerary_type = "Balanced Route"
-        balanced.pareto_score = round(float(utopia_distances[balanced_idx]), 3)
+        balanced.pareto_score = round(float(utopia_distances[balanced_rel_idx]), 3)
+
+        # Quickest non-stop baseline across corridors
+        fastest_non_stop_hours = min(r.total_distance_miles / max(1.0, r.speed_limit_mph + profile.speed_offset_mph) for r in routes) if routes else 0.0
 
         return {
             "fastest": fastest,
             "cheapest": cheapest,
-            "balanced": balanced
+            "balanced": balanced,
+            "non_stop_baseline_hours": round(fastest_non_stop_hours, 2),
+            "max_duration_tolerance_pct": max_duration_tolerance_pct,
+            "max_allowed_time_hours": round(max_allowed_time, 2)
         }
