@@ -314,11 +314,11 @@
         </h2>
         <div class="space-y-2 text-xs">
           <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="hasEzPass" checked onchange="recomputeCurrentRoute()" class="accent-emerald-500 rounded">
+            <input type="checkbox" id="hasEzPass" checked class="accent-emerald-500 rounded">
             <span>E-ZPass Equipped (PA/NJ/WV preferred rates)</span>
           </label>
           <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="hasNjGreenPass" checked onchange="recomputeCurrentRoute()" class="accent-emerald-500 rounded">
+            <input type="checkbox" id="hasNjGreenPass" checked class="accent-emerald-500 rounded">
             <span>NJ Turnpike EV Green Pass (10% off off-peak)</span>
           </label>
           <div class="p-2 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
@@ -332,11 +332,11 @@
           <div class="border-t border-slate-800/80 pt-2.5 mt-2 space-y-1.5">
             <span class="text-slate-300 font-medium block text-[11px]">Charging Memberships (Pre-Owned):</span>
             <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" id="hasEaPass" onchange="recomputeCurrentRoute()" class="accent-emerald-500 rounded">
+              <input type="checkbox" id="hasEaPass" class="accent-emerald-500 rounded">
               <span>Already have EA Pass+ ($0.45/kWh rate, $0 fee)</span>
             </label>
             <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" id="hasTeslaMember" onchange="recomputeCurrentRoute()" class="accent-emerald-500 rounded">
+              <input type="checkbox" id="hasTeslaMember" class="accent-emerald-500 rounded">
               <span>Already have Tesla Member ($0.46/kWh rate, $0 fee)</span>
             </label>
             <div class="text-[10px] text-slate-500 italic leading-snug">When unchecked, optimizer automatically checks if adding a pass saves money on this trip, discounts rates, and adds the $3.50/$6.50 fee.</div>
@@ -896,9 +896,7 @@
       updateStationManagerBadge();
       renderStandaloneStationMarkers();
       renderUnverifiedStations();
-      if (activeRoutesData && activeRoutesData.length > 0) {
-        recomputeCurrentRoute();
-      }
+// User clicks Calculate Route to apply changes
     }
 
     function setAllNetworks(enableAll) {
@@ -916,9 +914,7 @@
       updateStationManagerBadge();
       renderStandaloneStationMarkers();
       renderUnverifiedStations();
-      if (activeRoutesData && activeRoutesData.length > 0) {
-        recomputeCurrentRoute();
-      }
+// User clicks Calculate Route to apply changes
     }
 
     function renderNetworkFilters() {
@@ -1747,9 +1743,7 @@
         if (badge) badge.innerText = `+${pct}% (max ${formatHours(maxAllowed)})`;
       }
 
-      if (activeRoutesData && activeRoutesData.length > 0) {
-        planOptimalTrip();
-      }
+// User clicks Calculate Route to apply changes
     }
 
     function initDurationTolerance() {
@@ -2245,9 +2239,12 @@
       mapLayers.forEach(l => map.removeLayer(l));
       mapLayers = [];
 
-      // 1. Immediately build & render the spurred polyline that diverts into each charger
-      const spurredCoords = itin.osrmDetailedCoords || buildSpurredCoordinates(itin.route.coordinates, itin.stops);
-      const latlngs = spurredCoords.map(pt => [pt[1], pt[0]]);
+      // 1. Render the active route polyline (GeoJSON [lon, lat] converted to Leaflet [lat, lon])
+      const rawCoords = (itin.osrmDetailedCoords && itin.osrmDetailedCoords.length > 0) 
+        ? itin.osrmDetailedCoords 
+        : itin.route.coordinates;
+      
+      const latlngs = rawCoords.map(pt => [pt[1], pt[0]]);
       const poly = L.polyline(latlngs, {
         color: '#2563eb',
         weight: 5.5,
@@ -2324,15 +2321,16 @@
         mapLayers.push(stopMarker);
       });
 
-      // 6. Asynchronous high-resolution OSRM road geometry upgrade (visiting every charger waypoint)
-      if (itin.stops && itin.stops.length > 0) {
+      // 6. Asynchronously load high-resolution OSRM road geometry for the visual map line only
+      // (Never mutates itinerary duration or card hours on click)
+      if (itin.stops && itin.stops.length > 0 && !itin.osrmGeometryLoaded) {
         upgradePolylineWithOSRM(itin, poly);
       }
 
-      // 5. Draw all stations as interactive markers on the map
+      // 7. Draw corridor stations as interactive markers
       ALL_STATIONS.forEach(s => {
         if (!s || s.lat == null || s.lon == null) return;
-        if (!isNetworkEnabled(s.network)) return; // Excluded from map
+        if (!isNetworkEnabled(s.network)) return;
         const isUsed = itin.stops && itin.stops.some(sp => sp.station && sp.station.id === s.id);
         if (!isUsed) {
           const isVerified = (s.price_verified !== false && s.on != null && s.on > 0);
@@ -2370,7 +2368,7 @@
           ...itin.stops.map(s => `${s.station.lon},${s.station.lat}`),
           `${itin.route.destination.lon},${itin.route.destination.lat}`
         ];
-        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pts.join(';')}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pts.join(';')}?overview=full&geometries=geojson&steps=false`;
         const resp = await fetch(osrmUrl);
         if (resp.ok) {
           const data = await resp.json();
@@ -2378,88 +2376,14 @@
             const r0 = data.routes[0];
             itin.osrmGeometryLoaded = true;
 
-            // Physical road network distance through all off-ramps & charging stalls
-            const exact_miles = Math.round((r0.distance * 0.000621371) * 10) / 10;
-            itin.total_actual_miles = exact_miles;
+            // Store pure GeoJSON [lon, lat] coordinates (never pre-swapped)
+            itin.osrmDetailedCoords = r0.geometry.coordinates;
 
-            // Extract physics environment parameters from live UI
-            let payload_lbs = 0;
-            if (document.getElementById('josh')?.checked) payload_lbs += 150;
-            if (document.getElementById('courtney')?.checked) payload_lbs += 130;
-            if (document.getElementById('asher')?.checked) payload_lbs += 20;
-            if (document.getElementById('arno')?.checked) payload_lbs += 50;
-            payload_lbs += parseFloat(document.getElementById('gearSlider')?.value) || 0;
-
-            const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 5;
-            const max_cap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
-            const temp_f = parseFloat(document.getElementById('tempF')?.value) || 68;
-            const wind_speed = parseFloat(document.getElementById('windSpeed')?.value) || 0;
-            const wind_dir = parseFloat(document.getElementById('windDir')?.value) || 0;
-            const road_cond = document.getElementById('roadCond')?.value || 'dry';
-
-            // Simulate each leg directly through the interval physics engine using OSRM's actual road steps
-            if (r0.legs && r0.legs.length === (itin.stops.length + 1)) {
-              let upgradedDriveHours = 0.0;
-              let cumMile = 0.0;
-
-              for (let legIdx = 0; legIdx < r0.legs.length; legIdx++) {
-                const leg = r0.legs[legIdx];
-                const legDistMiles = (leg.distance || 0) * 0.000621371;
-
-                const parsedLegSteps = (leg.steps || []).map(s => {
-                  const d_mi = (s.distance || 0) * 0.000621371;
-                  const spd = resolveStepSpeedLimit(s);
-                  return {
-                    name: s.name || '',
-                    ref: s.ref || '',
-                    distance_miles: d_mi,
-                    posted_speed: spd,
-                    geometry: s.geometry,
-                    maneuver: s.maneuver,
-                    intersections: s.intersections
-                  };
-                });
-
-                const legSim = simulateLegFromSteps(
-                  parsedLegSteps, 0, legDistMiles,
-                  payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, itin.route.speed_mph
-                );
-
-                upgradedDriveHours += legSim.hours;
-
-                if (legIdx < itin.stops.length) {
-                  cumMile += legDistMiles;
-                  itin.stops[legIdx].mile = Math.round(cumMile * 10) / 10;
-                }
-              }
-
-              itin.drive_hours = Math.round(upgradedDriveHours * 100) / 100;
-              itin.total_hours = Math.round((upgradedDriveHours + itin.ch_hours) * 100) / 100;
+            // Update current visual polyline on map with Leaflet [lat, lon]
+            if (currentPoly && r0.geometry && r0.geometry.coordinates) {
+              const leafletCoords = r0.geometry.coordinates.map(pt => [pt[1], pt[0]]);
+              currentPoly.setLatLngs(leafletCoords);
             }
-
-            const detailedCoords = r0.geometry.coordinates.map(pt => [pt[1], pt[0]]);
-            itin.osrmDetailedCoords = detailedCoords;
-            currentPoly.setLatLngs(detailedCoords);
-
-            // Update itinerary card summaries without triggering recursive map re-renders
-            if (calculatedResults) {
-              const f = calculatedResults.fastest;
-              const c = calculatedResults.cheapest;
-              const b = calculatedResults.balanced;
-              if (f && document.getElementById('fastestTime')) {
-                document.getElementById('fastestTime').innerText = formatHours(f.total_hours);
-                document.getElementById('fastestMiles').innerText = Math.round(f.total_actual_miles || f.route.distance) + ' mi' + (f.total_detour_miles > 0.4 ? ' (+' + f.total_detour_miles + ' mi)' : '');
-              }
-              if (c && document.getElementById('cheapestTime')) {
-                document.getElementById('cheapestTime').innerText = formatHours(c.total_hours);
-                document.getElementById('cheapestMiles').innerText = Math.round(c.total_actual_miles || c.route.distance) + ' mi' + (c.total_detour_miles > 0.4 ? ' (+' + c.total_detour_miles + ' mi)' : '');
-              }
-              if (b && document.getElementById('balancedTime')) {
-                document.getElementById('balancedTime').innerText = formatHours(b.total_hours);
-                document.getElementById('balancedMiles').innerText = Math.round(b.total_actual_miles || b.route.distance) + ' mi' + (b.total_detour_miles > 0.4 ? ' (+' + b.total_detour_miles + ' mi)' : '');
-              }
-            }
-            renderTable(itin);
           }
         }
       } catch (e) {
