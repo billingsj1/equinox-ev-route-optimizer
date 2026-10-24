@@ -1018,16 +1018,19 @@
 
       const lowerName = name.toLowerCase();
 
-      // 1. Highway Ramps and Interchanges
-      if (maneuver_type.includes('ramp') || lowerName.includes('ramp') || lowerName.includes('exit')) {
-        return Math.min(45, Math.max(25, Math.round(osrm_mph / 5.0) * 5));
+      // 1. Highway Ramps, Interchange Connectors, and Exit Loops (strictly 25-35 mph)
+      if (maneuver_type.includes('ramp') || 
+          (maneuver_type === 'fork' && (lowerName.includes('exit') || lowerName.includes('ramp') || lowerName.includes('to '))) || 
+          lowerName.includes('ramp') || lowerName.includes('exit') || lowerName.includes('sliproad')) {
+        return Math.min(35, Math.max(25, Math.round(osrm_mph / 5.0) * 5 || 30));
       }
 
-      // 2. Interstate Freeways & Major Turnpikes (I-70, I-76, I-77, I-79, I-80, I-470, I-676, I-376)
+      // 2. Interstate Freeways & Major Turnpikes (I-70, I-76, I-77, I-79, I-80, I-68, I-470, I-676, I-376)
       if (ref.includes('I ') || ref.includes('I-') || (ref.startsWith('I') && /\d/.test(ref))) {
         // Specific Urban Expressways & Beltway Bottlenecks
         if (lowerName.includes('innerbelt') || lowerName.includes('downtown') || lowerName.includes('vine street') ||
-            lowerName.includes('airport expressway') || lowerName.includes('schuylkill') || lowerName.includes('pkwy')) {
+            lowerName.includes('airport expressway') || lowerName.includes('schuylkill') || lowerName.includes('pkwy') ||
+            lowerName.includes('tunnel') || lowerName.includes('beltway')) {
           return 55.0;
         }
 
@@ -1043,8 +1046,11 @@
           return (ref.includes('470') || lowerName.includes('tunnel')) ? 60.0 : 65.0;
         } else if (lon >= -80.52 && lon <= -75.2) {
           // Pennsylvania
+          if (ref.includes('376') || lowerName.includes('pkwy')) {
+            return 55.0; // Pittsburgh Metro Parkway East/West
+          }
           if (lowerName.includes('turnpike') || ref.includes('76')) {
-            if (lon >= -75.4) return 55.0; // Approaching King of Prussia / Philadelphia
+            if (lon >= -75.4) return 55.0; // Approaching King of Prussia / Philadelphia Schuylkill
             return 70.0; // PA Turnpike (I-76) Mainline posted limit is 70 mph
           }
           if (ref.includes('70')) {
@@ -1053,6 +1059,11 @@
           if (ref.includes('79') || ref.includes('80')) {
             return 70.0; // PA Rural I-79 / I-80
           }
+          return 65.0;
+        } else if (lat >= 39.1 && lat <= 39.8 && lon >= -79.5 && lon <= -76.5) {
+          // Maryland
+          if (lowerName.includes('beltway') || ref.includes('695') || ref.includes('495')) return 55.0;
+          if (ref.includes('68') || ref.includes('70')) return 70.0; // Rural Maryland I-68 / I-70
           return 65.0;
         } else if (lon > -75.2) {
           // New Jersey
@@ -1085,8 +1096,8 @@
       }
 
       // 6. Local Streets, Commercial Strips, & Charger Access Roads
-      if (osrm_mph >= 35.0) return 45.0;
-      if (osrm_mph >= 25.0) return 35.0;
+      if (osrm_mph >= 35.0) return 40.0;
+      if (osrm_mph >= 25.0) return 30.0;
       return 25.0;
     }
 
@@ -1117,8 +1128,28 @@
 
         if (ov_len > 0.0001) {
           const posted_speed = s.posted_speed || fallback_speed || 70.0;
-          const is_local = posted_speed <= 50.0;
-          const target_mph = Math.min(posted_speed + speed_offset, max_cap);
+          const mType = (s.maneuver && s.maneuver.type) ? s.maneuver.type : '';
+          const sName = (s.name || '').toLowerCase();
+          const is_ramp = mType.includes('ramp') || sName.includes('ramp') || sName.includes('exit') || sName.includes('sliproad');
+          const is_plaza = sName.includes('service plaza') || sName.includes('travel plaza') || sName.includes('rest area');
+          const is_local = (posted_speed <= 45.0) || is_ramp || is_plaza;
+
+          // Road Speed Policy:
+          // - Service Plazas: strictly 20 mph loop
+          // - Ramps & Interchanges: strictly 25-35 mph (never inflated with highway speed offset)
+          // - Arterials & Local: driven at posted limits
+          // - Highways / Freeways: posted limit + speed offset (capped at max speed cap)
+          let target_mph;
+          if (is_plaza) {
+            target_mph = 20.0;
+          } else if (is_ramp) {
+            target_mph = Math.min(posted_speed, 35.0);
+          } else if (posted_speed <= 45.0) {
+            target_mph = posted_speed;
+          } else {
+            target_mph = Math.min(posted_speed + speed_offset, max_cap);
+          }
+
           const v_ms = target_mph * 0.44704;
           const slice_hours = ov_len / Math.max(15.0, target_mph);
           const dist_m = ov_len * 1609.34;
@@ -1131,7 +1162,7 @@
           const v_airspeed_ms = Math.max(5.0, v_ms + (v_wind_ms * Math.cos((wind_dir - 90) * Math.PI / 180)));
           const f_aero = 0.5 * rho * drag_area * Math.pow(v_airspeed_ms, 2);
 
-          // 2. Rolling Resistance (Local roads have higher Crr due to surface texture)
+          // 2. Rolling Resistance (Local / ramp roads have higher Crr due to surface texture & turn friction)
           let crr = is_local ? 0.0105 : 0.0095;
           if (road_cond === "wet") crr *= 1.40;
           else if (road_cond === "snow_ice") crr *= 2.20;
@@ -1147,21 +1178,22 @@
             // Approx 28% of intersections require a complete stop or heavy braking cycle
             const stops = (ov_len / step_len) * num_intersections * 0.28;
             const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
-            // 78% regenerative recovery, 91% drive inverter efficiency
             const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
             kinetic_kwh += (stops * cycle_loss) / 3.6e6;
             idle_hours += (stops * 18.0) / 3600.0; // 18 seconds avg wait per stop
           }
 
-          // 4. Maneuver Turns (Deceleration to 15 mph and acceleration)
-          const mType = (s.maneuver && s.maneuver.type) ? s.maneuver.type : '';
-          if (['turn', 'roundabout', 'on ramp', 'off ramp'].includes(mType)) {
-            const v_turn_ms = Math.min(v_ms, 15.0 * 0.44704);
+          // 4. Maneuver Turns & Ramp Curvature Deceleration/Acceleration
+          let maneuver_delay_hours = 0.0;
+          if (['turn', 'roundabout', 'on ramp', 'off ramp'].includes(mType) || is_ramp) {
+            const v_turn_ms = Math.min(v_ms, 18.0 * 0.44704);
             const delta_ke_turn = 0.5 * total_mass_kg * Math.max(0.0, Math.pow(v_ms, 2) - Math.pow(v_turn_ms, 2));
             kinetic_kwh += (delta_ke_turn * ((1.0 / 0.91) - 0.78)) / 3.6e6;
+            // 18 seconds of deceleration/acceleration delay per ramp or turn maneuver
+            maneuver_delay_hours = (18.0 / 3600.0) * (ov_len / Math.max(0.01, step_len));
           }
 
-          const step_tot_hours = slice_hours + idle_hours;
+          const step_tot_hours = slice_hours + idle_hours + maneuver_delay_hours;
 
           // 5. HVAC & Thermal Management
           let hvac_kw = 0.35;
@@ -1178,23 +1210,20 @@
 
           total_kwh += slice_total_kwh;
           total_hours += step_tot_hours;
-          weighted_speed_sum += target_mph * ov_len;
+          weighted_speed_sum += (target_mph * ov_len);
           total_slice_dist += ov_len;
         }
+
         step_start = step_end;
       }
 
-      if (total_slice_dist <= 0.001) {
-        return simulateLegPhysics(Math.max(0.1, end_mile - start_mile), fallback_speed || 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
-      }
-
-      const avg_target_mph = weighted_speed_sum / total_slice_dist;
+      const avg_speed = total_slice_dist > 0 ? (weighted_speed_sum / total_slice_dist) : fallback_speed;
       return {
-        target_mph: Math.round(avg_target_mph * 10) / 10,
-        kwh: Math.max(0.2, total_kwh),
         hours: total_hours,
-        mi_per_kwh: total_slice_dist / Math.max(0.1, total_kwh),
-        wh_per_mi: (total_kwh * 1000.0) / total_slice_dist
+        kwh: total_kwh,
+        mi_per_kwh: total_kwh > 0 ? (total_slice_dist / total_kwh) : 3.0,
+        wh_per_mi: total_slice_dist > 0 ? (total_kwh * 1000.0 / total_slice_dist) : 330,
+        target_mph: avg_speed
       };
     }
 
@@ -2225,28 +2254,59 @@
             const exact_miles = Math.round((r0.distance * 0.000621371) * 10) / 10;
             itin.total_actual_miles = exact_miles;
 
-            // Maintain calibrated vehicle highway physics (posted speed limits + offset + cap)
-            // rather than raw OSRM demo durations which average ~50 mph on US freeways.
-            const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 5;
-            const maxCap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
-            const cruisingSpeed = Math.min((itin.route.speed_mph || 70) + speedOffset, maxCap);
+            // Extract physics environment parameters from live UI
+            let payload_lbs = 0;
+            if (document.getElementById('josh')?.checked) payload_lbs += 150;
+            if (document.getElementById('courtney')?.checked) payload_lbs += 130;
+            if (document.getElementById('asher')?.checked) payload_lbs += 20;
+            if (document.getElementById('arno')?.checked) payload_lbs += 50;
+            payload_lbs += parseFloat(document.getElementById('gearSlider')?.value) || 0;
 
-            // Reconcile driving time with physical OSRM road distance
-            const baselineEstimated = (itin.base_miles || itin.route.distance) + (itin.total_detour_miles || 0);
-            const roadDeltaMiles = exact_miles - baselineEstimated;
-            if (roadDeltaMiles > 0) {
-              const deltaHours = roadDeltaMiles / cruisingSpeed;
-              itin.drive_hours = Math.round((itin.drive_hours + deltaHours) * 100) / 100;
-              itin.total_hours = Math.round((itin.drive_hours + itin.ch_hours) * 100) / 100;
-            }
+            const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 5;
+            const max_cap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
+            const temp_f = parseFloat(document.getElementById('tempF')?.value) || 68;
+            const wind_speed = parseFloat(document.getElementById('windSpeed')?.value) || 0;
+            const wind_dir = parseFloat(document.getElementById('windDir')?.value) || 0;
+            const road_cond = document.getElementById('roadCond')?.value || 'dry';
 
-            // Exact leg arrival distances from OSRM
+            // Simulate each leg directly through the interval physics engine using OSRM's actual road steps
             if (r0.legs && r0.legs.length === (itin.stops.length + 1)) {
-              let cumMile = 0;
-              for (let i = 0; i < itin.stops.length; i++) {
-                cumMile += (r0.legs[i].distance * 0.000621371);
-                itin.stops[i].mile = Math.round(cumMile * 10) / 10;
+              let upgradedDriveHours = 0.0;
+              let cumMile = 0.0;
+
+              for (let legIdx = 0; legIdx < r0.legs.length; legIdx++) {
+                const leg = r0.legs[legIdx];
+                const legDistMiles = (leg.distance || 0) * 0.000621371;
+
+                const parsedLegSteps = (leg.steps || []).map(s => {
+                  const d_mi = (s.distance || 0) * 0.000621371;
+                  const spd = resolveStepSpeedLimit(s);
+                  return {
+                    name: s.name || '',
+                    ref: s.ref || '',
+                    distance_miles: d_mi,
+                    posted_speed: spd,
+                    geometry: s.geometry,
+                    maneuver: s.maneuver,
+                    intersections: s.intersections
+                  };
+                });
+
+                const legSim = simulateLegFromSteps(
+                  parsedLegSteps, 0, legDistMiles,
+                  payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, itin.route.speed_mph
+                );
+
+                upgradedDriveHours += legSim.hours;
+
+                if (legIdx < itin.stops.length) {
+                  cumMile += legDistMiles;
+                  itin.stops[legIdx].mile = Math.round(cumMile * 10) / 10;
+                }
               }
+
+              itin.drive_hours = Math.round(upgradedDriveHours * 100) / 100;
+              itin.total_hours = Math.round((upgradedDriveHours + itin.ch_hours) * 100) / 100;
             }
 
             const detailedCoords = r0.geometry.coordinates.map(pt => [pt[1], pt[0]]);
