@@ -373,6 +373,25 @@
           <span>Clear Added Stations (Reset Baseline)</span>
         </button>
 
+        <!-- Network Exclusion Filters -->
+        <div class="border-t border-slate-800 pt-3 space-y-2">
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-300">
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="filter" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Network Filters</span>
+            </span>
+            <div class="flex items-center gap-2 text-[10px]">
+              <button type="button" onclick="setAllNetworks(true)" class="text-cyan-400 hover:underline cursor-pointer">Select All</button>
+              <span class="text-slate-600">&bull;</span>
+              <button type="button" onclick="setAllNetworks(false)" class="text-slate-400 hover:underline cursor-pointer">Deselect All</button>
+            </div>
+          </div>
+          <div class="text-[10px] text-slate-400 leading-tight">Uncheck any network to exclude from map & route calculations (station info is retained):</div>
+          <div id="networkFilterContainer" class="grid grid-cols-2 gap-1.5 text-xs">
+            <!-- Dynamically populated network checkboxes -->
+          </div>
+        </div>
+
         <!-- Scraper Notification / Status Alert -->
         <div id="scraperStatusBox" class="hidden text-xs rounded-lg p-2.5 bg-slate-950 border border-slate-800 space-y-2">
           <!-- Populated dynamically with alerts & unverified station inputs -->
@@ -581,13 +600,15 @@
     let calculatedResults = null;
 
     const NETWORK_COLORS = {
-      "IONNA": "#a855f7",
-      "Mercedes-Benz": "#38bdf8",
       "Electrify America": "#3b82f6",
+      "EVgo": "#06b6d4",
+      "IONNA": "#a855f7",
+      "Tesla": "#ef4444",
+      "ChargePoint": "#10b981",
       "Applegreen": "#f97316",
       "Francis Energy": "#eab308",
-      "ChargePoint": "#10b981",
-      "Tesla": "#ef4444"
+      "Mercedes-Benz": "#38bdf8",
+      "Other": "#94a3b8"
     };
 
     function initMap() {
@@ -610,6 +631,7 @@
       mapLayers = [];
       ALL_STATIONS.forEach(s => {
         if (!s || s.lat == null || s.lon == null) return;
+        if (!isNetworkEnabled(s.network)) return; // Excluded network
         const isVerified = (s.price_verified !== false && s.on != null && s.on > 0);
         const color = NETWORK_COLORS[s.network] || "#64748b";
         const rateText = isVerified ? `$${s.on.toFixed(2)}/kWh` : '<span style="color:#f59e0b; font-weight:600;">Unverified / Not priced</span>';
@@ -776,6 +798,128 @@
       return result;
     }
 
+
+    // --- NETWORK FILTER CONTROLS (Include/Exclude from Map & Routes) ---
+    const KNOWN_NETWORKS = [
+      "Electrify America",
+      "EVgo",
+      "IONNA",
+      "Tesla",
+      "ChargePoint",
+      "Applegreen",
+      "Francis Energy",
+      "Mercedes-Benz"
+    ];
+
+    let ENABLED_NETWORKS = null;
+
+    function getEnabledNetworks() {
+      if (ENABLED_NETWORKS) return ENABLED_NETWORKS;
+      try {
+        const saved = localStorage.getItem('equinox_enabled_networks');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            ENABLED_NETWORKS = new Set(parsed);
+            return ENABLED_NETWORKS;
+          }
+        }
+      } catch (e) {}
+      // Default: all enabled
+      ENABLED_NETWORKS = new Set(KNOWN_NETWORKS);
+      ALL_STATIONS.forEach(s => { if (s.network) ENABLED_NETWORKS.add(s.network); });
+      return ENABLED_NETWORKS;
+    }
+
+    function isNetworkEnabled(net) {
+      const enabled = getEnabledNetworks();
+      return enabled.has(net);
+    }
+
+    function toggleNetwork(net, isChecked) {
+      const enabled = getEnabledNetworks();
+      if (isChecked) {
+        enabled.add(net);
+      } else {
+        enabled.delete(net);
+      }
+      try {
+        localStorage.setItem('equinox_enabled_networks', JSON.stringify(Array.from(enabled)));
+      } catch (e) {}
+
+      updateStationManagerBadge();
+      renderStandaloneStationMarkers();
+      renderUnverifiedStations();
+      if (activeRoutesData && activeRoutesData.length > 0) {
+        recomputeCurrentRoute();
+      }
+    }
+
+    function setAllNetworks(enableAll) {
+      const enabled = getEnabledNetworks();
+      enabled.clear();
+      if (enableAll) {
+        KNOWN_NETWORKS.forEach(n => enabled.add(n));
+        ALL_STATIONS.forEach(s => { if (s.network) enabled.add(s.network); });
+      }
+      try {
+        localStorage.setItem('equinox_enabled_networks', JSON.stringify(Array.from(enabled)));
+      } catch (e) {}
+
+      renderNetworkFilters();
+      updateStationManagerBadge();
+      renderStandaloneStationMarkers();
+      renderUnverifiedStations();
+      if (activeRoutesData && activeRoutesData.length > 0) {
+        recomputeCurrentRoute();
+      }
+    }
+
+    function renderNetworkFilters() {
+      const container = document.getElementById('networkFilterContainer');
+      if (!container) return;
+
+      const netCounts = {};
+      ALL_STATIONS.forEach(s => {
+        const net = s.network || "Other";
+        netCounts[net] = (netCounts[net] || 0) + 1;
+      });
+
+      KNOWN_NETWORKS.forEach(net => {
+        if (netCounts[net] === undefined) netCounts[net] = 0;
+      });
+
+      const enabled = getEnabledNetworks();
+
+      // Sort by active count descending
+      const sortedNets = Object.keys(netCounts).sort((a, b) => {
+        if (netCounts[b] !== netCounts[a]) return netCounts[b] - netCounts[a];
+        return a.localeCompare(b);
+      });
+
+      let html = '';
+      sortedNets.forEach(net => {
+        const count = netCounts[net];
+        const isChecked = enabled.has(net);
+        const color = NETWORK_COLORS[net] || "#64748b";
+        const netId = `net-filter-${net.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
+        html += `
+          <label class="flex items-center justify-between p-1.5 rounded bg-slate-950/70 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none text-[11px]">
+            <span class="flex items-center gap-1.5 overflow-hidden pr-1">
+              <input type="checkbox" id="${netId}" ${isChecked ? 'checked' : ''} onchange="toggleNetwork('${net}', this.checked)" class="accent-emerald-500 rounded cursor-pointer shrink-0">
+              <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${color};"></span>
+              <span class="text-slate-200 truncate font-medium" title="${net}">${net}</span>
+            </span>
+            <span class="text-[10px] font-mono text-slate-400 shrink-0 bg-slate-800/80 px-1 rounded">${count}</span>
+          </label>
+        `;
+      });
+
+      container.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+    }
+
     // Projects all stations in database onto the active highway polyline
     function matchStationsToPolyline(coords) {
       const cum_dist = [0.0];
@@ -800,6 +944,10 @@
       ALL_STATIONS.forEach(s => {
         // Exclude unverified stations or stations without verified prices from routing candidate stops
         if (s.price_verified === false || s.on == null || s.on <= 0) {
+          return;
+        }
+        // Exclude stations belonging to unchecked/excluded networks
+        if (!isNetworkEnabled(s.network)) {
           return;
         }
         if (s.lat < b_lat_min || s.lat > b_lat_max || s.lon < b_lon_min || s.lon > b_lon_max) {
@@ -1985,6 +2133,7 @@
       // 5. Draw all stations as interactive markers on the map
       ALL_STATIONS.forEach(s => {
         if (!s || s.lat == null || s.lon == null) return;
+        if (!isNetworkEnabled(s.network)) return; // Excluded from map
         const isUsed = itin.stops && itin.stops.some(sp => sp.station && sp.station.id === s.id);
         if (!isUsed) {
           const isVerified = (s.price_verified !== false && s.on != null && s.on > 0);
@@ -2346,6 +2495,7 @@
         saveStationsToStorage();
       }
 
+      renderNetworkFilters();
       updateStationManagerBadge();
       renderUnverifiedStations();
       renderStandaloneStationMarkers();
@@ -2364,7 +2514,7 @@
     function updateStationManagerBadge() {
       const badge = document.getElementById('stationCountBadge');
       if (badge) {
-        const verifiedCount = ALL_STATIONS.filter(s => s.price_verified !== false && s.on != null && s.on > 0).length;
+        const verifiedCount = ALL_STATIONS.filter(s => s.price_verified !== false && s.on != null && s.on > 0 && isNetworkEnabled(s.network)).length;
         badge.innerText = `${verifiedCount} active (${ALL_STATIONS.length} total)`;
       }
     }
@@ -2481,6 +2631,7 @@
         }
 
         saveStationsToStorage();
+        renderNetworkFilters();
         updateStationManagerBadge();
 
         if (statusBox) {
