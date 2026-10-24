@@ -21,7 +21,13 @@ TARGET_OPERATOR_IDS = [
     3252  # NRG EVgo
 ]
 
-TARGET_STATES = ["OH", "PA", "NJ", "WV", "MD"]
+TARGET_STATE_CONFIGS = {
+    "OH": {"lat": 40.4173, "lon": -82.9071, "dist": 180, "aliases": ["OH", "OHIO"]},
+    "PA": {"lat": 40.9699, "lon": -77.7278, "dist": 200, "aliases": ["PA", "PENNSYLVANIA"]},
+    "NJ": {"lat": 40.0583, "lon": -74.4057, "dist": 110, "aliases": ["NJ", "NEW JERSEY"]},
+    "WV": {"lat": 38.5976, "lon": -80.4549, "dist": 160, "aliases": ["WV", "WEST VIRGINIA"]},
+    "MD": {"lat": 39.0458, "lon": -76.6413, "dist": 130, "aliases": ["MD", "MARYLAND"]},
+}
 
 class OpenChargeMapClient:
     BASE_URL = "https://api.openchargemap.io/v3/poi/"
@@ -38,8 +44,9 @@ class OpenChargeMapClient:
     ) -> List[Dict[str, Any]]:
         """
         Queries OCM POI API across target states with CCS1 (ID 32) and >= 100 kW.
+        Uses geographic radius queries to reliably discover all chargers in each state.
         """
-        states = states or TARGET_STATES
+        states = states or list(TARGET_STATE_CONFIGS.keys())
         op_str = ",".join(str(op_id) for op_id in TARGET_OPERATOR_IDS)
         all_results = []
         seen_ids = set()
@@ -51,14 +58,19 @@ class OpenChargeMapClient:
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             for state in states:
+                cfg = TARGET_STATE_CONFIGS.get(state)
+                if not cfg:
+                    continue
                 params = {
                     "output": "json",
-                    "countrycode": "US",
-                    "statename": state,
+                    "latitude": cfg["lat"],
+                    "longitude": cfg["lon"],
+                    "distance": cfg["dist"],
+                    "distanceunit": "Miles",
                     "operatorid": op_str,
                     "connectiontypeid": "32", # CCS1
                     "minpowerkw": min_power_kw,
-                    "maxresults": 100,
+                    "maxresults": 250,
                     "compact": "true",
                     "verbose": "false"
                 }
@@ -70,8 +82,11 @@ class OpenChargeMapClient:
                             poi_id = poi.get("ID")
                             addr = poi.get("AddressInfo", {})
                             st_code = addr.get("StateOrProvince", "").strip().upper()
-                            # Ensure state matches exactly or abbreviation
-                            if poi_id not in seen_ids and st_code in [state, f"{state}."]:
+                            matches = any(
+                                st_code == a or st_code.startswith(a + " ") or st_code == f"{a}."
+                                for a in cfg["aliases"]
+                            )
+                            if poi_id not in seen_ids and matches:
                                 seen_ids.add(poi_id)
                                 all_results.append(poi)
                 except Exception as e:

@@ -1774,6 +1774,10 @@
         }
       });
 
+      if (!fastest || !cheapest || !best_balanced) {
+        console.warn("No viable Pareto route candidates found under current constraints.");
+        return;
+      }
       calculatedResults = {
         fastest: fastest,
         cheapest: cheapest,
@@ -2113,6 +2117,13 @@
       15: "EVgo",
       3252: "EVgo"
     };
+    const OCM_TARGET_CONFIGS = [
+      { state: "OH", lat: 40.4173, lon: -82.9071, dist: 180, aliases: ["OH", "OHIO"] },
+      { state: "PA", lat: 40.9699, lon: -77.7278, dist: 200, aliases: ["PA", "PENNSYLVANIA"] },
+      { state: "NJ", lat: 40.0583, lon: -74.4057, dist: 110, aliases: ["NJ", "NEW JERSEY"] },
+      { state: "WV", lat: 38.5976, lon: -80.4549, dist: 160, aliases: ["WV", "WEST VIRGINIA"] },
+      { state: "MD", lat: 39.0458, lon: -76.6413, dist: 130, aliases: ["MD", "MARYLAND"] },
+    ];
     const OCM_TARGET_STATES = ["OH", "PA", "NJ", "WV", "MD"];
 
     // Initialize Station Data from localStorage if present
@@ -2308,174 +2319,251 @@
     async function handlePullOcmStations() {
       const btn = document.getElementById('btnPullOcm');
       const statusBox = document.getElementById('scraperStatusBox');
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin text-cyan-400"></i><span>Pulling...</span>`;
-      lucide.createIcons();
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin text-cyan-400"></i><span>Pulling...</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
 
-      statusBox.classList.remove('hidden');
-      statusBox.innerHTML = `
-        <div class="flex items-center gap-2 text-cyan-400 font-medium">
-          <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
-          <span>Querying OCM and matching real station-by-station prices...</span>
-        </div>
-      `;
-      lucide.createIcons();
+      if (statusBox) {
+        statusBox.classList.remove('hidden');
+        statusBox.innerHTML = `
+          <div class="flex items-center gap-2 text-cyan-400 font-medium text-xs">
+            <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
+            <span>Querying Open Charge Map across OH, PA, NJ, WV, MD (CCS1 &ge; 100 kW)...</span>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+      }
 
       let newlyAdded = 0;
       let newlyVerified = 0;
-      const db = await loadScrapedDatabase();
 
-      // Client-side OCM fetch with state bounding box & real scraper cross-referencing
-      const opIds = Object.keys(OCM_TARGET_OPERATORS).join(',');
-      for (const state of OCM_TARGET_STATES) {
-        const url = `https://api.openchargemap.io/v3/poi/?output=json&countrycode=US&statename=${state}&operatorid=${opIds}&connectiontypeid=32&minpowerkw=100&maxresults=100`;
-        try {
-          const resp = await fetch(url, {
-            headers: { "User-Agent": "Equinox-Route-Optimizer/1.0", "X-API-Key": OCM_API_KEY }
-          });
-          if (resp.ok) {
-            const pois = await resp.json();
-            pois.forEach(poi => {
-              const addr = poi.AddressInfo || {};
-              const lat = addr.Latitude;
-              const lon = addr.Longitude;
-              if (!lat || !lon) return;
+      try {
+        const db = await loadScrapedDatabase();
+        const opIds = Object.keys(OCM_TARGET_OPERATORS).join(',');
 
-              const stCode = (addr.StateOrProvince || '').trim().toUpperCase();
-              if (stCode !== state && stCode !== `${state}.`) return;
-
-              const exists = ALL_STATIONS.some(s => haversineMiles(s.lat, s.lon, lat, lon) < 0.5);
-              if (!exists) {
-                const opId = poi.OperatorID;
-                const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
-                const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
-                const gm = network === "IONNA" || network === "EVgo";
-                const ea_pass = network === "Electrify America";
-
-                let maxKw = 150;
-                (poi.Connections || []).forEach(conn => {
-                  const p = conn.PowerKW;
-                  if (p && p > maxKw) maxKw = Math.round(p);
-                });
-
-                let sourceUrl = addr.RelatedURL || `https://openchargemap.org/site/poi/details/${poi.ID}`;
-
-                // Real station-specific price matching
-                const res = matchStationToScrapedData({
-                  id: `ocm-${poi.ID}`,
-                  network: network,
-                  state: state,
-                  city: addr.Town || '',
-                  address: addr.AddressLine1 || '',
-                  name: addr.Title || '',
-                  lat: lat,
-                  lon: lon,
-                  usage_cost: poi.UsageCost || '',
-                  plug: sourceUrl
-                }, db);
-
-                const newSt = {
-                  id: `ocm-${poi.ID || Math.round(Math.random()*100000)}`,
-                  name: `${network} - ${addr.Title || 'Fast Charger'}`,
-                  network: network,
-                  lat: Math.round(lat * 10000) / 10000,
-                  lon: Math.round(lon * 10000) / 10000,
-                  city: addr.Town || '',
-                  state: state,
-                  kw: maxKw,
-                  off: res.off,
-                  on: res.on,
-                  gm: gm,
-                  gm_pct: gm ? 0.10 : 0.0,
-                  ea_pass: ea_pass,
-                  plug: res.url || sourceUrl,
-                  price_verified: res.verified,
-                  ocm_id: poi.ID
-                };
-                ALL_STATIONS.push(newSt);
-                newlyAdded++;
-                if (res.verified) newlyVerified++;
-              }
+        for (const cfg of OCM_TARGET_CONFIGS) {
+          const url = `https://api.openchargemap.io/v3/poi/?output=json&latitude=${cfg.lat}&longitude=${cfg.lon}&distance=${cfg.dist}&distanceunit=Miles&operatorid=${opIds}&connectiontypeid=32&minpowerkw=100&maxresults=250`;
+          try {
+            const resp = await fetch(url, {
+              headers: { "User-Agent": "Equinox-Route-Optimizer/1.0", "X-API-Key": OCM_API_KEY }
             });
+            if (resp.ok) {
+              const pois = await resp.json();
+              if (Array.isArray(pois)) {
+                pois.forEach(poi => {
+                  const addr = poi.AddressInfo || {};
+                  const lat = addr.Latitude;
+                  const lon = addr.Longitude;
+                  if (!lat || !lon) return;
+
+                  const stRaw = (addr.StateOrProvince || '').trim().toUpperCase();
+                  const matchesState = cfg.aliases.some(a => stRaw === a || stRaw === `${a}.` || stRaw.startsWith(`${a} `));
+                  if (!matchesState) return;
+
+                  const exists = ALL_STATIONS.some(s => 
+                    (s.ocm_id && poi.ID && s.ocm_id === poi.ID) || 
+                    haversineMiles(s.lat, s.lon, lat, lon) < 0.25
+                  );
+
+                  if (!exists) {
+                    const opId = poi.OperatorID;
+                    const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
+                    const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
+                    const gm = network === "IONNA" || network === "EVgo";
+                    const ea_pass = network === "Electrify America";
+
+                    let maxKw = 150;
+                    (poi.Connections || []).forEach(conn => {
+                      const p = conn.PowerKW;
+                      if (p && p > maxKw) maxKw = Math.round(p);
+                    });
+
+                    let sourceUrl = addr.RelatedURL || `https://openchargemap.org/site/poi/details/${poi.ID}`;
+
+                    // Real station-specific price matching
+                    const res = matchStationToScrapedData({
+                      id: `ocm-${poi.ID}`,
+                      network: network,
+                      state: cfg.state,
+                      city: addr.Town || '',
+                      address: addr.AddressLine1 || '',
+                      name: addr.Title || '',
+                      lat: lat,
+                      lon: lon,
+                      usage_cost: poi.UsageCost || '',
+                      plug: sourceUrl
+                    }, db);
+
+                    const newSt = {
+                      id: `ocm-${poi.ID || Math.round(Math.random()*100000)}`,
+                      name: `${network} - ${addr.Title || 'Fast Charger'}`,
+                      network: network,
+                      lat: Math.round(lat * 10000) / 10000,
+                      lon: Math.round(lon * 10000) / 10000,
+                      city: addr.Town || '',
+                      state: cfg.state,
+                      kw: maxKw,
+                      off: res.off,
+                      on: res.on,
+                      gm: gm,
+                      gm_pct: gm ? 0.10 : 0.0,
+                      ea_pass: ea_pass,
+                      plug: res.url || sourceUrl,
+                      price_verified: res.verified,
+                      ocm_id: poi.ID
+                    };
+                    ALL_STATIONS.push(newSt);
+                    newlyAdded++;
+                    if (res.verified) newlyVerified++;
+                  }
+                });
+              }
+            }
+          } catch (stErr) {
+            console.warn(`Error querying state ${cfg.state}:`, stErr);
           }
-        } catch (err) {
-          console.warn(`Error querying state ${state}:`, err);
+        }
+
+        saveStationsToStorage();
+        updateStationManagerBadge();
+
+        if (statusBox) {
+          statusBox.innerHTML = `
+            <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+              <span>OCM Discovery Complete: Added ${newlyAdded} stations (${newlyVerified} verified from scrapers)!</span>
+            </div>
+            <div class="text-[11px] text-slate-300">
+              Database: <b>${ALL_STATIONS.length} total stations</b>. Unverified stations are listed below for manual pricing.
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons();
+        }
+
+        try {
+          renderUnverifiedStations();
+        } catch (rErr) {
+          console.warn("Error rendering unverified stations:", rErr);
+        }
+
+        try {
+          if (activeRoutesData && activeRoutesData.length > 0) {
+            recomputeCurrentRoute();
+          }
+        } catch (cErr) {
+          console.warn("Error recomputing route:", cErr);
+        }
+
+      } catch (err) {
+        console.error("Error pulling OCM stations:", err);
+        if (statusBox) {
+          statusBox.innerHTML = `
+            <div class="text-rose-400 font-semibold flex items-center gap-1.5 text-xs">
+              <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>
+              <span>Error pulling OCM stations: ${err.message || err}</span>
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons();
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i><span>Pull OCM</span>`;
+          if (window.lucide) lucide.createIcons();
         }
       }
-
-      saveStationsToStorage();
-
-      statusBox.innerHTML = `
-        <div class="text-emerald-400 font-semibold flex items-center gap-1.5">
-          <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span>OCM Discovery Complete: Added ${newlyAdded} stations (${newlyVerified} verified from scrapers)!</span>
-        </div>
-        <div class="text-[11px] text-slate-300">
-          Database: <b>${ALL_STATIONS.length} total stations</b>. Unverified stations are excluded from routing until priced.
-        </div>
-      `;
-      lucide.createIcons();
-      renderUnverifiedStations();
-      recomputeCurrentRoute();
-
-      btn.disabled = false;
-      btn.innerHTML = `<i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i><span>Pull OCM</span>`;
-      lucide.createIcons();
     }
 
     // BUTTON 2: Refresh Prices (Scrapes & Updates Real Station-Specific Tariffs)
     async function handleRefreshPrices() {
       const btn = document.getElementById('btnRefreshPrices');
       const statusBox = document.getElementById('scraperStatusBox');
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Scraping...</span>`;
-      lucide.createIcons();
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Scraping...</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
 
-      statusBox.classList.remove('hidden');
-      statusBox.innerHTML = `
-        <div class="flex items-center gap-2 text-emerald-400 font-medium">
-          <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
-          <span>Matching stations against 1,125+ live scraped station tariffs (DCFC Tracker, IONNA, Mercedes)...</span>
-        </div>
-      `;
-      lucide.createIcons();
+      if (statusBox) {
+        statusBox.classList.remove('hidden');
+        statusBox.innerHTML = `
+          <div class="flex items-center gap-2 text-emerald-400 font-medium text-xs">
+            <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
+            <span>Matching stations against 1,125+ live scraped station tariffs (DCFC Tracker, IONNA, Mercedes)...</span>
+          </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+      }
 
-      // Force-reload fresh scraped database
-      SCRAPED_DATABASE = null;
-      const db = await loadScrapedDatabase();
-      let refreshedCount = 0;
+      try {
+        // Force-reload fresh scraped database
+        SCRAPED_DATABASE = null;
+        const db = await loadScrapedDatabase();
+        let refreshedCount = 0;
 
-      ALL_STATIONS.forEach(s => {
-        const res = matchStationToScrapedData(s, db);
-        if (res.verified) {
-          s.on = res.on;
-          s.off = res.off;
-          if (res.mem_on) s.mem_on = res.mem_on;
-          if (res.mem_off) s.mem_off = res.mem_off;
-          if (res.url) s.plug = res.url;
-          s.price_verified = true;
-          refreshedCount++;
+        ALL_STATIONS.forEach(s => {
+          const res = matchStationToScrapedData(s, db);
+          if (res.verified) {
+            s.on = res.on;
+            s.off = res.off;
+            if (res.mem_on) s.mem_on = res.mem_on;
+            if (res.mem_off) s.mem_off = res.mem_off;
+            if (res.url) s.plug = res.url;
+            s.price_verified = true;
+            refreshedCount++;
+          }
+        });
+
+        saveStationsToStorage();
+        updateStationManagerBadge();
+
+        if (statusBox) {
+          statusBox.innerHTML = `
+            <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+              <span>Price Refresh Complete! ${refreshedCount} stations verified from real scrapers.</span>
+            </div>
+            <div class="text-[11px] text-slate-300">
+              Individual station rates updated. Any unverified stations remain listed below.
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons();
         }
-      });
 
-      saveStationsToStorage();
+        try {
+          renderUnverifiedStations();
+        } catch (rErr) {
+          console.warn("Error rendering unverified stations:", rErr);
+        }
 
-      statusBox.innerHTML = `
-        <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
-          <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span>Price Refresh Complete! ${refreshedCount} stations verified from real scrapers.</span>
-        </div>
-        <div class="text-[11px] text-slate-300">
-          Individual station rates updated. Any unverified stations remain flagged below with inspection links.
-        </div>
-      `;
-      lucide.createIcons();
-      renderUnverifiedStations();
-      recomputeCurrentRoute();
+        try {
+          if (activeRoutesData && activeRoutesData.length > 0) {
+            recomputeCurrentRoute();
+          }
+        } catch (cErr) {
+          console.warn("Error recomputing route:", cErr);
+        }
 
-      btn.disabled = false;
-      btn.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Refresh Prices</span>`;
-      lucide.createIcons();
+      } catch (err) {
+        console.error("Error refreshing prices:", err);
+        if (statusBox) {
+          statusBox.innerHTML = `
+            <div class="text-rose-400 font-semibold flex items-center gap-1.5 text-xs">
+              <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i>
+              <span>Error refreshing prices: ${err.message || err}</span>
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons();
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Refresh Prices</span>`;
+          if (window.lucide) lucide.createIcons();
+        }
+      }
     }
 
     // BUTTON 3: Clear Added Stations (Reset to Baseline)

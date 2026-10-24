@@ -272,7 +272,9 @@ class PricingScraperPipeline:
 
             st_id = f"{network.lower().replace(' ', '-')}-{addr.get('ID', item.get('ID'))}"
             city = addr.get("Town", "")
-            state = (addr.get("StateOrProvince", "")).strip().upper()
+            st_raw = (addr.get("StateOrProvince", "")).strip().upper()
+            state_map = {"OH": "OH", "OHIO": "OH", "PA": "PA", "PENNSYLVANIA": "PA", "NJ": "NJ", "NEW JERSEY": "NJ", "WV": "WV", "WEST VIRGINIA": "WV", "MD": "MD", "MARYLAND": "MD"}
+            state = state_map.get(st_raw, st_raw[:2] if len(st_raw) >= 2 else st_raw)
             title = addr.get("Title", "Station")
             line1 = addr.get("AddressLine1", "")
             uc = item.get("UsageCost")
