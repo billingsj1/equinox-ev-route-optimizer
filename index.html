@@ -492,40 +492,42 @@
       </div>
 
             <!-- Optimization Audit & Progress Bar (Sticks around after calculation) -->
-      <div id="optimizationAudit" class="p-3 bg-slate-900 border border-slate-800 rounded-xl mb-4 transition-all duration-300">
-        <div class="flex items-center justify-between mb-2">
+      <div id="optimizationAudit" class="p-4 bg-slate-900 border-2 border-slate-800 rounded-xl mb-4 transition-all duration-300">
+        <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
-            <span id="auditPulseDot" class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Pareto Optimization Audit</span>
+            <span id="auditPulseDot" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Route Optimization Audit</span>
           </div>
-          <span id="auditStatusText" class="text-[11px] text-emerald-400 font-mono">Ready</span>
+          <span id="auditStatusText" class="text-xs text-emerald-400 font-mono font-semibold">Ready</span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-          <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5">
-            <span class="text-emerald-400 text-sm font-bold">⚡</span>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-3">
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center gap-3">
+            <span class="text-lg">⚡</span>
             <div>
               <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">Itineraries Generated</div>
-              <div id="auditGeneratedCount" class="font-mono text-emerald-400 font-bold text-sm">--</div>
+              <div id="auditGeneratedCount" class="font-mono text-emerald-400 font-bold text-base">--</div>
             </div>
           </div>
-          <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5">
-            <span class="text-cyan-400 text-sm font-bold">🎯</span>
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center gap-3">
+            <span class="text-lg">🎯</span>
             <div>
-              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">Candidate Variations</div>
-              <div id="auditAnalyzedCount" class="font-mono text-cyan-400 font-bold text-sm">--</div>
+              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">Analyzed Best Routes</div>
+              <div id="auditAnalyzedCount" class="font-mono text-cyan-400 font-bold text-base">--</div>
             </div>
           </div>
-          <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5">
-            <span class="text-indigo-400 text-sm font-bold">🛣️</span>
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center gap-3">
+            <span class="text-lg">🛣️</span>
             <div>
               <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">OSRM Verified Routes</div>
-              <div id="auditOsrmCount" class="font-mono text-indigo-400 font-bold text-sm">--</div>
+              <div id="auditOsrmCount" class="font-mono text-indigo-400 font-bold text-base">--</div>
             </div>
           </div>
         </div>
-        <div class="mt-2 pt-2 border-t border-slate-800/60 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2">
-          <span id="auditLogSummary">• Ready to calculate optimal charging strategies</span>
-          <span id="auditTimestamp" class="text-slate-500 font-mono"></span>
+        <div class="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div id="auditLogSummary" class="text-xs text-slate-300">
+            • Configure your settings on the left, then click <b>Calculate Route</b> to begin.
+          </div>
+          <span id="auditTimestamp" class="text-[11px] text-slate-500 font-mono shrink-0"></span>
         </div>
       </div>
 
@@ -1936,15 +1938,28 @@
       document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
       document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
 
-      // Update Audit UI: Search started
+      // Elements for live Audit UI
       const auditStatusText = document.getElementById('auditStatusText');
       const auditLogSummary = document.getElementById('auditLogSummary');
       const auditGeneratedCount = document.getElementById('auditGeneratedCount');
       const auditAnalyzedCount = document.getElementById('auditAnalyzedCount');
       const auditOsrmCount = document.getElementById('auditOsrmCount');
       const auditPulseDot = document.getElementById('auditPulseDot');
-      if (auditStatusText) auditStatusText.innerText = "Generating Tree Branches...";
-      if (auditPulseDot) auditPulseDot.className = "inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+      const searchBtn = document.getElementById('searchBtn');
+
+      // Step 1: Live UI Update
+      if (auditStatusText) auditStatusText.innerText = "Exploring Forward State Tree...";
+      if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+      if (auditLogSummary) {
+        auditLogSummary.innerHTML = `<span class="text-amber-400 font-mono text-xs animate-pulse">• Step 1/3: Exploring forward search tree branches across highway corridors...</span>`;
+      }
+      if (searchBtn) {
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Generating Routes...</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+      // Micro-yield to allow browser UI thread to repaint
+      await new Promise(r => setTimeout(r, 60));
 
       // Compute Quickest Non-Stop Driving Baseline across active highway corridors
       let fastestNonStop = null;
@@ -1968,10 +1983,8 @@
       // STAGE 1: FORWARD STATE-SPACE SEARCH TREE
       // =========================================================================
       const stage1_candidates = [];
-      let total_state_evaluations = 0;
 
       activeRoutesData.forEach(route => {
-        // Project stations within 12-mile corridor buffer
         const projection = matchStationsToPolyline(route.coordinates);
         const routeStations = projection.matched;
         const total_miles = projection.total_dist || route.distance;
@@ -2003,7 +2016,6 @@
         }
 
         // Forward Tree Search Queue
-        // State: { mile, soc, drive_hrs, ch_hrs, stops }
         const queue = [{
           mile: 0.0,
           soc: start_soc,
@@ -2014,9 +2026,8 @@
 
         while (queue.length > 0) {
           const curr = queue.shift();
-          total_state_evaluations++;
 
-          // A. Destination reachability check from current state
+          // A. Destination reachability check
           const destLeg = simulateLegFromSteps(route.steps, curr.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
           let last_exit_detour = 0;
           let last_exit_kwh = 0;
@@ -2032,13 +2043,8 @@
           const leg_to_dest_mins = leg_to_dest_hrs * 60.0;
           const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
-          // Completion criteria:
-          // 1. Battery buffer at arrival: final_soc >= target_arrival_soc - 0.015
-          // 2. Max leg time limit: leg_to_dest_mins <= max_leg_mins
-          // 3. Final leg hardcoded 45-min absolute floor (unless 0 stops direct trip)
           if (final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_leg_mins) {
             if (curr.stops.length === 0 || leg_to_dest_mins >= 45.0) {
-              // Valid itinerary! Evaluate membership ROI & cost
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
 
@@ -2133,45 +2139,27 @@
             }
           }
 
-          // B. Branch Cutoff Rule:
-          // Only stop searching for additional stops if remaining drive time to destination < 45 min
-          if (leg_to_dest_mins < 45.0) {
-            continue;
-          }
-          if (curr.stops.length >= 4) {
-            continue;
-          }
+          if (leg_to_dest_mins < 45.0) continue;
+          if (curr.stops.length >= 4) continue;
 
-          // C. Branch forward to candidate station S_j
           for (let j = 0; j < routeStations.length; j++) {
             const st = routeStations[j];
             if (st.mile <= curr.mile + 5.0) continue;
 
-            // Check if drive time from S_j to destination is < 45 min (must be >= 45 min to justify stopping)
             const legToDestFromSt = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
-            if ((legToDestFromSt.hours * 60.0) < 45.0) {
-              continue;
-            }
+            if ((legToDestFromSt.hours * 60.0) < 45.0) continue;
 
-            // Drive time from current state to S_j
             const legSim = simulateLegFromSteps(route.steps, curr.mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
             const leg_mins = legSim.hours * 60.0;
 
-            // Max time constraint applies to ALL legs
             if (leg_mins > max_leg_mins) continue;
 
-            // Min time constraint:
             if (curr.mile === 0.0) {
-              // First leg:
-              // If start_soc >= 0.80 -> 45 min hardcoded absolute floor
-              // If start_soc < 0.80 -> no min time
               if (start_soc >= 0.80 && leg_mins < 45.0) continue;
             } else {
-              // Intermediate leg:
               if (leg_mins < min_leg_mins) continue;
             }
 
-            // Detour simulation for S_j
             const isPlaza = isServicePlaza(st);
             let detour_miles, detour_mins;
             if (isPlaza) {
@@ -2183,19 +2171,15 @@
             }
             const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
 
-            // Half detour energy & time entering station
             const total_leg_energy = legSim.kwh + (detourSim.kwh / 2.0);
             const total_leg_hrs = legSim.hours + (detour_mins / 60.0 / 2.0);
             const arr_soc = curr.soc - (total_leg_energy / 85.0);
 
-            // Buffer check at station arrival
             if (arr_soc < min_buffer_soc) continue;
 
-            // Sweep Target SoC in 5% increments
             const min_target = Math.max(arr_soc + 0.08, Math.ceil((arr_soc + 0.05) * 20.0) / 20.0);
             const max_target = 0.85;
 
-            // Plug & Go: 1.0 min setup for IONNA, EVgo, ChargePoint; 3.0 min for others
             const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
             const setup_mins = has_plug_and_go ? 1.0 : 3.0;
             const rate = st.on;
@@ -2237,13 +2221,6 @@
         }
       });
 
-      // Update Audit UI: Itineraries Generated
-      if (auditGeneratedCount) auditGeneratedCount.innerText = stage1_candidates.length.toLocaleString();
-      if (auditLogSummary) auditLogSummary.innerText = `* Generated ${stage1_candidates.length.toLocaleString()} routes across search tree`;
-
-      // =========================================================================
-      // STAGE 2: DIVERSE PHYSICAL SEQUENCE SELECTION & LIVE OSRM MULTI-WAYPOINT POLISH
-      // =========================================================================
       const alertBanner = document.getElementById('alertBanner');
       const alertMsg = document.getElementById('alertMessage');
 
@@ -2253,7 +2230,7 @@
           alertMsg.innerText = "No charging combinations found under current slider constraints. Try loosening Min/Max time between stops or starting with a higher SoC.";
         }
         if (auditStatusText) auditStatusText.innerText = "No Routes Found";
-        if (auditPulseDot) auditPulseDot.className = "inline-block w-2 h-2 rounded-full bg-red-400";
+        if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-red-400";
         return;
       }
       if (alertBanner) alertBanner.classList.add('hidden');
@@ -2268,7 +2245,6 @@
         sequenceGroups.get(seqKey).push(cand);
       });
 
-      // From each physical sequence, extract the best fastest, cheapest, and knee variations
       const representativeCandidates = [];
       const maxToleranceSlider = document.getElementById('maxDurationToleranceSlider');
       const maxTolerancePct = maxToleranceSlider ? parseFloat(maxToleranceSlider.value) : 10.0;
@@ -2290,7 +2266,6 @@
         }
       });
 
-      // Rank across sequences: top fastest, top cheapest, top balanced
       representativeCandidates.sort((a, b) => a.total_hours - b.total_hours);
       const top_fastest = representativeCandidates.slice(0, 20);
 
@@ -2311,7 +2286,6 @@
       const eligibleForBalanced = [...eligibleForCheapest].sort((a, b) => a.knee_dist - b.knee_dist);
       const top_balanced = eligibleForBalanced.slice(0, 20);
 
-      // Collect unique physical station sequences from Top candidates
       const combinedTop = [...top_fastest, ...top_cheapest, ...top_balanced];
       const uniqueSequencesMap = new Map();
 
@@ -2326,26 +2300,49 @@
         }
       });
 
-      // Update Audit UI: Analyzing Best Routes
+      // Step 2: Live UI Update
+      if (auditGeneratedCount) auditGeneratedCount.innerText = stage1_candidates.length.toLocaleString();
       if (auditAnalyzedCount) auditAnalyzedCount.innerText = combinedTop.length.toLocaleString();
       if (auditOsrmCount) auditOsrmCount.innerText = uniqueSequencesMap.size.toLocaleString();
-      if (auditStatusText) auditStatusText.innerText = `Polishing ${uniqueSequencesMap.size} Routes with OSRM...`;
-      if (auditLogSummary) auditLogSummary.innerText = `* Generated ${stage1_candidates.length.toLocaleString()} routes · * Analyzed ${combinedTop.length} candidate variations · Polishing ${uniqueSequencesMap.size} verified corridors with OSRM...`;
-
-      // Update button with live spinning progress
-      const searchBtn = document.getElementById('searchBtn');
+      if (auditStatusText) auditStatusText.innerText = `Analyzing Top ${combinedTop.length} Variations...`;
+      if (auditLogSummary) {
+        auditLogSummary.innerHTML = `
+          <div class="space-y-0.5 font-mono text-xs">
+            <div class="text-slate-300">✓ <b>Generated ${stage1_candidates.length.toLocaleString()} routes</b> across state-space search tree</div>
+            <div class="text-cyan-300 animate-pulse">• Step 2/3: Analyzing ${combinedTop.length} best candidate variations across corridors...</div>
+          </div>
+        `;
+      }
       if (searchBtn) {
-        searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Polishing ${uniqueSequencesMap.size} Routes with OSRM...</span>`;
+        searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Analyzing ${combinedTop.length} Variations...</span>`;
         if (window.lucide) lucide.createIcons();
       }
+      await new Promise(r => setTimeout(r, 60));
 
-      // Query OSRM in concurrent batches of 5
+      // Query OSRM in concurrent batches of 5 with live progress updates
       const osrmResponses = new Map();
       const seqEntries = Array.from(uniqueSequencesMap.entries());
       const BATCH_SIZE = 5;
 
       for (let i = 0; i < seqEntries.length; i += BATCH_SIZE) {
         const batch = seqEntries.slice(i, i + BATCH_SIZE);
+        const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
+
+        if (auditStatusText) auditStatusText.innerText = `Polishing Corridors (${completedSoFar}/${seqEntries.length})...`;
+        if (auditLogSummary) {
+          auditLogSummary.innerHTML = `
+            <div class="space-y-0.5 font-mono text-xs">
+              <div class="text-slate-300">✓ <b>Generated ${stage1_candidates.length.toLocaleString()} routes</b> across state-space search tree</div>
+              <div class="text-slate-300">✓ <b>Analyzed ${combinedTop.length} best routes</b> across diverse corridors</div>
+              <div class="text-indigo-300 animate-pulse">• Step 3/3: Verifying ${completedSoFar}/${seqEntries.length} physical routes with live OSRM turn-by-turn geometry...</div>
+            </div>
+          `;
+        }
+        if (searchBtn) {
+          searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Polishing ${completedSoFar}/${seqEntries.length} with OSRM...</span>`;
+          if (window.lucide) lucide.createIcons();
+        }
+
         await Promise.all(batch.map(async ([key, info]) => {
           if (info.stops.length === 0) {
             osrmResponses.set(key, {
@@ -2357,7 +2354,6 @@
             return;
           }
 
-          // Build multi-waypoint coordinate query
           const coordsStr = [
             `${info.route.origin.lon},${info.route.origin.lat}`,
             ...info.stops.map(s => `${s.station.lon},${s.station.lat}`),
@@ -2405,15 +2401,17 @@
             console.warn("Stage 2 OSRM waypoint query error for key:", key, netErr);
           }
         }));
+
+        await new Promise(r => setTimeout(r, 40));
       }
 
-      // Re-polish candidates using true OSRM multi-waypoint geometry with Smart Target SoC Auto-Adjustment
+      // Re-polish candidates using true OSRM multi-waypoint geometry
       const polishedCandidates = combinedTop.map(cand => {
         const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
         const osrmData = osrmResponses.get(seqKey);
 
         if (!osrmData || !osrmData.legs || osrmData.legs.length !== (cand.stops.length + 1)) {
-          return cand; // Keep Stage 1 estimates if OSRM was unavailable
+          return cand;
         }
 
         let current_soc = start_soc;
@@ -2427,18 +2425,15 @@
           const sp = cand.stops[idx];
           const leg = osrmData.legs[idx];
 
-          // Simulate leg on exact OSRM turn-by-turn steps
           const legSim = simulateLegFromSteps(leg.steps, 0, leg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
           total_drive_hrs += legSim.hours;
           current_soc -= (legSim.kwh / 85.0);
 
-          // If origin to first stop cannot be reached safely with buffer
           if (current_soc < (min_buffer_soc - 0.02)) {
             valid = false;
             break;
           }
 
-          // Next leg energy requirement
           const nextLeg = osrmData.legs[idx + 1];
           const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
           const needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
@@ -2449,7 +2444,6 @@
             break;
           }
 
-          // Smart auto-margin: respect proposed target SoC or bump to min_safe_departure if turn-by-turn was slightly longer
           const cand_target = sp.tgt_soc / 100.0;
           let target_soc = Math.max(cand_target, min_safe_departure);
           target_soc = Math.min(0.92, Math.max(current_soc + 0.05, target_soc));
@@ -2459,7 +2453,6 @@
           total_ch_hrs += (stop_mins / 60.0);
           total_ch_cost += ch.cost;
 
-          // Detour distance in real OSRM leg vs straight mainline
           const actual_detour_miles = Math.max(0.0, Math.round((leg.distance_miles - (sp.mile - (idx === 0 ? 0 : cand.stops[idx-1].mile))) * 10) / 10);
 
           polishedStops.push({
@@ -2478,7 +2471,6 @@
 
         if (!valid) return null;
 
-        // Final leg to destination
         const finalLeg = osrmData.legs[osrmData.legs.length - 1];
         const finalLegSim = simulateLegFromSteps(finalLeg.steps, 0, finalLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
         total_drive_hrs += finalLegSim.hours;
@@ -2507,7 +2499,7 @@
 
       const finalPool = (polishedCandidates.length > 0) ? polishedCandidates : stage1_candidates;
 
-      // Final Pareto Sorting with Enforced Physical Route Diversity
+      // Final Pareto Sorting
       finalPool.sort((a, b) => a.total_hours - b.total_hours);
       const fastest = finalPool[0];
       const fastSeqKey = fastest.stops.map(s => s.station.name).join('->');
@@ -2515,20 +2507,17 @@
       const maxAllowedHours = fastest.total_hours * (1.0 + (maxTolerancePct / 100.0));
       const eligibleFinal = finalPool.filter(c => c.total_hours <= (maxAllowedHours + 0.001));
 
-      // Separate candidates from physically distinct station sequences
       const diffSeqEligible = eligibleFinal.filter(c => c.stops.map(s => s.station.name).join('->') !== fastSeqKey);
       diffSeqEligible.sort((a, b) => a.total_cost - b.total_cost);
       eligibleFinal.sort((a, b) => a.total_cost - b.total_cost);
       const absCheapest = eligibleFinal[0] || fastest;
 
-      // Pick cheapest: if a distinct physical sequence is available and costs within $2 of fastest (or is cheaper), pick it
       let cheapest = absCheapest;
       if (diffSeqEligible.length > 0 && diffSeqEligible[0].total_cost <= (fastest.total_cost + 2.0)) {
         cheapest = diffSeqEligible[0];
       }
       const cheapSeqKey = cheapest.stops.map(s => s.station.name).join('->');
 
-      // Balanced (Pareto Knee)
       const f_min_t = fastest.total_hours;
       const f_max_t = Math.max(...eligibleFinal.map(c => c.total_hours));
       const f_min_c = Math.min(...eligibleFinal.map(c => c.total_cost));
@@ -2541,7 +2530,6 @@
       });
       eligibleFinal.sort((a, b) => a.knee_dist - b.knee_dist);
 
-      // Prefer a balanced route that is distinct from both fastest and cheapest if available
       let best_balanced = eligibleFinal.find(c => {
         const sKey = c.stops.map(s => s.station.name).join('->');
         return sKey !== fastSeqKey && sKey !== cheapSeqKey;
@@ -2562,19 +2550,34 @@
         osrmCount: uniqueSequencesMap.size
       };
 
-      // Update Audit UI: Complete & Persistent
+      // Update Audit UI: Complete & Permanently Persistent
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       if (auditStatusText) auditStatusText.innerText = "Verified & Optimized";
-      if (auditPulseDot) auditPulseDot.className = "inline-block w-2 h-2 rounded-full bg-emerald-400";
+      if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-400";
       if (auditGeneratedCount) auditGeneratedCount.innerText = stage1_candidates.length.toLocaleString();
       if (auditAnalyzedCount) auditAnalyzedCount.innerText = combinedTop.length.toLocaleString();
       if (auditOsrmCount) auditOsrmCount.innerText = uniqueSequencesMap.size.toLocaleString();
-      if (auditLogSummary) {
-        auditLogSummary.innerHTML = `<span>✓ <b>${stage1_candidates.length.toLocaleString()}</b> routes generated</span> <span class="text-slate-600">·</span> <span>✓ <b>${combinedTop.length}</b> candidate variations evaluated</span> <span class="text-slate-600">·</span> <span>✓ <b>${uniqueSequencesMap.size}</b> unique corridors verified with live OSRM</span>`;
-      }
-      const auditTimestamp = document.getElementById('auditTimestamp');
       if (auditTimestamp) auditTimestamp.innerText = `Updated ${timeStr}`;
+
+      if (auditLogSummary) {
+        auditLogSummary.innerHTML = `
+          <div class="space-y-1 font-mono text-xs">
+            <div class="text-emerald-400 flex items-center gap-1.5">
+              <span>✓</span> <b>Generated ${stage1_candidates.length.toLocaleString()} routes</b>
+              <span class="text-slate-500 font-normal">(state-space search tree explored across all corridor branches)</span>
+            </div>
+            <div class="text-cyan-400 flex items-center gap-1.5">
+              <span>✓</span> <b>Analyzed ${combinedTop.length} best routes</b>
+              <span class="text-slate-500 font-normal">(top fastest, cheapest, and Pareto knee variations)</span>
+            </div>
+            <div class="text-indigo-400 flex items-center gap-1.5">
+              <span>✓</span> <b>Verified ${uniqueSequencesMap.size} physical routes with live OSRM</b>
+              <span class="text-slate-500 font-normal">(real turn-by-turn ramps, speed limits, and charging detours)</span>
+            </div>
+          </div>
+        `;
+      }
 
       renderResultsUI();
     }
@@ -3740,7 +3743,7 @@ window.onload = () => {
       initMap();
       updateTimeGapDisplays(75, 150);
       updatePhysicsHUD();
-      handleSearchRoute();
+      // Route calculation is not run automatically on load, allowing settings adjustment first
       lucide.createIcons();
     };
   </script>
