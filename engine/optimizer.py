@@ -196,9 +196,10 @@ class MultiObjectiveOptimizer:
                 )
 
                 # Session Setup & Plugin Time:
-                # GM "Plug and Go" (IONNA, EVgo): ~2.0 mins auto-handshake
-                # Standard networks (EA, Applegreen, Tesla, ChargePoint): ~4.5 mins app/card auth & cable stow
-                setup_mins = 2.0 if (station.gm_discount_eligible or station.network.lower() in ["ionna", "evgo"]) else 4.5
+                # GM "Plug and Go" (IONNA, EVgo, ChargePoint): ~1.0 min auto-handshake
+                # Standard networks (EA, Applegreen, Tesla): ~3.0 mins app/card auth & cable stow
+                is_plug_and_go = station.gm_discount_eligible or station.network.lower() in ["ionna", "evgo", "chargepoint"]
+                setup_mins = 1.0 if is_plug_and_go else 3.0
                 total_stop_mins = charge_res["duration_minutes"] + setup_mins
                 charge_dur_hours = total_stop_mins / 60.0
                 total_charging_hours += charge_dur_hours

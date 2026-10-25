@@ -1080,7 +1080,7 @@
         }
 
         // Include station if it is within 10 miles corridor cross-track distance
-        if (min_dist < 10.0) {
+        if (min_dist <= 12.0) {
           const sCopy = Object.assign({}, s);
           sCopy.mile = Math.round(best_mile * 10) / 10;
           sCopy.detour_mi = Math.round(min_dist * 10) / 10;
@@ -1479,7 +1479,7 @@
         total_hours += (ds * usable) / Math.max(10, effective_p);
       }
 
-      const mins = (total_hours * 60) + 3.0; // 3 min handshake overhead
+      const mins = total_hours * 60; // pure charging duration
       const cost = needed_kwh * rate_per_kwh;
       return { added_kwh: needed_kwh, mins: mins, cost: cost };
     }
@@ -1606,7 +1606,7 @@
           buildCalibratedCorridor(originGeo, destGeo);
         }
 
-        recomputeCurrentRoute();
+        await recomputeCurrentRoute();
 
       } catch (err) {
         console.error("Route search error:", err);
@@ -1815,7 +1815,7 @@
     }
 
     // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---
-    function recomputeCurrentRoute() {
+    async function recomputeCurrentRoute() {
       if (!activeRoutesData || activeRoutesData.length === 0) {
         buildCalibratedCorridor(DEFAULT_ORIGIN, CITY_COORDINATES["marlton, nj"]);
       }
@@ -1863,207 +1863,88 @@
         }
       });
 
-      const candidates = [];
+      // =========================================================================
+      // STAGE 1: IN-MEMORY FORWARD TREE SEARCH WITH MULTI-TARGET SOC EVALUATION
+      // =========================================================================
+      const stage1_candidates = [];
 
       activeRoutesData.forEach(route => {
-        // Spatial projection: match verified stations along this specific highway route
+        // Project stations within 12-mile corridor buffer
         const projection = matchStationsToPolyline(route.coordinates);
         const routeStations = projection.matched;
         const total_miles = projection.total_dist || route.distance;
 
-        // 1. Check 0-Stop Candidate (Direct without charging, evaluated across specific speed limits)
+        // 1. Direct 0-Stop Candidate Check
         const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
         const rem_soc0 = start_soc - (leg0.kwh / 85.0);
-        if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.01)) {
-          candidates.push({
+        const dur_mins0 = leg0.hours * 60.0;
+        if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_leg_mins) {
+          stage1_candidates.push({
             route: route,
+            base_miles: total_miles,
+            total_actual_miles: total_miles,
+            total_detour_miles: 0.0,
             drive_hours: leg0.hours,
-            ch_hours: 0,
+            ch_hours: 0.0,
             total_hours: leg0.hours,
-            ch_cost: 0,
+            ch_cost: 0.0,
+            membership_fees: 0.0,
             toll_cost: route.toll,
             total_cost: route.toll,
             final_soc: Math.round(rem_soc0 * 100),
             stops: [],
             memberships: {
-              ea: { kwh: 0, worth: false, net: 0 },
-              tesla: { kwh: 0, worth: false, net: 0 }
+              ea: { kwh: 0, active: false, pre_owned: false, fee: 0, savings: 0, net: 0 },
+              tesla: { kwh: 0, active: false, pre_owned: false, fee: 0, savings: 0, net: 0 }
             }
           });
         }
 
-        const target_speed = Math.min(route.speed_mph + speed_offset, max_cap);
-        // Min & max leg distance derived from user's time sliders (allowing reasonable tolerance for highway exits)
-        const min_leg_dist = Math.max(16, (min_leg_mins / 60.0) * target_speed * 0.75);
-        const max_leg_dist = Math.max(min_leg_dist + 25, (max_leg_mins / 60.0) * target_speed * 1.35);
+        // Forward Tree Search Queue
+        // State: { mile, soc, drive_hrs, ch_hrs, stops }
+        const queue = [{
+          mile: 0.0,
+          soc: start_soc,
+          drive_hrs: 0.0,
+          ch_hrs: 0.0,
+          stops: []
+        }];
 
-        // Stations eligible for stopping (must be within trip bounds)
-        const eligible = routeStations.filter(s => s.mile >= (min_leg_dist * 0.40) && s.mile <= (total_miles - 15));
+        while (queue.length > 0) {
+          const curr = queue.shift();
 
-        const combos = [];
-        // 1-Stop Combos
-        eligible.forEach(s => combos.push([s]));
-
-        // 2-Stop Combos
-        for (let i = 0; i < eligible.length; i++) {
-          for (let j = i + 1; j < eligible.length; j++) {
-            const leg = eligible[j].mile - eligible[i].mile;
-            if (leg >= min_leg_dist && leg <= max_leg_dist) {
-              combos.push([eligible[i], eligible[j]]);
-            }
-          }
-        }
-
-        // 3-Stop Combos
-        for (let i = 0; i < eligible.length; i++) {
-          for (let j = i + 1; j < eligible.length; j++) {
-            for (let k = j + 1; k < eligible.length; k++) {
-              const leg1 = eligible[j].mile - eligible[i].mile;
-              const leg2 = eligible[k].mile - eligible[j].mile;
-              if (leg1 >= min_leg_dist && leg2 >= min_leg_dist && leg1 <= max_leg_dist && leg2 <= max_leg_dist) {
-                combos.push([eligible[i], eligible[j], eligible[k]]);
-              }
-            }
-          }
-        }
-
-        // 4-Stop Combos (unlocked when user allows shorter gaps <= 75 mins, enabling cheaper rapid charging)
-        if (min_leg_mins <= 75 && total_miles >= 280) {
-          for (let i = 0; i < eligible.length; i++) {
-            for (let j = i + 1; j < eligible.length; j++) {
-              for (let k = j + 1; k < eligible.length; k++) {
-                for (let m = k + 1; m < eligible.length; m++) {
-                  const leg1 = eligible[j].mile - eligible[i].mile;
-                  const leg2 = eligible[k].mile - eligible[j].mile;
-                  const leg3 = eligible[m].mile - eligible[k].mile;
-                  if (leg1 >= min_leg_dist && leg2 >= min_leg_dist && leg3 >= min_leg_dist) {
-                    combos.push([eligible[i], eligible[j], eligible[k], eligible[m]]);
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // Safety fallback: if bounds were too strict to generate combos, relax bounds
-        if (combos.length === 0) {
-          for (let i = 0; i < eligible.length; i++) {
-            for (let j = i + 1; j < eligible.length; j++) {
-              if ((eligible[j].mile - eligible[i].mile) >= 25) {
-                combos.push([eligible[i], eligible[j]]);
-              }
-            }
-          }
-        }
-
-        // Simulate each combination
-        combos.forEach(stopsGroup => {
-          let current_soc = start_soc;
-          let current_mile = 0;
-          let total_drive_hrs = 0;
-          let total_ch_hrs = 0;
-          let total_ch_cost = 0;
-          let stopPlans = [];
-          let valid = true;
-
-          for (let idx = 0; idx < stopsGroup.length; idx++) {
-            const st = stopsGroup[idx];
-            // Detour calculation: Service Plazas (~0.5 mi, 3m) vs Off-Highway Exits (ramps + lights + surface streets)
-            const isPlaza = isServicePlaza(st);
-            let detour_miles = 0.5;
-            let detour_mins = 2.8;
-            if (isPlaza) {
-              detour_miles = 0.5; // Service plaza loop off/on mainline
-              detour_mins = 2.8;  // Plaza ramp deceleration, 20 mph ring road, merge acceleration
-            } else {
-              // Off-highway: off-ramp (0.4 mi) + cross-track street + retail parking lot + signals/turns + on-ramp (0.4 mi)
-              const one_way = Math.max(0.15, st.detour_mi || 0.2);
-              detour_miles = Math.round((0.8 + (2.0 * one_way)) * 10) / 10;
-              detour_mins = Math.round((3.2 + (detour_miles / 28.0 * 60.0) + (1.2 * Math.max(1, detour_miles * 0.8))) * 10) / 10;
-            }
-            const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
-            const detour_hours = detourSim.hours;
-
-            // Leg distance driving to this charger (simulated along specific segment speed limits)
-            const legSim = simulateLegFromSteps(route.steps, current_mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
-
-            total_drive_hrs += legSim.hours + (detour_hours / 2.0);
-            current_soc -= ((legSim.kwh + (detourSim.kwh / 2.0)) / 85.0);
-
-            // Buffer constraint
-            if (current_soc < min_buffer_soc) {
-              valid = false;
-              break;
-            }
-
-            const next_mile = (idx === stopsGroup.length - 1) ? total_miles : stopsGroup[idx + 1].mile;
-            const nextLegSim = simulateLegFromSteps(route.steps, st.mile, next_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
-            const needed_next_soc = (nextLegSim.kwh + (detourSim.kwh / 2.0)) / 85.0;
-
-            let target_soc = 0;
-            if (idx === stopsGroup.length - 1) {
-              target_soc = needed_next_soc + target_arrival_soc + 0.02;
-            } else {
-              target_soc = needed_next_soc + min_buffer_soc + 0.04;
-            }
-
-            target_soc = Math.min(0.95, Math.max(current_soc + 0.08, target_soc));
-
-            let rate = st.on;
-            if (st.gm) rate *= (1.0 - st.gm_pct); // 10% GM EV discount
-
-            const ch = calculateCharging(current_soc, target_soc, st.kw, rate);
-
-            // Session Setup & Teardown Time:
-            // GM "Plug and Go" (IONNA, EVgo): ~2.0 mins (park, plug in, auto ISO 15118 handshake)
-            // Other networks (EA, Applegreen, Tesla, ChargePoint): ~4.5 mins (locate stall, phone app / card tap, authorization, cable stow)
-            const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo");
-            const setup_mins = has_plug_and_go ? 2.0 : 4.5;
-            const total_stop_mins = Math.round(ch.mins + setup_mins);
-
-            total_ch_hrs += (total_stop_mins / 60.0);
-            total_ch_cost += ch.cost;
-
-            stopPlans.push({
-              station: st,
-              mile: st.mile,
-              is_plaza: isPlaza,
-              detour_mi: st.detour_mi || 0,
-              detour_miles: detour_miles,
-              detour_mins: detour_mins,
-              arr_soc: Math.round(current_soc * 100),
-              tgt_soc: Math.round(target_soc * 100),
-              added_kwh: Math.round(ch.added_kwh * 10) / 10,
-              charge_mins: Math.round(ch.mins),
-              setup_mins: setup_mins,
-              has_plug_and_charge: has_plug_and_go,
-              mins: total_stop_mins,
-              cost: Math.round(ch.cost * 100) / 100,
-              rate: rate
-            });
-
-            current_soc = target_soc;
-            current_mile = st.mile;
+          // A. Destination reachability check from current state
+          const destLeg = simulateLegFromSteps(route.steps, curr.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+          let last_exit_detour = 0;
+          let last_exit_kwh = 0;
+          if (curr.stops.length > 0) {
+            const lastStop = curr.stops[curr.stops.length - 1];
+            last_exit_detour = lastStop.detour_miles / 2.0;
+            const detourSim = simulateDetourPhysics(last_exit_detour, lastStop.is_plaza, payload_lbs, temp_f, road_cond);
+            last_exit_kwh = detourSim.kwh;
           }
 
-          if (valid) {
-            const last_exit_detour = stopPlans.length > 0 ? (stopPlans[stopPlans.length - 1].detour_miles / 2.0) : 0;
-            const finalLegSim = simulateLegFromSteps(route.steps, current_mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
-            total_drive_hrs += finalLegSim.hours + (last_exit_detour / 28.0);
-            current_soc -= (finalLegSim.kwh / 85.0);
+          const leg_to_dest_kwh = destLeg.kwh + last_exit_kwh;
+          const leg_to_dest_hrs = destLeg.hours + (last_exit_detour / 28.0);
+          const leg_to_dest_mins = leg_to_dest_hrs * 60.0;
+          const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
-            if (current_soc >= (target_arrival_soc - 0.015)) {
-              // Membership ROI Analysis (50% round trip split: EA Pass+ $3.50, Tesla $6.50)
+          // Completion criteria:
+          // 1. Battery buffer at arrival: final_soc >= target_arrival_soc - 0.015
+          // 2. Max leg time limit: leg_to_dest_mins <= max_leg_mins
+          // 3. Final leg hardcoded 45-min absolute floor (unless 0 stops direct trip)
+          if (final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_leg_mins) {
+            if (curr.stops.length === 0 || leg_to_dest_mins >= 45.0) {
+              // Valid itinerary! Evaluate membership ROI & cost
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
 
               let ea_kwh = 0, ea_gross_savings = 0;
               let tesla_kwh = 0, tesla_gross_savings = 0;
 
-              stopPlans.forEach(sp => {
+              curr.stops.forEach(sp => {
                 if (sp.station.ea_pass) {
                   ea_kwh += sp.added_kwh;
-                  // Standard EA is ~$0.56-$0.64, Pass+ is 25% discount (saves ~14-16c/kWh)
                   ea_gross_savings += (sp.added_kwh * (sp.station.on * 0.25));
                 }
                 if (sp.station.network === "Tesla" && sp.station.mem_on) {
@@ -2072,19 +1953,16 @@
                 }
               });
 
-              // EA Pass+ decision: auto-activate if gross savings >= $3.50 or pre-owned
               const ea_active = has_ea_preowned || (ea_gross_savings >= 3.50);
               const ea_fee = has_ea_preowned ? 0.0 : (ea_active ? 3.50 : 0.0);
               const ea_net = ea_gross_savings - ea_fee;
 
-              // Tesla Membership decision: auto-activate if gross savings >= $6.50 or pre-owned
               const tesla_active = has_tesla_preowned || (tesla_gross_savings >= 6.50);
               const tesla_fee = has_tesla_preowned ? 0.0 : (tesla_active ? 6.50 : 0.0);
               const tesla_net = tesla_gross_savings - tesla_fee;
 
-              // Update each stop plan's actual charged rate and cost
               let discounted_ch_cost = 0;
-              stopPlans.forEach(sp => {
+              const finalStops = curr.stops.map(sp => {
                 let effective_rate = sp.station.on;
                 let badge = "";
 
@@ -2092,7 +1970,7 @@
                   effective_rate *= (1.0 - sp.station.gm_pct);
                   badge = "10% GM";
                 } else if (sp.station.ea_pass && ea_active) {
-                  effective_rate *= 0.75; // 25% Pass+ discount applied
+                  effective_rate *= 0.75;
                   badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
                 } else if (sp.station.network === "Tesla" && tesla_active && sp.station.mem_on) {
                   effective_rate = sp.station.mem_on;
@@ -2100,32 +1978,36 @@
                 }
 
                 const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
-                sp.rate = effective_rate;
-                sp.cost = stopCost;
-                sp.badge = badge;
                 discounted_ch_cost += stopCost;
+                return {
+                  ...sp,
+                  rate: effective_rate,
+                  cost: stopCost,
+                  badge: badge
+                };
               });
 
               const membership_fees = Math.round((ea_fee + tesla_fee) * 100) / 100;
-              const total_detour_miles = Math.round(stopPlans.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
+              const total_detour_miles = Math.round(finalStops.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
               const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
-              const total_time = total_drive_hrs + total_ch_hrs;
+              const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
+              const total_time = total_drive_hrs + curr.ch_hrs;
               const total_cost = Math.round((discounted_ch_cost + membership_fees + route.toll) * 100) / 100;
 
-              candidates.push({
+              stage1_candidates.push({
                 route: route,
                 base_miles: total_miles,
                 total_actual_miles: total_actual_miles,
                 total_detour_miles: total_detour_miles,
                 drive_hours: total_drive_hrs,
-                ch_hours: total_ch_hrs,
+                ch_hours: curr.ch_hrs,
                 total_hours: total_time,
                 ch_cost: Math.round(discounted_ch_cost * 100) / 100,
                 membership_fees: membership_fees,
                 toll_cost: route.toll,
                 total_cost: total_cost,
-                final_soc: Math.round(current_soc * 100),
-                stops: stopPlans,
+                final_soc: Math.round(final_soc * 100),
+                stops: finalStops,
                 memberships: {
                   ea: {
                     kwh: Math.round(ea_kwh * 10) / 10,
@@ -2147,46 +2029,346 @@
               });
             }
           }
-        });
+
+          // B. Branch Cutoff Rule:
+          // "Only stop searching for additional stops if remaining drive time to destination < 45 min"
+          if (leg_to_dest_mins < 45.0) {
+            continue;
+          }
+          if (curr.stops.length >= 4) {
+            continue;
+          }
+
+          // C. Branch forward to candidate station S_j
+          for (let j = 0; j < routeStations.length; j++) {
+            const st = routeStations[j];
+            if (st.mile <= curr.mile + 5.0) continue;
+
+            // Check if drive time from S_j to destination is < 45 min (must be >= 45 min to justify stopping)
+            const legToDestFromSt = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+            if ((legToDestFromSt.hours * 60.0) < 45.0) {
+              continue;
+            }
+
+            // Drive time from current state to S_j
+            const legSim = simulateLegFromSteps(route.steps, curr.mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+            const leg_mins = legSim.hours * 60.0;
+
+            // Max time constraint applies to ALL legs
+            if (leg_mins > max_leg_mins) continue;
+
+            // Min time constraint:
+            if (curr.mile === 0.0) {
+              // First leg:
+              // If start_soc >= 0.80 -> 45 min hardcoded absolute floor
+              // If start_soc < 0.80 -> no min time
+              if (start_soc >= 0.80 && leg_mins < 45.0) continue;
+            } else {
+              // Intermediate leg:
+              if (leg_mins < min_leg_mins) continue;
+            }
+
+            // Detour simulation for S_j
+            const isPlaza = isServicePlaza(st);
+            let detour_miles, detour_mins;
+            if (isPlaza) {
+              detour_miles = 0.5;
+              detour_mins = 2.5;
+            } else {
+              detour_miles = Math.round((0.6 + (2.0 * Math.max(0.15, st.detour_mi || 0.2))) * 10) / 10;
+              detour_mins = Math.round((2.5 + (detour_miles / 30.0 * 60.0)) * 10) / 10;
+            }
+            const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
+
+            // Half detour energy & time entering station
+            const total_leg_energy = legSim.kwh + (detourSim.kwh / 2.0);
+            const total_leg_hrs = legSim.hours + (detour_mins / 60.0 / 2.0);
+            const arr_soc = curr.soc - (total_leg_energy / 85.0);
+
+            // Buffer check at station arrival
+            if (arr_soc < min_buffer_soc) continue;
+
+            // Sweep Target SoC in 5% increments
+            const min_target = Math.max(arr_soc + 0.08, Math.ceil((arr_soc + 0.05) * 20.0) / 20.0);
+            const max_target = 0.85;
+
+            // Plug & Go: 1.0 min setup for IONNA, EVgo, ChargePoint; 3.0 min for others
+            const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
+            const setup_mins = has_plug_and_go ? 1.0 : 3.0;
+            const rate = st.on;
+
+            let target_soc = min_target;
+            while (target_soc <= max_target + 0.001) {
+              const ch = calculateCharging(arr_soc, target_soc, st.kw, rate);
+              const total_stop_mins = Math.round(ch.mins + setup_mins);
+
+              const stopPlan = {
+                station: st,
+                mile: st.mile,
+                is_plaza: isPlaza,
+                detour_mi: st.detour_mi || 0,
+                detour_miles: detour_miles,
+                detour_mins: detour_mins,
+                arr_soc: Math.round(arr_soc * 100),
+                tgt_soc: Math.round(target_soc * 100),
+                added_kwh: Math.round(ch.added_kwh * 10) / 10,
+                charge_mins: Math.round(ch.mins),
+                setup_mins: setup_mins,
+                has_plug_and_charge: has_plug_and_go,
+                mins: total_stop_mins,
+                cost: Math.round(ch.cost * 100) / 100,
+                rate: rate
+              };
+
+              queue.push({
+                mile: st.mile,
+                soc: target_soc,
+                drive_hrs: curr.drive_hrs + total_leg_hrs,
+                ch_hrs: curr.ch_hrs + (total_stop_mins / 60.0),
+                stops: [...curr.stops, stopPlan]
+              });
+
+              target_soc += 0.05;
+            }
+          }
+        }
       });
 
+      // =========================================================================
+      // STAGE 2: SELECT TOP 60 (20 Fastest, 20 Cheapest, 20 Knee) & OSRM POLISH
+      // =========================================================================
       const alertBanner = document.getElementById('alertBanner');
-      if (candidates.length === 0) {
-        alertBanner.classList.remove('hidden');
-        document.getElementById('alertMessage').innerText = "Constraints too strict for selected parameters (e.g. low starting SoC or extreme cold). Displaying closest achievable route.";
-        // Fallback: relax target arrival SoC constraint to find best route
+      const alertMsg = document.getElementById('alertMessage');
+
+      if (stage1_candidates.length === 0) {
+        if (alertBanner && alertMsg) {
+          alertBanner.classList.remove('hidden');
+          alertMsg.innerText = "No charging combinations found under current slider constraints. Try loosening Min/Max time between stops or starting with a higher SoC.";
+        }
         return;
-      } else {
-        alertBanner.classList.add('hidden');
       }
+      if (alertBanner) alertBanner.classList.add('hidden');
 
-      // 1. FASTEST ROUTE (Min total duration with charging stops)
-      candidates.sort((a, b) => a.total_hours - b.total_hours);
-      const fastest = candidates[0];
+      // Rank Stage 1 candidates
+      stage1_candidates.sort((a, b) => a.total_hours - b.total_hours);
+      const top_fastest = stage1_candidates.slice(0, 20);
 
-      // Max Duration Tolerance Filter (Default 10% over fastest route)
       const maxToleranceSlider = document.getElementById('maxDurationToleranceSlider');
       const maxTolerancePct = maxToleranceSlider ? parseFloat(maxToleranceSlider.value) : 10.0;
-      const maxAllowedHours = fastest.total_hours * (1.0 + (maxTolerancePct / 100.0));
+      const s1_fastest_hrs = top_fastest[0].total_hours;
+      const s1_max_allowed = s1_fastest_hrs * (1.0 + (maxTolerancePct / 100.0));
 
-      // Eligible comparison candidates: must not exceed fastest duration by more than maxTolerancePct
-      const eligibleCandidates = candidates.filter(c => c.total_hours <= (maxAllowedHours + 0.001));
-      const candidatesByCost = [...eligibleCandidates].sort((a, b) => a.total_cost - b.total_cost);
+      const eligibleForCheapest = stage1_candidates.filter(c => c.total_hours <= (s1_max_allowed + 0.001));
+      eligibleForCheapest.sort((a, b) => a.total_cost - b.total_cost);
+      const top_cheapest = eligibleForCheapest.slice(0, 20);
 
-      // 2. CHEAPEST ROUTE (Min combined cost within duration tolerance)
-      const cheapest = candidatesByCost[0] || fastest;
+      // Balanced (Pareto Knee)
+      const min_t = s1_fastest_hrs;
+      const max_t = Math.max(...eligibleForCheapest.map(c => c.total_hours));
+      const min_c = Math.min(...eligibleForCheapest.map(c => c.total_cost));
+      const max_c = Math.max(...eligibleForCheapest.map(c => c.total_cost));
 
-      // 3. BALANCED ROUTE (Pareto Knee / Utopia Distance within duration tolerance)
-      const min_t = fastest.total_hours;
-      const max_t = Math.max(...eligibleCandidates.map(c => c.total_hours));
-      const min_c = Math.min(...eligibleCandidates.map(c => c.total_cost));
-      const max_c = Math.max(...eligibleCandidates.map(c => c.total_cost));
-
-      let best_balanced = eligibleCandidates[0] || fastest;
-      let min_dist = 999;
-      eligibleCandidates.forEach(c => {
+      eligibleForCheapest.forEach(c => {
         const norm_t = (c.total_hours - min_t) / Math.max(0.01, max_t - min_t);
         const norm_c = (c.total_cost - min_c) / Math.max(0.01, max_c - min_c);
+        c.knee_dist = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
+      });
+      const eligibleForBalanced = [...eligibleForCheapest].sort((a, b) => a.knee_dist - b.knee_dist);
+      const top_balanced = eligibleForBalanced.slice(0, 20);
+
+      // Collect unique physical station sequences from Top 60
+      const combinedTop = [...top_fastest, ...top_cheapest, ...top_balanced];
+      const uniqueSequencesMap = new Map();
+
+      combinedTop.forEach(cand => {
+        const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
+        if (!uniqueSequencesMap.has(seqKey)) {
+          uniqueSequencesMap.set(seqKey, {
+            route: cand.route,
+            stops: cand.stops,
+            sampleCandidate: cand
+          });
+        }
+      });
+
+      // Update button / status box with live progress
+      const searchBtn = document.getElementById('searchBtn');
+      if (searchBtn) {
+        searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Polishing ${uniqueSequencesMap.size} Routes with OSRM...</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      // Query OSRM in concurrent batches of 5
+      const osrmResponses = new Map();
+      const seqEntries = Array.from(uniqueSequencesMap.entries());
+      const BATCH_SIZE = 5;
+
+      for (let i = 0; i < seqEntries.length; i += BATCH_SIZE) {
+        const batch = seqEntries.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(async ([key, info]) => {
+          if (info.stops.length === 0) {
+            osrmResponses.set(key, {
+              distance_miles: info.route.distance,
+              duration_hours: info.sampleCandidate.drive_hours,
+              coordinates: info.route.coordinates,
+              legs: [{ steps: info.route.steps, distance_miles: info.route.distance }]
+            });
+            return;
+          }
+
+          // Build multi-waypoint coordinate query
+          const coordsStr = [
+            `${info.route.origin.lon},${info.route.origin.lat}`,
+            ...info.stops.map(s => `${s.station.lon},${s.station.lat}`),
+            `${info.route.destination.lon},${info.route.destination.lat}`
+          ].join(';');
+
+          const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
+          try {
+            const resp = await fetch(url, { headers: { "User-Agent": "Equinox-Route-Optimizer/1.0" } });
+            if (resp.ok) {
+              const osrmData = await resp.json();
+              if (osrmData && osrmData.routes && osrmData.routes.length > 0) {
+                const r = osrmData.routes[0];
+                const miles = r.distance * 0.000621371;
+                const hours = r.duration / 3600.0;
+                const parsedLegs = (r.legs || []).map(leg => {
+                  const rawSteps = leg.steps || [];
+                  const pSteps = rawSteps.map(s => {
+                    const d_mi = (s.distance || 0) * 0.000621371;
+                    const spd = resolveStepSpeedLimit(s);
+                    return {
+                      name: s.name || '',
+                      ref: s.ref || '',
+                      distance_miles: d_mi,
+                      posted_speed: spd,
+                      geometry: s.geometry,
+                      maneuver: s.maneuver
+                    };
+                  });
+                  return {
+                    distance_miles: leg.distance * 0.000621371,
+                    steps: pSteps
+                  };
+                });
+
+                osrmResponses.set(key, {
+                  distance_miles: miles,
+                  duration_hours: hours,
+                  coordinates: r.geometry.coordinates,
+                  legs: parsedLegs
+                });
+              }
+            }
+          } catch (osrmErr) {
+            console.warn(`OSRM multi-waypoint query failed for ${key}, using Stage 1 estimate:`, osrmErr);
+          }
+        }));
+      }
+
+      // Re-polish candidates using true OSRM multi-waypoint geometry
+      const polishedCandidates = combinedTop.map(cand => {
+        const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
+        const osrmData = osrmResponses.get(seqKey);
+
+        if (!osrmData || !osrmData.legs || osrmData.legs.length !== (cand.stops.length + 1)) {
+          return cand; // Keep Stage 1 estimates if OSRM was unavailable
+        }
+
+        let current_soc = start_soc;
+        let total_drive_hrs = 0.0;
+        let total_ch_hrs = 0.0;
+        let total_ch_cost = 0.0;
+        let valid = true;
+        let polishedStops = [];
+
+        for (let idx = 0; idx < cand.stops.length; idx++) {
+          const sp = cand.stops[idx];
+          const leg = osrmData.legs[idx];
+
+          // Simulate leg on exact OSRM turn-by-turn steps
+          const legSim = simulateLegFromSteps(leg.steps, 0, leg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
+          total_drive_hrs += legSim.hours;
+          current_soc -= (legSim.kwh / 85.0);
+
+          if (current_soc < min_buffer_soc) {
+            valid = false;
+            break;
+          }
+
+          const target_soc = sp.tgt_soc / 100.0;
+          const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate);
+          const stop_mins = Math.round(ch.mins + sp.setup_mins);
+          total_ch_hrs += (stop_mins / 60.0);
+          total_ch_cost += ch.cost;
+
+          // Detour distance in real OSRM leg vs straight mainline
+          const actual_detour_miles = Math.max(0.0, Math.round((leg.distance_miles - (sp.mile - (idx === 0 ? 0 : cand.stops[idx-1].mile))) * 10) / 10);
+
+          polishedStops.push({
+            ...sp,
+            detour_miles: actual_detour_miles > 0 ? actual_detour_miles : sp.detour_miles,
+            arr_soc: Math.round(current_soc * 100),
+            added_kwh: Math.round(ch.added_kwh * 10) / 10,
+            charge_mins: Math.round(ch.mins),
+            mins: stop_mins,
+            cost: Math.round(ch.cost * 100) / 100
+          });
+
+          current_soc = target_soc;
+        }
+
+        if (!valid) return null;
+
+        // Final leg to destination
+        const finalLeg = osrmData.legs[osrmData.legs.length - 1];
+        const finalLegSim = simulateLegFromSteps(finalLeg.steps, 0, finalLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
+        total_drive_hrs += finalLegSim.hours;
+        current_soc -= (finalLegSim.kwh / 85.0);
+
+        if (current_soc < (target_arrival_soc - 0.015)) {
+          return null;
+        }
+
+        const total_time = total_drive_hrs + total_ch_hrs;
+        const total_cost = Math.round((total_ch_cost + cand.membership_fees + cand.route.toll) * 100) / 100;
+
+        return {
+          ...cand,
+          total_actual_miles: Math.round(osrmData.distance_miles * 10) / 10,
+          drive_hours: total_drive_hrs,
+          ch_hours: total_ch_hrs,
+          total_hours: total_time,
+          ch_cost: Math.round(total_ch_cost * 100) / 100,
+          total_cost: total_cost,
+          final_soc: Math.round(current_soc * 100),
+          stops: polishedStops,
+          osrmDetailedCoords: osrmData.coordinates
+        };
+      }).filter(Boolean);
+
+      const finalPool = (polishedCandidates.length > 0) ? polishedCandidates : stage1_candidates;
+
+      // Final Pareto Sorting
+      finalPool.sort((a, b) => a.total_hours - b.total_hours);
+      const fastest = finalPool[0];
+
+      const maxAllowedHours = fastest.total_hours * (1.0 + (maxTolerancePct / 100.0));
+      const eligibleFinal = finalPool.filter(c => c.total_hours <= (maxAllowedHours + 0.001));
+      eligibleFinal.sort((a, b) => a.total_cost - b.total_cost);
+
+      const cheapest = eligibleFinal[0] || fastest;
+
+      const f_min_t = fastest.total_hours;
+      const f_max_t = Math.max(...eligibleFinal.map(c => c.total_hours));
+      const f_min_c = Math.min(...eligibleFinal.map(c => c.total_cost));
+      const f_max_c = Math.max(...eligibleFinal.map(c => c.total_cost));
+
+      let best_balanced = eligibleFinal[0] || fastest;
+      let min_dist = 999;
+      eligibleFinal.forEach(c => {
+        const norm_t = (c.total_hours - f_min_t) / Math.max(0.01, f_max_t - f_min_t);
+        const norm_c = (c.total_cost - f_min_c) / Math.max(0.01, f_max_c - f_min_c);
         const dist = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
         if (dist < min_dist) {
           min_dist = dist;
@@ -2194,10 +2376,6 @@
         }
       });
 
-      if (!fastest || !cheapest || !best_balanced) {
-        console.warn("No viable Pareto route candidates found under current constraints.");
-        return;
-      }
       calculatedResults = {
         fastest: fastest,
         cheapest: cheapest,
@@ -3069,7 +3247,7 @@
 
         try {
           if (activeRoutesData && activeRoutesData.length > 0) {
-            recomputeCurrentRoute();
+            await recomputeCurrentRoute();
           }
         } catch (cErr) {
           console.warn("Error recomputing route:", cErr);
@@ -3160,7 +3338,7 @@
 
         try {
           if (activeRoutesData && activeRoutesData.length > 0) {
-            recomputeCurrentRoute();
+            await recomputeCurrentRoute();
           }
         } catch (cErr) {
           console.warn("Error recomputing route:", cErr);
