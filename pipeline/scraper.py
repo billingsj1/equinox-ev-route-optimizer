@@ -50,7 +50,7 @@ MANUALLY_VERIFIED_OVERRIDES = {
 }
 
 # Blacklisted stations (fake OCM entries or permanently/temporarily closed locations)
-BLOCKED_OCM_IDS = {307653, 285227} # 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo
+BLOCKED_OCM_IDS = {307653, 285227, 307817} # 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo; 307817 = Myerstown EVgo GM Energy
 
 def is_station_blocked(st_id: str, title: str = "", city: str = "", network: str = "", ocm_id: Optional[int] = None) -> bool:
     if ocm_id in BLOCKED_OCM_IDS:
@@ -59,6 +59,8 @@ def is_station_blocked(st_id: str, title: str = "", city: str = "", network: str
     if "huber heights" in t and "ionna" in t:
         return True
     if "menlo park" in t:
+        return True
+    if "myerstown" in t:
         return True
     return False
 

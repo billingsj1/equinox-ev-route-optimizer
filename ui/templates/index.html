@@ -632,7 +632,7 @@
 
   <script>
     // --- VERIFIED CHARGING NETWORK DATABASE (CCS1 / >= 100 kW) ---
-    const ALL_STATIONS = [
+    let ALL_STATIONS = [
       {"id":"ionna-cambridge-oh","name":"IONNA - Cambridge, OH","network":"IONNA","lat":40.0345,"lon":-81.5833,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/454141"},
       {"id":"mb-washington-pa","name":"Mercedes-Benz HPC - Washington, PA","network":"Mercedes-Benz","lat":40.1740,"lon":-80.2462,"kw":150,"off":0.44,"on":0.44,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/"},
       {"id":"ea-belle-vernon-pa","name":"Electrify America - Belle Vernon, PA","network":"Electrify America","lat":40.1265,"lon":-79.8695,"kw":150,"off":0.40,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/237974"},
@@ -2619,26 +2619,67 @@
       return null;
     }
 
-        // Blacklisted stations (e.g. non-existent fake OCM stations or closed sites)
-    const BLOCKED_OCM_IDS = [307653, 285227]; // 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo
+        // Blacklisted stations (e.g. non-existent fake OCM stations, closed sites, or excluded locations)
+    const BLOCKED_OCM_IDS = [307653, 285227, 307817]; 
+    // 307653 = Fake IONNA Huber Heights
+    // 285227 = Menlo Park Mall closed EVgo
+    // 307817 = Myerstown EVgo GM Energy (excluded)
 
     function isStationBlocked(st) {
       if (!st) return false;
-      const ocmId = st.ocm_id || (typeof st.id === 'string' && st.id.startsWith('ocm-') ? parseInt(st.id.replace('ocm-', '')) : null);
-      if (ocmId && BLOCKED_OCM_IDS.includes(ocmId)) return true;
 
-      const title = ((st.name || '') + ' ' + (st.title || '')).toLowerCase();
-      const town = (st.city || st.town || '').toLowerCase();
-      const net = (st.network || '').toLowerCase();
+      // Check OCM ID
+      const rawId = st.ocm_id || st.ID || (typeof st.id === 'string' && st.id.startsWith('ocm-') ? st.id.replace('ocm-', '') : null);
+      if (rawId && BLOCKED_OCM_IDS.some(id => String(id) === String(rawId))) return true;
 
-      // Huber Heights fake IONNA station
-      if (title.includes('huber heights') && (title.includes('ionna') || net.includes('ionna'))) return true;
-      if (town.includes('huber heights') && (title.includes('ionna') || net.includes('ionna'))) return true;
+      // Check all possible text fields
+      const addr = st.AddressInfo || {};
+      const op = st.OperatorInfo || {};
+      const textParts = [
+        st.id,
+        st.name,
+        st.title,
+        st.city,
+        st.town,
+        st.address,
+        st.network,
+        addr.Title,
+        addr.Town,
+        addr.AddressLine1,
+        op.Title
+      ];
+      const allText = textParts.filter(Boolean).join(' ').toLowerCase();
 
-      // Menlo Park Mall closed station
-      if (title.includes('menlo park')) return true;
+      // 1. Huber Heights IONNA
+      if (allText.includes('huber heights') && allText.includes('ionna')) return true;
+
+      // 2. Menlo Park Mall
+      if (allText.includes('menlo park')) return true;
+
+      // 3. Myerstown (EVgo / GM Energy)
+      if (allText.includes('myerstown')) return true;
 
       return false;
+    }
+
+    function purgeBlockedStations() {
+      for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
+        if (isStationBlocked(ALL_STATIONS[i])) {
+          ALL_STATIONS.splice(i, 1);
+        }
+      }
+      try {
+        const saved = localStorage.getItem('equinox_custom_stations');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            const cleaned = parsed.filter(s => !isStationBlocked(s));
+            localStorage.setItem('equinox_custom_stations', JSON.stringify(cleaned));
+          }
+        }
+      } catch (e) {
+        console.warn("Could not purge localStorage:", e);
+      }
     }
 
     function getStationLinkText(url) {
@@ -2817,12 +2858,14 @@
     }
 
     async function initStationData() {
+      purgeBlockedStations();
       try {
         const saved = localStorage.getItem('equinox_custom_stations');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
             parsed.forEach(savedSt => {
+              if (isStationBlocked(savedSt)) return;
               const existingIdx = ALL_STATIONS.findIndex(s => s.id === savedSt.id);
               if (existingIdx >= 0) {
                 ALL_STATIONS[existingIdx] = { ...ALL_STATIONS[existingIdx], ...savedSt };
@@ -2836,8 +2879,7 @@
         console.warn("Could not load stations from localStorage:", e);
       }
 
-      // Purge blocked/fake stations
-      ALL_STATIONS = ALL_STATIONS.filter(s => !isStationBlocked(s));
+      purgeBlockedStations();
 
       // Load real scraped station database to match any unverified stations
       const db = await loadScrapedDatabase();
@@ -2865,6 +2907,7 @@
     }
 
     function saveStationsToStorage() {
+      purgeBlockedStations();
       try {
         localStorage.setItem('equinox_custom_stations', JSON.stringify(ALL_STATIONS));
       } catch (e) {
@@ -2877,13 +2920,15 @@
     function updateStationManagerBadge() {
       const badge = document.getElementById('stationCountBadge');
       if (badge) {
-        const verifiedCount = ALL_STATIONS.filter(s => s.price_verified !== false && s.on != null && s.on > 0 && isNetworkEnabled(s.network)).length;
-        badge.innerText = `${verifiedCount} active (${ALL_STATIONS.length} total)`;
+        const activeList = ALL_STATIONS.filter(s => !isStationBlocked(s));
+        const verifiedCount = activeList.filter(s => s.price_verified !== false && s.on != null && s.on > 0 && isNetworkEnabled(s.network)).length;
+        badge.innerText = `${verifiedCount} active (${activeList.length} total)`;
       }
     }
 
     // BUTTON 1: Pull Stations from OCM
     async function handlePullOcmStations() {
+      purgeBlockedStations();
       const btn = document.getElementById('btnPullOcm');
       const statusBox = document.getElementById('scraperStatusBox');
       if (btn) {
@@ -2985,8 +3030,10 @@
                       price_verified: res.verified,
                       ocm_id: poi.ID
                     };
-                    ALL_STATIONS.push(newSt);
-                    newlyAdded++;
+                    if (!isStationBlocked(newSt)) {
+                      ALL_STATIONS.push(newSt);
+                      newlyAdded++;
+                    }
                     if (res.verified) newlyVerified++;
                   }
                 });
@@ -3050,6 +3097,7 @@
 
     // BUTTON 2: Refresh Prices (Scrapes & Updates Real Station-Specific Tariffs)
     async function handleRefreshPrices() {
+      purgeBlockedStations();
       const btn = document.getElementById('btnRefreshPrices');
       const statusBox = document.getElementById('scraperStatusBox');
       if (btn) {
@@ -3191,7 +3239,8 @@
       const statusBox = document.getElementById('scraperStatusBox');
       if (!statusBox) return;
 
-      const unverified = ALL_STATIONS.filter(s => s.price_verified === false || s.on == null || s.on <= 0);
+      purgeBlockedStations();
+      const unverified = ALL_STATIONS.filter(s => !isStationBlocked(s) && (s.price_verified === false || s.on == null || s.on <= 0));
       const existingContainer = document.getElementById('unverifiedListContainer');
 
       if (unverified.length === 0) {

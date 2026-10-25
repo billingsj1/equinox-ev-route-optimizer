@@ -21,8 +21,8 @@ TARGET_OPERATOR_IDS = [
     3252  # NRG EVgo
 ]
 
-# Blacklisted stations (e.g. fake OCM entries or permanently closed locations)
-BLOCKED_OCM_IDS = {307653, 285227} # 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo
+# Blacklisted stations (e.g. fake OCM entries or permanently/temporarily closed locations)
+BLOCKED_OCM_IDS = {307653, 285227, 307817} # 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo; 307817 = Myerstown EVgo GM Energy
 
 def is_blocked_poi(poi: Dict[str, Any]) -> bool:
     poi_id = poi.get("ID")
@@ -31,13 +31,18 @@ def is_blocked_poi(poi: Dict[str, Any]) -> bool:
     addr = poi.get("AddressInfo", {})
     title = (addr.get("Title") or "").lower()
     town = (addr.get("Town") or "").lower()
+    line1 = (addr.get("AddressLine1") or "").lower()
     op_title = (poi.get("OperatorInfo", {}).get("Title") or "").lower()
+    all_text = f"{title} {town} {line1} {op_title}"
     
     # Huber Heights fake IONNA station
-    if ("huber heights" in title or "huber heights" in town) and ("ionna" in title or "ionna" in op_title):
+    if "huber heights" in all_text and "ionna" in all_text:
         return True
     # Menlo Park Mall closed EVgo station
-    if "menlo park" in title or "menlo park" in town:
+    if "menlo park" in all_text:
+        return True
+    # Myerstown EVgo GM Energy station
+    if "myerstown" in all_text:
         return True
     return False
 
