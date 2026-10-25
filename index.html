@@ -1634,6 +1634,53 @@
                 };
               });
               routesFound = true;
+
+              // Check if East Coast destination from Midwest has a toll-free Maryland I-68 corridor
+              if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
+                try {
+                  const mdCoords = `${originGeo.lon},${originGeo.lat};-78.9284,39.6582;${destGeo.lon},${destGeo.lat}`;
+                  const mdUrl = `https://router.project-osrm.org/route/v1/driving/${mdCoords}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
+                  const mdResp = await fetch(mdUrl, { headers: { "User-Agent": "EquinoxEV-RouteOptimizer/2.0" } });
+                  if (mdResp.ok) {
+                    const mdData = await mdResp.json();
+                    if (mdData && mdData.routes && mdData.routes.length > 0) {
+                      const r = mdData.routes[0];
+                      const miles = r.distance * 0.000621371;
+                      const rawSteps = [];
+                      (r.legs || []).forEach(leg => {
+                        (leg.steps || []).forEach(s => rawSteps.push(s));
+                      });
+                      const parsedSteps = rawSteps.map(s => ({
+                        name: s.name || '',
+                        ref: s.ref || '',
+                        distance_miles: (s.distance || 0) * 0.000621371,
+                        posted_speed: resolveStepSpeedLimit(s),
+                        geometry: s.geometry,
+                        maneuver: s.maneuver
+                      }));
+                      const totalStepDist = parsedSteps.reduce((acc, s) => acc + s.distance_miles, 0);
+                      const sumSpdDist = parsedSteps.reduce((acc, s) => acc + (s.posted_speed * s.distance_miles), 0);
+                      const weightedLimit = totalStepDist > 0 ? (sumSpdDist / totalStepDist) : 65.0;
+
+                      activeRoutesData.push({
+                        id: "md_i68_toll_free",
+                        name: "Route 2: Maryland I-68 / I-70 Corridor (Toll-Free Scenic)",
+                        distance: Math.round(miles * 10) / 10,
+                        base_speed_limit: Math.round(weightedLimit * 10) / 10,
+                        speed_mph: Math.round(weightedLimit * 10) / 10,
+                        steps: parsedSteps,
+                        speed_profile_text: "65 mph I-68 Freeway (Toll-Free Mountain Corridor)",
+                        toll: 0.00,
+                        coordinates: r.geometry.coordinates,
+                        origin: originGeo,
+                        destination: destGeo
+                      });
+                    }
+                  }
+                } catch (mdErr) {
+                  console.warn("Failed to fetch Maryland toll-free corridor:", mdErr);
+                }
+              }
             }
           }
         } catch (e) {
@@ -1809,11 +1856,16 @@
             toll: 0.00,
             coordinates: [
               [originGeo.lon, originGeo.lat],
-              [-81.5833, 40.0345],
-              [-80.2462, 40.1740],
-              [-78.9284, 39.6582],
-              [-77.7200, 39.6418],
-              [-75.8333, 39.6068],
+              [-81.5833, 40.0345], // Cambridge OH
+              [-80.2462, 40.1740], // Washington PA
+              [-79.9559, 39.6295], // Morgantown WV
+              [-78.9284, 39.6582], // Frostburg MD
+              [-78.7636, 39.6496], // Cumberland MD
+              [-78.1797, 39.6998], // Hancock MD
+              [-77.7200, 39.6418], // Hagerstown MD
+              [-77.4105, 39.4143], // Frederick MD
+              [-76.6434, 39.2503], // Baltimore MD
+              [-75.8333, 39.6068], // Elkton MD
               [destGeo.lon, destGeo.lat]
             ],
             origin: originGeo,
