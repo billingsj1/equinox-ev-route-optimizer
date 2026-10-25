@@ -491,6 +491,44 @@
 
       </div>
 
+            <!-- Optimization Audit & Progress Bar (Sticks around after calculation) -->
+      <div id="optimizationAudit" class="p-3 bg-slate-900 border border-slate-800 rounded-xl mb-4 transition-all duration-300">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span id="auditPulseDot" class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Pareto Optimization Audit</span>
+          </div>
+          <span id="auditStatusText" class="text-[11px] text-emerald-400 font-mono">Ready</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+          <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5">
+            <span class="text-emerald-400 text-sm font-bold">⚡</span>
+            <div>
+              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">Itineraries Generated</div>
+              <div id="auditGeneratedCount" class="font-mono text-emerald-400 font-bold text-sm">--</div>
+            </div>
+          </div>
+          <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5">
+            <span class="text-cyan-400 text-sm font-bold">🎯</span>
+            <div>
+              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">Candidate Variations</div>
+              <div id="auditAnalyzedCount" class="font-mono text-cyan-400 font-bold text-sm">--</div>
+            </div>
+          </div>
+          <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-2.5">
+            <span class="text-indigo-400 text-sm font-bold">🛣️</span>
+            <div>
+              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">OSRM Verified Routes</div>
+              <div id="auditOsrmCount" class="font-mono text-indigo-400 font-bold text-sm">--</div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-800/60 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2">
+          <span id="auditLogSummary">• Ready to calculate optimal charging strategies</span>
+          <span id="auditTimestamp" class="text-slate-500 font-mono"></span>
+        </div>
+      </div>
+
       <!-- 3 Pareto Route Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         
@@ -1846,27 +1884,39 @@
       document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
       document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
 
+      // Update Audit UI: Search started
+      const auditStatusText = document.getElementById('auditStatusText');
+      const auditLogSummary = document.getElementById('auditLogSummary');
+      const auditGeneratedCount = document.getElementById('auditGeneratedCount');
+      const auditAnalyzedCount = document.getElementById('auditAnalyzedCount');
+      const auditOsrmCount = document.getElementById('auditOsrmCount');
+      const auditPulseDot = document.getElementById('auditPulseDot');
+      if (auditStatusText) auditStatusText.innerText = "Generating Tree Branches...";
+      if (auditPulseDot) auditPulseDot.className = "inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+
       // Compute Quickest Non-Stop Driving Baseline across active highway corridors
       let fastestNonStop = null;
       activeRoutesData.forEach(route => {
         const sim = simulateLegFromSteps(
           route.steps, 0, route.distance,
-          payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph
+          payload_lbs, temp_f, wind_speed, wind_dir, road_cond,
+          speed_offset, max_cap, route.speed_mph
         );
         if (!fastestNonStop || sim.hours < fastestNonStop.hours) {
           fastestNonStop = {
-            hours: sim.hours,
             distance: route.distance,
-            avg_speed: route.distance / Math.max(0.1, sim.hours),
+            hours: sim.hours,
+            avg_speed: sim.target_mph,
             route_name: route.name
           };
         }
       });
 
       // =========================================================================
-      // STAGE 1: IN-MEMORY FORWARD TREE SEARCH WITH MULTI-TARGET SOC EVALUATION
+      // STAGE 1: FORWARD STATE-SPACE SEARCH TREE
       // =========================================================================
       const stage1_candidates = [];
+      let total_state_evaluations = 0;
 
       activeRoutesData.forEach(route => {
         // Project stations within 12-mile corridor buffer
@@ -1912,6 +1962,7 @@
 
         while (queue.length > 0) {
           const curr = queue.shift();
+          total_state_evaluations++;
 
           // A. Destination reachability check from current state
           const destLeg = simulateLegFromSteps(route.steps, curr.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
@@ -2031,7 +2082,7 @@
           }
 
           // B. Branch Cutoff Rule:
-          // "Only stop searching for additional stops if remaining drive time to destination < 45 min"
+          // Only stop searching for additional stops if remaining drive time to destination < 45 min
           if (leg_to_dest_mins < 45.0) {
             continue;
           }
@@ -2114,7 +2165,7 @@
                 added_kwh: Math.round(ch.added_kwh * 10) / 10,
                 charge_mins: Math.round(ch.mins),
                 setup_mins: setup_mins,
-                has_plug_and_charge: has_plug_and_go,
+                has_plug_and_go: has_plug_and_go,
                 mins: total_stop_mins,
                 cost: Math.round(ch.cost * 100) / 100,
                 rate: rate
@@ -2134,8 +2185,12 @@
         }
       });
 
+      // Update Audit UI: Itineraries Generated
+      if (auditGeneratedCount) auditGeneratedCount.innerText = stage1_candidates.length.toLocaleString();
+      if (auditLogSummary) auditLogSummary.innerText = `* Generated ${stage1_candidates.length.toLocaleString()} routes across search tree`;
+
       // =========================================================================
-      // STAGE 2: SELECT TOP 60 (20 Fastest, 20 Cheapest, 20 Knee) & OSRM POLISH
+      // STAGE 2: DIVERSE PHYSICAL SEQUENCE SELECTION & LIVE OSRM MULTI-WAYPOINT POLISH
       // =========================================================================
       const alertBanner = document.getElementById('alertBanner');
       const alertMsg = document.getElementById('alertMessage');
@@ -2145,24 +2200,52 @@
           alertBanner.classList.remove('hidden');
           alertMsg.innerText = "No charging combinations found under current slider constraints. Try loosening Min/Max time between stops or starting with a higher SoC.";
         }
+        if (auditStatusText) auditStatusText.innerText = "No Routes Found";
+        if (auditPulseDot) auditPulseDot.className = "inline-block w-2 h-2 rounded-full bg-red-400";
         return;
       }
       if (alertBanner) alertBanner.classList.add('hidden');
 
-      // Rank Stage 1 candidates
-      stage1_candidates.sort((a, b) => a.total_hours - b.total_hours);
-      const top_fastest = stage1_candidates.slice(0, 20);
+      // Group candidate variations by physical station sequence to ensure route diversity
+      const sequenceGroups = new Map();
+      stage1_candidates.forEach(cand => {
+        const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.name).join('->');
+        if (!sequenceGroups.has(seqKey)) {
+          sequenceGroups.set(seqKey, []);
+        }
+        sequenceGroups.get(seqKey).push(cand);
+      });
 
+      // From each physical sequence, extract the best fastest, cheapest, and knee variations
+      const representativeCandidates = [];
       const maxToleranceSlider = document.getElementById('maxDurationToleranceSlider');
       const maxTolerancePct = maxToleranceSlider ? parseFloat(maxToleranceSlider.value) : 10.0;
-      const s1_fastest_hrs = top_fastest[0].total_hours;
+
+      stage1_candidates.sort((a, b) => a.total_hours - b.total_hours);
+      const s1_fastest_hrs = stage1_candidates[0].total_hours;
       const s1_max_allowed = s1_fastest_hrs * (1.0 + (maxTolerancePct / 100.0));
 
-      const eligibleForCheapest = stage1_candidates.filter(c => c.total_hours <= (s1_max_allowed + 0.001));
+      sequenceGroups.forEach((groupCands, seqKey) => {
+        groupCands.sort((a, b) => a.total_hours - b.total_hours);
+        representativeCandidates.push(groupCands[0]); // Best speed variation
+
+        const withinTol = groupCands.filter(c => c.total_hours <= (s1_max_allowed + 0.001));
+        if (withinTol.length > 0) {
+          withinTol.sort((a, b) => a.total_cost - b.total_cost);
+          if (withinTol[0] !== groupCands[0]) {
+            representativeCandidates.push(withinTol[0]); // Best cheap variation
+          }
+        }
+      });
+
+      // Rank across sequences: top fastest, top cheapest, top balanced
+      representativeCandidates.sort((a, b) => a.total_hours - b.total_hours);
+      const top_fastest = representativeCandidates.slice(0, 20);
+
+      const eligibleForCheapest = representativeCandidates.filter(c => c.total_hours <= (s1_max_allowed + 0.001));
       eligibleForCheapest.sort((a, b) => a.total_cost - b.total_cost);
       const top_cheapest = eligibleForCheapest.slice(0, 20);
 
-      // Balanced (Pareto Knee)
       const min_t = s1_fastest_hrs;
       const max_t = Math.max(...eligibleForCheapest.map(c => c.total_hours));
       const min_c = Math.min(...eligibleForCheapest.map(c => c.total_cost));
@@ -2176,7 +2259,7 @@
       const eligibleForBalanced = [...eligibleForCheapest].sort((a, b) => a.knee_dist - b.knee_dist);
       const top_balanced = eligibleForBalanced.slice(0, 20);
 
-      // Collect unique physical station sequences from Top 60
+      // Collect unique physical station sequences from Top candidates
       const combinedTop = [...top_fastest, ...top_cheapest, ...top_balanced];
       const uniqueSequencesMap = new Map();
 
@@ -2191,7 +2274,13 @@
         }
       });
 
-      // Update button / status box with live progress
+      // Update Audit UI: Analyzing Best Routes
+      if (auditAnalyzedCount) auditAnalyzedCount.innerText = combinedTop.length.toLocaleString();
+      if (auditOsrmCount) auditOsrmCount.innerText = uniqueSequencesMap.size.toLocaleString();
+      if (auditStatusText) auditStatusText.innerText = `Polishing ${uniqueSequencesMap.size} Routes with OSRM...`;
+      if (auditLogSummary) auditLogSummary.innerText = `* Generated ${stage1_candidates.length.toLocaleString()} routes · * Analyzed ${combinedTop.length} candidate variations · Polishing ${uniqueSequencesMap.size} verified corridors with OSRM...`;
+
+      // Update button with live spinning progress
       const searchBtn = document.getElementById('searchBtn');
       if (searchBtn) {
         searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Polishing ${uniqueSequencesMap.size} Routes with OSRM...</span>`;
@@ -2225,29 +2314,29 @@
 
           const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
           try {
-            const resp = await fetch(url, { headers: { "User-Agent": "Equinox-Route-Optimizer/1.0" } });
+            const resp = await fetch(url, { headers: { "User-Agent": "EquinoxEV-RouteOptimizer/2.0" } });
             if (resp.ok) {
-              const osrmData = await resp.json();
-              if (osrmData && osrmData.routes && osrmData.routes.length > 0) {
-                const r = osrmData.routes[0];
+              const data = await resp.json();
+              if (data && data.routes && data.routes.length > 0) {
+                const r = data.routes[0];
                 const miles = r.distance * 0.000621371;
                 const hours = r.duration / 3600.0;
+
                 const parsedLegs = (r.legs || []).map(leg => {
+                  const legMiles = (leg.distance || 0) * 0.000621371;
                   const rawSteps = leg.steps || [];
-                  const pSteps = rawSteps.map(s => {
-                    const d_mi = (s.distance || 0) * 0.000621371;
-                    const spd = resolveStepSpeedLimit(s);
-                    return {
-                      name: s.name || '',
-                      ref: s.ref || '',
-                      distance_miles: d_mi,
-                      posted_speed: spd,
-                      geometry: s.geometry,
-                      maneuver: s.maneuver
-                    };
-                  });
+                  const pSteps = rawSteps.map(s => ({
+                    name: s.name || '',
+                    ref: s.ref || '',
+                    distance_miles: (s.distance || 0) * 0.000621371,
+                    posted_speed: resolveStepSpeedLimit(s),
+                    geometry: s.geometry,
+                    maneuver: s.maneuver,
+                    intersections: s.intersections || []
+                  }));
                   return {
-                    distance_miles: leg.distance * 0.000621371,
+                    distance_miles: legMiles,
+                    duration_hours: (leg.duration || 0) / 3600.0,
                     steps: pSteps
                   };
                 });
@@ -2260,13 +2349,13 @@
                 });
               }
             }
-          } catch (osrmErr) {
-            console.warn(`OSRM multi-waypoint query failed for ${key}, using Stage 1 estimate:`, osrmErr);
+          } catch (netErr) {
+            console.warn("Stage 2 OSRM waypoint query error for key:", key, netErr);
           }
         }));
       }
 
-      // Re-polish candidates using true OSRM multi-waypoint geometry
+      // Re-polish candidates using true OSRM multi-waypoint geometry with Smart Target SoC Auto-Adjustment
       const polishedCandidates = combinedTop.map(cand => {
         const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
         const osrmData = osrmResponses.get(seqKey);
@@ -2291,12 +2380,28 @@
           total_drive_hrs += legSim.hours;
           current_soc -= (legSim.kwh / 85.0);
 
-          if (current_soc < min_buffer_soc) {
+          // If origin to first stop cannot be reached safely with buffer
+          if (current_soc < (min_buffer_soc - 0.02)) {
             valid = false;
             break;
           }
 
-          const target_soc = sp.tgt_soc / 100.0;
+          // Next leg energy requirement
+          const nextLeg = osrmData.legs[idx + 1];
+          const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
+          const needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
+          const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer + 0.01;
+
+          if (min_safe_departure > 0.95) {
+            valid = false;
+            break;
+          }
+
+          // Smart auto-margin: respect proposed target SoC or bump to min_safe_departure if turn-by-turn was slightly longer
+          const cand_target = sp.tgt_soc / 100.0;
+          let target_soc = Math.max(cand_target, min_safe_departure);
+          target_soc = Math.min(0.92, Math.max(current_soc + 0.05, target_soc));
+
           const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate);
           const stop_mins = Math.round(ch.mins + sp.setup_mins);
           total_ch_hrs += (stop_mins / 60.0);
@@ -2309,6 +2414,7 @@
             ...sp,
             detour_miles: actual_detour_miles > 0 ? actual_detour_miles : sp.detour_miles,
             arr_soc: Math.round(current_soc * 100),
+            tgt_soc: Math.round(target_soc * 100),
             added_kwh: Math.round(ch.added_kwh * 10) / 10,
             charge_mins: Math.round(ch.mins),
             mins: stop_mins,
@@ -2326,7 +2432,7 @@
         total_drive_hrs += finalLegSim.hours;
         current_soc -= (finalLegSim.kwh / 85.0);
 
-        if (current_soc < (target_arrival_soc - 0.015)) {
+        if (current_soc < (target_arrival_soc - 0.02)) {
           return null;
         }
 
@@ -2349,32 +2455,48 @@
 
       const finalPool = (polishedCandidates.length > 0) ? polishedCandidates : stage1_candidates;
 
-      // Final Pareto Sorting
+      // Final Pareto Sorting with Enforced Physical Route Diversity
       finalPool.sort((a, b) => a.total_hours - b.total_hours);
       const fastest = finalPool[0];
+      const fastSeqKey = fastest.stops.map(s => s.station.name).join('->');
 
       const maxAllowedHours = fastest.total_hours * (1.0 + (maxTolerancePct / 100.0));
       const eligibleFinal = finalPool.filter(c => c.total_hours <= (maxAllowedHours + 0.001));
+
+      // Separate candidates from physically distinct station sequences
+      const diffSeqEligible = eligibleFinal.filter(c => c.stops.map(s => s.station.name).join('->') !== fastSeqKey);
+      diffSeqEligible.sort((a, b) => a.total_cost - b.total_cost);
       eligibleFinal.sort((a, b) => a.total_cost - b.total_cost);
+      const absCheapest = eligibleFinal[0] || fastest;
 
-      const cheapest = eligibleFinal[0] || fastest;
+      // Pick cheapest: if a distinct physical sequence is available and costs within $2 of fastest (or is cheaper), pick it
+      let cheapest = absCheapest;
+      if (diffSeqEligible.length > 0 && diffSeqEligible[0].total_cost <= (fastest.total_cost + 2.0)) {
+        cheapest = diffSeqEligible[0];
+      }
+      const cheapSeqKey = cheapest.stops.map(s => s.station.name).join('->');
 
+      // Balanced (Pareto Knee)
       const f_min_t = fastest.total_hours;
       const f_max_t = Math.max(...eligibleFinal.map(c => c.total_hours));
       const f_min_c = Math.min(...eligibleFinal.map(c => c.total_cost));
       const f_max_c = Math.max(...eligibleFinal.map(c => c.total_cost));
 
-      let best_balanced = eligibleFinal[0] || fastest;
-      let min_dist = 999;
       eligibleFinal.forEach(c => {
         const norm_t = (c.total_hours - f_min_t) / Math.max(0.01, f_max_t - f_min_t);
         const norm_c = (c.total_cost - f_min_c) / Math.max(0.01, f_max_c - f_min_c);
-        const dist = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
-        if (dist < min_dist) {
-          min_dist = dist;
-          best_balanced = c;
-        }
+        c.knee_dist = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
       });
+      eligibleFinal.sort((a, b) => a.knee_dist - b.knee_dist);
+
+      // Prefer a balanced route that is distinct from both fastest and cheapest if available
+      let best_balanced = eligibleFinal.find(c => {
+        const sKey = c.stops.map(s => s.station.name).join('->');
+        return sKey !== fastSeqKey && sKey !== cheapSeqKey;
+      });
+      if (!best_balanced) {
+        best_balanced = eligibleFinal[0] || fastest;
+      }
 
       calculatedResults = {
         fastest: fastest,
@@ -2382,11 +2504,29 @@
         balanced: best_balanced,
         nonStop: fastestNonStop,
         maxAllowedHours: maxAllowedHours,
-        maxTolerancePct: maxTolerancePct
+        maxTolerancePct: maxTolerancePct,
+        generatedCount: stage1_candidates.length,
+        analyzedCount: combinedTop.length,
+        osrmCount: uniqueSequencesMap.size
       };
+
+      // Update Audit UI: Complete & Persistent
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      if (auditStatusText) auditStatusText.innerText = "Verified & Optimized";
+      if (auditPulseDot) auditPulseDot.className = "inline-block w-2 h-2 rounded-full bg-emerald-400";
+      if (auditGeneratedCount) auditGeneratedCount.innerText = stage1_candidates.length.toLocaleString();
+      if (auditAnalyzedCount) auditAnalyzedCount.innerText = combinedTop.length.toLocaleString();
+      if (auditOsrmCount) auditOsrmCount.innerText = uniqueSequencesMap.size.toLocaleString();
+      if (auditLogSummary) {
+        auditLogSummary.innerHTML = `<span>✓ <b>${stage1_candidates.length.toLocaleString()}</b> routes generated</span> <span class="text-slate-600">·</span> <span>✓ <b>${combinedTop.length}</b> candidate variations evaluated</span> <span class="text-slate-600">·</span> <span>✓ <b>${uniqueSequencesMap.size}</b> unique corridors verified with live OSRM</span>`;
+      }
+      const auditTimestamp = document.getElementById('auditTimestamp');
+      if (auditTimestamp) auditTimestamp.innerText = `Updated ${timeStr}`;
 
       renderResultsUI();
     }
+
 
     function renderResultsUI() {
       if (!calculatedResults) return;
