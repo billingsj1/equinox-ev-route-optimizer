@@ -21,6 +21,26 @@ TARGET_OPERATOR_IDS = [
     3252  # NRG EVgo
 ]
 
+# Blacklisted stations (e.g. fake OCM entries or permanently closed locations)
+BLOCKED_OCM_IDS = {307653, 285227} # 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo
+
+def is_blocked_poi(poi: Dict[str, Any]) -> bool:
+    poi_id = poi.get("ID")
+    if poi_id in BLOCKED_OCM_IDS:
+        return True
+    addr = poi.get("AddressInfo", {})
+    title = (addr.get("Title") or "").lower()
+    town = (addr.get("Town") or "").lower()
+    op_title = (poi.get("OperatorInfo", {}).get("Title") or "").lower()
+    
+    # Huber Heights fake IONNA station
+    if ("huber heights" in title or "huber heights" in town) and ("ionna" in title or "ionna" in op_title):
+        return True
+    # Menlo Park Mall closed EVgo station
+    if "menlo park" in title or "menlo park" in town:
+        return True
+    return False
+
 TARGET_STATE_CONFIGS = {
     "OH": {"lat": 40.4173, "lon": -82.9071, "dist": 180, "aliases": ["OH", "OHIO"]},
     "PA": {"lat": 40.9699, "lon": -77.7278, "dist": 200, "aliases": ["PA", "PENNSYLVANIA"]},
@@ -79,6 +99,8 @@ class OpenChargeMapClient:
                     if resp.status_code == 200:
                         pois = resp.json()
                         for poi in pois:
+                            if is_blocked_poi(poi):
+                                continue
                             poi_id = poi.get("ID")
                             addr = poi.get("AddressInfo", {})
                             st_code = addr.get("StateOrProvince", "").strip().upper()

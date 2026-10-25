@@ -611,7 +611,7 @@
                   <th class="py-2 px-3">Charge Time</th>
                   <th class="py-2 px-3">Tariff Rate</th>
                   <th class="py-2 px-3">Cost</th>
-                  <th class="py-2 px-3">Plugshare</th>
+                  <th class="py-2 px-3">Station / Link</th>
                 </tr>
               </thead>
               <tbody id="stopsTableBody" class="divide-y divide-slate-800/60 font-mono">
@@ -633,26 +633,30 @@
   <script>
     // --- VERIFIED CHARGING NETWORK DATABASE (CCS1 / >= 100 kW) ---
     const ALL_STATIONS = [
-      {"id":"ionna-cambridge-oh","name":"IONNA - Cambridge, OH","network":"IONNA","lat":40.0345,"lon":-81.5833,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/"},
+      {"id":"ionna-cambridge-oh","name":"IONNA - Cambridge, OH","network":"IONNA","lat":40.0345,"lon":-81.5833,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/454141"},
       {"id":"mb-washington-pa","name":"Mercedes-Benz HPC - Washington, PA","network":"Mercedes-Benz","lat":40.1740,"lon":-80.2462,"kw":150,"off":0.44,"on":0.44,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/"},
       {"id":"ea-belle-vernon-pa","name":"Electrify America - Belle Vernon, PA","network":"Electrify America","lat":40.1265,"lon":-79.8695,"kw":150,"off":0.40,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/237974"},
-      {"id":"ea-new-stanton-pa","name":"Sheetz / EA - New Stanton, PA","network":"Electrify America","lat":40.2187,"lon":-79.6103,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/549749"},
-      {"id":"ag-somerset-pa","name":"Applegreen - Somerset, PA (PA Turnpike)","network":"Applegreen","lat":40.0150,"lon":-79.0700,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/892354"},
-      {"id":"tesla-somerset-pa","name":"Tesla Supercharger (+CCS1) - Somerset, PA","network":"Tesla","lat":40.0084,"lon":-79.0781,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://www.tesla.com/findus?bounds=40.04563516929346%2C-78.9947205390625%2C39.98943325885038%2C-79.1595154609375&search=Somerset%2C%20PA%2015501&location=somersetsupercharger&functionType=party"},
+      {"id":"ea-new-stanton-pa","name":"Sheetz / EA - New Stanton, PA","network":"Electrify America","lat":40.2187,"lon":-79.6103,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/451444"},
+      {"id":"ag-somerset-pa","name":"Applegreen - Somerset, PA (PA Turnpike)","network":"Applegreen","lat":40.0150,"lon":-79.0700,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/421314"},
+      {"id":"tesla-somerset-pa","name":"Tesla Supercharger (+CCS1) - Somerset, PA","network":"Tesla","lat":40.0084,"lon":-79.0781,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://dcfctracker.com/stations/194073"},
       {"id":"cp-frostburg-md","name":"ChargePoint - Frostburg, MD (I-68)","network":"ChargePoint","lat":39.6582,"lon":-78.9284,"kw":125,"off":0.34,"on":0.34,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/338694"},
-      {"id":"ea-bedford-pa","name":"Electrify America - Bedford, PA","network":"Electrify America","lat":40.0187,"lon":-78.5039,"kw":150,"off":0.60,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://www.plugshare.com/location/186738"},
+      {"id":"ea-bedford-pa","name":"Electrify America - Bedford, PA","network":"Electrify America","lat":40.0187,"lon":-78.5039,"kw":150,"off":0.60,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/167187"},
       {"id":"ag-bedford-pa","name":"Applegreen - Bedford, PA (PA Turnpike)","network":"Applegreen","lat":40.0210,"lon":-78.4980,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/1820129"},
       {"id":"cp-hancock-md","name":"ChargePoint - Hancock, MD (I-68)","network":"ChargePoint","lat":39.6998,"lon":-78.1797,"kw":125,"off":0.40,"on":0.40,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://driver.chargepoint.com/stations/13210691"},
       {"id":"ag-waterfall-pa","name":"Applegreen - Blue Mountain / Waterfall, PA (PA Turnpike)","network":"Applegreen","lat":40.1550,"lon":-78.1400,"kw":150,"off":0.55,"on":0.55,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/451875"},
-      {"id":"tesla-fort-littleton-pa","name":"Tesla Supercharger (+CCS1) - Fort Littleton, PA","network":"Tesla","lat":40.0495,"lon":-77.9620,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://www.tesla.com/findus?bounds=40.1641541900422%2C-77.79653640087889%2C39.939723054403245%2C-78.12543959912108&search=Fort%20Littleton%2C%20PA&location=26674&functionType=party"},
-      {"id":"ea-hagerstown-md","name":"Electrify America - Hagerstown, MD (I-68/I-70)","network":"Electrify America","lat":39.6418,"lon":-77.7200,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://www.plugshare.com/location/169554"},
-      {"id":"fe-newburg-pa","name":"Francis Energy - Newburg, PA","network":"Francis Energy","lat":40.1340,"lon":-77.5560,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/1093182"},
+      {"id":"tesla-fort-littleton-pa","name":"Tesla Supercharger (+CCS1) - Fort Littleton, PA","network":"Tesla","lat":40.0495,"lon":-77.9620,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://dcfctracker.com/stations/397535"},
+      {"id":"ea-hagerstown-md","name":"Electrify America - Hagerstown, MD (I-68/I-70)","network":"Electrify America","lat":39.6418,"lon":-77.7200,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/170350"},
+      {"id":"fe-newburg-pa","name":"Francis Energy - Newburg, PA","network":"Francis Energy","lat":40.1340,"lon":-77.5560,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/446568"},
       {"id":"ag-newburg-pa","name":"Applegreen - Newburg, PA (PA Turnpike)","network":"Applegreen","lat":40.1350,"lon":-77.5500,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/743932"},
-      {"id":"ionna-frederick-md","name":"IONNA - Frederick, MD (I-70)","network":"IONNA","lat":39.4143,"lon":-77.4105,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/1449991"},
-      {"id":"ea-carlisle-pa","name":"Electrify America - Carlisle, PA","network":"Electrify America","lat":40.2014,"lon":-77.1889,"kw":150,"off":0.44,"on":0.64,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://www.plugshare.com/location/552335"},
+      {"id":"ionna-frederick-md","name":"IONNA - Frederick, MD (I-70)","network":"IONNA","lat":39.4143,"lon":-77.4105,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/462541"},
+      {"id":"ea-carlisle-pa","name":"Electrify America - Carlisle, PA","network":"Electrify America","lat":40.2014,"lon":-77.1889,"kw":150,"off":0.44,"on":0.64,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/121756"},
       {"id":"ag-middletown-pa","name":"Applegreen - Middletown, PA (PA Turnpike)","network":"Applegreen","lat":40.1989,"lon":-76.7314,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/631745"},
-      {"id":"ionna-elkton-md","name":"IONNA - Elkton, MD","network":"IONNA","lat":39.6068,"lon":-75.8333,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/1483639"},
-      {"id":"ionna-chester-springs-pa","name":"IONNA - Chester Springs, PA","network":"IONNA","lat":40.0934,"lon":-75.6268,"kw":150,"off":0.35,"on":0.35,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/1451631"}
+      {"id":"ionna-elkton-md","name":"IONNA - Elkton, MD","network":"IONNA","lat":39.6068,"lon":-75.8333,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/448358"},
+      {"id":"ionna-chester-springs-pa","name":"IONNA - Chester Springs, PA","network":"IONNA","lat":40.0934,"lon":-75.6268,"kw":150,"off":0.35,"on":0.35,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/448302"},
+      {"id":"evgo-pilot-marengo-oh","name":"EVgo - Pilot Travel Center - Marengo, OH","network":"EVgo","lat":40.3713,"lon":-82.8309,"city":"Marengo","state":"OH","kw":350,"off":0.69,"on":0.69,"gm":false,"gm_pct":0.0,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/347668","ocm_id":306512},
+      {"id":"evgo-farley-nj","name":"EVgo - Farley Travel Plaza, NJ","network":"EVgo","lat":39.5507,"lon":-74.7349,"city":"Hammonton","state":"NJ","kw":350,"off":0.66,"on":0.66,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/228536","ocm_id":225139},
+      {"id":"evgo-hollinswood-md","name":"EVgo - Hollinswood Shopping Center, MD","network":"EVgo","lat":39.2503,"lon":-76.6434,"city":"Baltimore","state":"MD","kw":350,"off":0.61,"on":0.61,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/322293","ocm_id":294317},
+      {"id":"cp-potomac-edison-canal-md","name":"ChargePoint - POTOMAC EDISON CANAL PLACE DC2, MD","network":"ChargePoint","lat":39.6496,"lon":-78.7636,"city":"Cumberland","state":"MD","kw":125,"off":0.34,"on":0.34,"gm":false,"gm_pct":0.0,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/300557","ocm_id":282416}
     ];
     const BASELINE_STATIONS = JSON.parse(JSON.stringify(ALL_STATIONS));
 
@@ -747,7 +751,7 @@
             <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
             ${s.gm && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
             ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
-            ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect / PlugShare</a>` : ''}
+            ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
           </div>
         `).addTo(map);
         mapLayers.push(dot);
@@ -2365,7 +2369,7 @@
               <span style="color:#64748b;">Mile:</span> <b>Mile ${Math.round(s.mile)}</b> (${detourLabel})<br>
               <span style="color:#64748b;">Charge:</span> <b>${s.arr_soc}% &rarr; ${s.tgt_soc}%</b> (+${s.added_kwh} kWh)<br>
               <span style="color:#64748b;">Total Dwell:</span> <b>${s.mins} mins</b> (${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}) | Cost: <b>$${s.cost.toFixed(2)}</b><br>
-              ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Open on PlugShare</a>` : ''}
+              ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Open Details</a>` : ''}
             </div>
           `).addTo(map);
         mapLayers.push(stopMarker);
@@ -2400,7 +2404,7 @@
               <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
               ${s.gm && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
               ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
-              ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect / PlugShare</a>` : ''}
+              ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
             </div>
           `).addTo(map);
           mapLayers.push(dot);
@@ -2485,7 +2489,7 @@
           </td>
           <td class="py-2.5 px-3 text-emerald-400 font-semibold font-mono">$${s.cost.toFixed(2)}</td>
           <td class="py-2.5 px-3">
-            ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" onclick="event.stopPropagation()" class="text-blue-400 hover:text-blue-300 underline font-sans text-[11px]">View</a>` : '-'}
+            ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" onclick="event.stopPropagation()" class="text-cyan-400 hover:text-cyan-300 underline font-sans text-[11px] font-medium inline-flex items-center gap-1">${getStationLinkText(s.station.plug)} &nearr;</a>` : '-'}
           </td>
         `;
         tbody.appendChild(row);
@@ -2615,20 +2619,78 @@
       return null;
     }
 
+        // Blacklisted stations (e.g. non-existent fake OCM stations or closed sites)
+    const BLOCKED_OCM_IDS = [307653, 285227]; // 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo
+
+    function isStationBlocked(st) {
+      if (!st) return false;
+      const ocmId = st.ocm_id || (typeof st.id === 'string' && st.id.startsWith('ocm-') ? parseInt(st.id.replace('ocm-', '')) : null);
+      if (ocmId && BLOCKED_OCM_IDS.includes(ocmId)) return true;
+
+      const title = ((st.name || '') + ' ' + (st.title || '')).toLowerCase();
+      const town = (st.city || st.town || '').toLowerCase();
+      const net = (st.network || '').toLowerCase();
+
+      // Huber Heights fake IONNA station
+      if (title.includes('huber heights') && (title.includes('ionna') || net.includes('ionna'))) return true;
+      if (town.includes('huber heights') && (title.includes('ionna') || net.includes('ionna'))) return true;
+
+      // Menlo Park Mall closed station
+      if (title.includes('menlo park')) return true;
+
+      return false;
+    }
+
+    function getStationLinkText(url) {
+      if (!url) return 'View';
+      const u = url.toLowerCase();
+      if (u.includes('dcfctracker.com')) return 'DCFC Tracker';
+      if (u.includes('plugshare.com')) return 'PlugShare';
+      if (u.includes('driver.chargepoint.com') || u.includes('chargepoint.com')) return 'ChargePoint';
+      if (u.includes('ionna.com')) return 'IONNA';
+      if (u.includes('mercedesbenzhpc.com')) return 'Mercedes-Benz';
+      if (u.includes('tesla.com')) return 'Tesla';
+      if (u.includes('openchargemap.org')) return 'OCM Details';
+      return 'DCFC / Info';
+    }
+
     const MANUALLY_VERIFIED_OVERRIDES = {
       'cp-hancock-md': { on: 0.40, off: 0.40, url: 'https://driver.chargepoint.com/stations/13210691', verified: true },
       'ag-waterfall-pa': { on: 0.55, off: 0.55, url: 'https://dcfctracker.com/stations/451875', verified: true },
       'ea-belle-vernon-pa': { on: 0.60, off: 0.40, url: 'https://dcfctracker.com/stations/237974', verified: true },
-      'ionna-cambridge-oh': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/', verified: true },
+      'ionna-cambridge-oh': { on: 0.39, off: 0.39, url: 'https://dcfctracker.com/stations/454141', verified: true },
       'mb-washington-pa': { on: 0.44, off: 0.44, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
-      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus?bounds=40.04563516929346%2C-78.9947205390625%2C39.98943325885038%2C-79.1595154609375&search=Somerset%2C%20PA%2015501&location=somersetsupercharger&functionType=party', verified: true },
-      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus?bounds=40.1641541900422%2C-77.79653640087889%2C39.939723054403245%2C-78.12543959912108&search=Fort%20Littleton%2C%20PA&location=26674&functionType=party', verified: true }
+      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://dcfctracker.com/stations/194073', verified: true },
+      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://dcfctracker.com/stations/397535', verified: true },
+      'evgo-pilot-marengo-oh': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
+      'ocm-306512': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
+      'ocm-351529': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
+      'evgo-farley-nj': { on: 0.66, off: 0.66, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
+      'ocm-225139': { on: 0.66, off: 0.66, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
+      'evgo-hollinswood-md': { on: 0.61, off: 0.61, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/322293', verified: true },
+      'ocm-294317': { on: 0.61, off: 0.61, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/322293', verified: true },
+      'cp-potomac-edison-canal-md': { on: 0.34, off: 0.34, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/300557', verified: true },
+      'ocm-282416': { on: 0.34, off: 0.34, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/300557', verified: true }
     };
 
     function matchStationToScrapedData(station, db) {
+      if (isStationBlocked(station)) {
+        return { on: null, off: null, url: station.plug, verified: false, blocked: true };
+      }
+
       // 1. Manually verified overrides
       if (MANUALLY_VERIFIED_OVERRIDES[station.id]) {
-        return MANUALLY_VERIFIED_OVERRIDES[station.id];
+        const ov = MANUALLY_VERIFIED_OVERRIDES[station.id];
+        return {
+          on: ov.on,
+          off: ov.off,
+          mem_on: ov.mem_on,
+          mem_off: ov.mem_off,
+          gm: ov.gm,
+          gm_pct: ov.gm_pct,
+          url: ov.url,
+          verified: true
+        };
       }
 
       // 2. Check IONNA real scraped stations
@@ -2640,6 +2702,8 @@
               off: ion.price,
               mem_on: Math.round(ion.price * 0.90 * 100) / 100,
               mem_off: Math.round(ion.price * 0.90 * 100) / 100,
+              gm: true,
+              gm_pct: 0.10,
               url: ion.url,
               verified: true
             };
@@ -2648,44 +2712,76 @@
       }
 
       // 3. Check DCFC Tracker real scraped stations (network + state + address / name match)
-      if (db && db.dcfc && station.network && station.state) {
-        const netLower = station.network.toLowerCase();
+      if (db && db.dcfc && Array.isArray(db.dcfc)) {
+        const netLower = (station.network || '').toLowerCase();
         const stUpper = (station.state || '').trim().toUpperCase();
-        const lineClean = (station.address || station.name || '').toLowerCase();
-        const townClean = (station.city || '').toLowerCase();
+        const stTitle = (station.name || station.title || '').toLowerCase();
+        const stAddr = (station.address || '').toLowerCase();
+        const stCity = (station.city || station.town || '').toLowerCase();
+        const fullStText = `${stTitle} ${stAddr} ${stCity}`.toLowerCase();
+
+        // Pilot / Flying J check
+        const isPilot = fullStText.includes('pilot') || fullStText.includes('flying j');
+
+        const GENERIC = ['station', 'stations', 'plaza', 'center', 'centre', 'travel', 'charger', 'chargers', 'fast', 'charging', 'north', 'south', 'east', 'west', 'road', 'street', 'avenue', 'drive', 'route', 'highway', 'exit', 'lane', 'court', 'parkway', 'evgo', 'chargepoint', 'electrify', 'america', 'applegreen', 'tesla', 'francis', 'energy'];
+        const wordMatches = fullStText.match(/[a-zA-Z]{4,}/g) || [];
+        const tokens = wordMatches.filter(w => !GENERIC.includes(w));
+        const nums = fullStText.match(/\b\d{2,5}\b/g) || [];
+
+        let bestMatch = null;
+        let bestScore = 0;
 
         for (const d of db.dcfc) {
-          if (d.state === stUpper && (d.network.toLowerCase() === netLower || netLower.includes(d.network.toLowerCase()) || d.network.toLowerCase().includes(netLower))) {
-            const dName = (d.name || '').toLowerCase();
-            const dAddr = (d.address || '').toLowerCase();
+          if (stUpper && d.state && d.state !== stUpper) continue;
 
-            // Match address numbers (e.g. 1091 Main, 61205 Southgate)
-            const addrNums = lineClean.match(/\b\d{3,5}\b/g);
-            if (addrNums && addrNums.some(num => dAddr.includes(num))) {
-              const ea = netLower.includes('electrify');
-              return {
-                on: d.price,
-                off: d.price,
-                mem_on: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
-                mem_off: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
-                url: d.url,
-                verified: true
-              };
-            }
-
-            // Match town in name
-            if (townClean && townClean.length > 3 && dName.includes(townClean)) {
-              const ea = netLower.includes('electrify');
-              return {
-                on: d.price,
-                off: d.price,
-                mem_on: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
-                mem_off: ea ? Math.round(d.price * 0.75 * 100) / 100 : d.price,
-                url: d.url,
-                verified: true
-              };
-            }
+          const dNet = (d.network || '').toLowerCase();
+          let netCompat = false;
+          if (!netLower || netLower === 'other') {
+            netCompat = true; // generic fallback
+          } else if (netLower === dNet || netLower.includes(dNet) || dNet.includes(netLower)) {
+            netCompat = true;
+          } else if ((netLower.includes('evgo') || dNet.includes('evgo')) && (dNet.includes('pilot') || dNet.includes('flying') || isPilot)) {
+            netCompat = true;
           }
+
+          if (!netCompat) continue;
+
+          const dName = (d.name || '').toLowerCase();
+          const dAddr = (d.address || '').toLowerCase();
+          const dFull = `${dName} ${dAddr}`;
+
+          let score = 0;
+          for (const t of tokens) {
+            if (dFull.includes(t)) score += 3;
+          }
+          for (const n of nums) {
+            if (dFull.includes(n)) score += 4;
+          }
+          if (stCity && stCity.length >= 4 && dFull.includes(stCity)) {
+            score += 2;
+          }
+
+          if (score > bestScore && score >= 3) {
+            bestScore = score;
+            bestMatch = d;
+          }
+        }
+
+        if (bestMatch) {
+          const ea = netLower.includes('electrify') || (bestMatch.network || '').toLowerCase().includes('electrify');
+          const isPilotSite = isPilot || (bestMatch.name || '').toLowerCase().includes('pilot') || (bestMatch.network || '').toLowerCase().includes('pilot') || (bestMatch.name || '').toLowerCase().includes('flying j');
+          const gmEligible = (netLower.includes('evgo') || netLower.includes('ionna')) && !isPilotSite;
+
+          return {
+            on: bestMatch.price,
+            off: bestMatch.price,
+            mem_on: ea ? Math.round(bestMatch.price * 0.75 * 100) / 100 : bestMatch.price,
+            mem_off: ea ? Math.round(bestMatch.price * 0.75 * 100) / 100 : bestMatch.price,
+            gm: gmEligible,
+            gm_pct: gmEligible ? 0.10 : 0.0,
+            url: bestMatch.url,
+            verified: true
+          };
         }
       }
 
@@ -2696,11 +2792,15 @@
         const val = parseFloat(m[1]);
         if (val >= 0.10 && val <= 1.50) {
           const ea = (station.network || '').toLowerCase().includes('electrify');
+          const isPilot = (station.name || '').toLowerCase().includes('pilot') || (station.name || '').toLowerCase().includes('flying j');
+          const gmEligible = ((station.network || '').toLowerCase().includes('evgo') || (station.network || '').toLowerCase().includes('ionna')) && !isPilot;
           return {
             on: val,
             off: val,
             mem_on: ea ? Math.round(val * 0.75 * 100) / 100 : val,
             mem_off: ea ? Math.round(val * 0.75 * 100) / 100 : val,
+            gm: gmEligible,
+            gm_pct: gmEligible ? 0.10 : 0.0,
             url: station.plug,
             verified: true
           };
@@ -2735,6 +2835,9 @@
       } catch (e) {
         console.warn("Could not load stations from localStorage:", e);
       }
+
+      // Purge blocked/fake stations
+      ALL_STATIONS = ALL_STATIONS.filter(s => !isStationBlocked(s));
 
       // Load real scraped station database to match any unverified stations
       const db = await loadScrapedDatabase();
@@ -2818,6 +2921,9 @@
               if (Array.isArray(pois)) {
                 pois.forEach(poi => {
                   const addr = poi.AddressInfo || {};
+                  if (isStationBlocked(poi) || isStationBlocked({ name: addr.Title, city: addr.Town, ocm_id: poi.ID, network: (poi.OperatorInfo && poi.OperatorInfo.Title) })) {
+                    return;
+                  }
                   const lat = addr.Latitude;
                   const lon = addr.Longitude;
                   if (!lat || !lon) return;
@@ -2835,7 +2941,8 @@
                     const opId = poi.OperatorID;
                     const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
                     const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
-                    const gm = network === "IONNA" || network === "EVgo";
+                    const isPilot = (addr.Title || "").toLowerCase().includes("pilot") || (addr.Title || "").toLowerCase().includes("flying j");
+                    const gm = (network === "IONNA" || network === "EVgo") && !isPilot;
                     const ea_pass = network === "Electrify America";
 
                     let maxKw = 150;
@@ -2871,8 +2978,8 @@
                       kw: maxKw,
                       off: res.off,
                       on: res.on,
-                      gm: gm,
-                      gm_pct: gm ? 0.10 : 0.0,
+                      gm: res.gm !== undefined ? res.gm : gm,
+                      gm_pct: res.gm_pct !== undefined ? res.gm_pct : (gm ? 0.10 : 0.0),
                       ea_pass: ea_pass,
                       plug: res.url || sourceUrl,
                       price_verified: res.verified,

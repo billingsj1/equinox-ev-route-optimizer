@@ -34,11 +34,33 @@ MANUALLY_VERIFIED_OVERRIDES = {
     "cp-hancock-md": {"price": 0.40, "url": "https://driver.chargepoint.com/stations/13210691"},
     "ag-waterfall-pa": {"price": 0.55, "url": "https://dcfctracker.com/stations/451875"},
     "ea-belle-vernon-pa": {"price": 0.60, "url": "https://dcfctracker.com/stations/237974"},
-    "ionna-cambridge-oh": {"price": 0.39, "url": "https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/"},
+    "ionna-cambridge-oh": {"price": 0.39, "url": "https://dcfctracker.com/stations/454141"},
     "mb-washington-pa": {"price": 0.44, "url": "https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/"},
-    "tesla-somerset-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://www.tesla.com/findus?bounds=40.04563516929346%2C-78.9947205390625%2C39.98943325885038%2C-79.1595154609375&search=Somerset%2C%20PA%2015501&location=somersetsupercharger&functionType=party"},
-    "tesla-fort-littleton-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://www.tesla.com/findus?bounds=40.1641541900422%2C-77.79653640087889%2C39.939723054403245%2C-78.12543959912108&search=Fort%20Littleton%2C%20PA&location=26674&functionType=party"}
+    "tesla-somerset-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://dcfctracker.com/stations/194073"},
+    "tesla-fort-littleton-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://dcfctracker.com/stations/397535"},
+    "evgo-pilot-marengo-oh": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
+    "ocm-306512": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
+    "ocm-351529": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
+    "evgo-farley-nj": {"price": 0.66, "url": "https://dcfctracker.com/stations/228536", "gm_discount_eligible": True},
+    "ocm-225139": {"price": 0.66, "url": "https://dcfctracker.com/stations/228536", "gm_discount_eligible": True},
+    "evgo-hollinswood-md": {"price": 0.61, "url": "https://dcfctracker.com/stations/322293", "gm_discount_eligible": True},
+    "ocm-294317": {"price": 0.61, "url": "https://dcfctracker.com/stations/322293", "gm_discount_eligible": True},
+    "cp-potomac-edison-canal-md": {"price": 0.34, "url": "https://dcfctracker.com/stations/300557", "gm_discount_eligible": False},
+    "ocm-282416": {"price": 0.34, "url": "https://dcfctracker.com/stations/300557", "gm_discount_eligible": False}
 }
+
+# Blacklisted stations (fake OCM entries or permanently/temporarily closed locations)
+BLOCKED_OCM_IDS = {307653, 285227} # 307653 = Fake IONNA Huber Heights; 285227 = Menlo Park Mall closed EVgo
+
+def is_station_blocked(st_id: str, title: str = "", city: str = "", network: str = "", ocm_id: Optional[int] = None) -> bool:
+    if ocm_id in BLOCKED_OCM_IDS:
+        return True
+    t = f"{st_id} {title} {city} {network}".lower()
+    if "huber heights" in t and "ionna" in t:
+        return True
+    if "menlo park" in t:
+        return True
+    return False
 
 def haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = 3958.8
@@ -167,46 +189,85 @@ class PricingScraperPipeline:
         lon: Optional[float],
         usage_cost: Optional[str],
         scraped_db: Dict[str, Any]
-    ) -> Tuple[Optional[float], Optional[str]]:
+    ) -> Tuple[Optional[float], Optional[str], Optional[bool]]:
         """
         Matches station against real scraped sources with NO synthetic guessing.
-        Returns (price, source_url) or (None, fallback_url).
+        Returns (price, source_url, gm_eligible) or (None, fallback_url, gm_eligible).
         """
+        if is_station_blocked(st_id, title, city, network):
+            return None, None, False
+
         # 1. Check manually verified overrides
         if st_id in MANUALLY_VERIFIED_OVERRIDES:
             ov = MANUALLY_VERIFIED_OVERRIDES[st_id]
-            return ov["price"], ov["url"]
+            return ov["price"], ov["url"], ov.get("gm_discount_eligible")
 
         # 2. Check IONNA real scraped stations
         if network == "IONNA" and lat is not None and lon is not None:
             for ion in scraped_db.get("ionna", []):
                 if haversine_miles(lat, lon, ion["lat"], ion["lon"]) < 1.0:
-                    return ion["price"], ion["url"]
+                    return ion["price"], ion["url"], True
 
         # 3. Check DCFC Tracker real scraped stations (network + state + address / name match)
         line_clean = (address or "").lower()
         town_clean = (city or "").lower()
         title_clean = (title or "").lower()
         st_upper = (state or "").strip().upper()
+        full_st_text = f"{title_clean} {line_clean} {town_clean}"
+        is_pilot = "pilot" in full_st_text or "flying j" in full_st_text
+
+        generic_words = {"station", "stations", "plaza", "center", "centre", "travel", "charger", "chargers", "fast", "charging", "north", "south", "east", "west", "road", "street", "avenue", "drive", "route", "highway", "exit", "lane", "court", "parkway", "evgo", "chargepoint", "electrify", "america", "applegreen", "tesla", "francis", "energy"}
+        raw_tokens = re.findall(r'[a-zA-Z]{4,}', full_st_text)
+        tokens = [t for t in raw_tokens if t not in generic_words]
+        st_nums = set(re.findall(r'\b\d{2,5}\b', full_st_text))
+
+        best_match = None
+        best_score = 0
 
         for d in scraped_db.get("dcfc", []):
-            if d.get("state") == st_upper and (d.get("network", "").lower() == network.lower() or network.lower() in d.get("network", "").lower()):
-                d_name = d.get("name", "").lower()
-                d_addr = d.get("address", "").lower()
+            if st_upper and d.get("state") != st_upper:
+                continue
 
-                # Match by street address number
-                addr_nums = re.findall(r'\b\d{3,5}\b', line_clean)
-                if addr_nums and any(num in d_addr for num in addr_nums):
-                    return d["price"], d["url"]
+            d_net = (d.get("network") or "").lower()
+            s_net = network.lower()
 
-                # Match by exact town in name
-                if town_clean and len(town_clean) > 3 and town_clean in d_name:
-                    return d["price"], d["url"]
+            net_compat = False
+            if not s_net or s_net == "other":
+                net_compat = True
+            elif s_net == d_net or s_net in d_net or d_net in s_net:
+                net_compat = True
+            elif ("evgo" in s_net or "evgo" in d_net) and ("pilot" in d_net or "flying j" in d_net or is_pilot):
+                net_compat = True
 
-                # Match title words
-                title_words = [w for w in re.findall(r'\b[a-zA-Z]{4,}\b', title_clean) if w not in ["station", "supercharger", "charger", "fast"]]
-                if title_words and any(w in d_name for w in title_words):
-                    return d["price"], d["url"]
+            if not net_compat:
+                continue
+
+            d_name = (d.get("name") or "").lower()
+            d_addr = (d.get("address") or "").lower()
+            d_full = f"{d_name} {d_addr}"
+
+            score = 0
+            for t in tokens:
+                if t in d_full:
+                    score += 3
+
+            d_nums = set(re.findall(r'\b\d{2,5}\b', d_full))
+            if st_nums.intersection(d_nums):
+                score += 4
+
+            if town_clean and len(town_clean) >= 4 and town_clean in d_full:
+                score += 2
+
+            if score > best_score and score >= 3:
+                best_score = score
+                best_match = d
+
+        if best_match:
+            d_name_l = (best_match.get("name") or "").lower()
+            d_net_l = (best_match.get("network") or "").lower()
+            is_pilot_site = is_pilot or "pilot" in d_name_l or "pilot" in d_net_l or "flying j" in d_name_l
+            gm_eligible = (network in ("EVgo", "IONNA") or "evgo" in d_net_l or "ionna" in d_net_l) and not is_pilot_site
+            return best_match["price"], best_match["url"], gm_eligible
 
         # 4. Check OCM UsageCost field
         if usage_cost:
@@ -214,9 +275,10 @@ class PricingScraperPipeline:
             if m:
                 val = float(m.group(1))
                 if 0.10 <= val <= 1.50:
-                    return val, None
+                    gm_eligible = (network in ("EVgo", "IONNA")) and not is_pilot
+                    return val, None, gm_eligible
 
-        return None, None
+        return None, None, None
 
     async def pull_ocm_stations(self, states: List[str] = None) -> List[Dict[str, Any]]:
         existing = self.load_existing_stations()
@@ -236,6 +298,13 @@ class PricingScraperPipeline:
                 if haversine_miles(ex_st["latitude"], ex_st["longitude"], lat, lon) < 0.5:
                     matched_id = ex_id
                     break
+
+            title = addr.get("Title", "Station")
+            city = addr.get("Town", "")
+            ocm_id = item.get("ID")
+            op_title = item.get("OperatorInfo", {}).get("Title", "").lower()
+            if is_station_blocked(f"ocm-{ocm_id}", title, city, op_title, ocm_id=ocm_id):
+                continue
 
             if matched_id:
                 continue
@@ -262,7 +331,8 @@ class PricingScraperPipeline:
                 network = "Francis Energy"
             elif op_id in [15, 3252] or "evgo" in op_title:
                 network = "EVgo"
-                gm_perk = True
+                is_pilot = "pilot" in title.lower() or "flying j" in title.lower()
+                gm_perk = not is_pilot
 
             max_kw = 150.0
             for conn in item.get("Connections", []):
@@ -297,9 +367,11 @@ class PricingScraperPipeline:
                     pass
 
             if verified_price is None:
-                verified_price, source_url = self.match_station_price(
+                verified_price, source_url, matched_gm = self.match_station_price(
                     st_id, network, state, city, title, line1, lat, lon, uc, scraped_db
                 )
+                if matched_gm is not None:
+                    gm_perk = matched_gm
 
             # Fallback inspection URL
             if not source_url:
