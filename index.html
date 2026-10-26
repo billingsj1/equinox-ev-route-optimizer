@@ -917,6 +917,64 @@
       document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
     }
 
+    // --- COMPREHENSIVE TOPOGRAPHIC & ELEVATION PHYSICS ENGINE ---
+    const TOPOGRAPHIC_ELEVATION_POINTS = [
+      [-83.0750, 39.9512, 230.0], // Columbus, OH (750 ft)
+      [-82.0132, 39.9403, 215.0], // Zanesville, OH
+      [-81.5833, 40.0345, 245.0], // Cambridge, OH
+      [-80.7209, 40.0639, 200.0], // Wheeling, WV (Ohio River)
+      [-80.2462, 40.1740, 310.0], // Washington, PA (1,017 ft)
+      [-79.8695, 40.1265, 290.0], // Belle Vernon, PA
+      [-79.6103, 40.2187, 340.0], // New Stanton, PA (1,115 ft)
+      [-79.3500, 40.1000, 520.0], // Laurel Hill Ascent (1,706 ft)
+      [-79.0781, 40.0084, 690.0], // Somerset, PA (Laurel Ridge - 2,264 ft)
+      [-78.7500, 40.0100, 715.0], // Allegheny Mountain Tunnel Pass (2,345 ft)
+      [-78.5039, 40.0187, 380.0], // Bedford, PA (1,246 ft Basin)
+      [-78.1400, 40.1550, 420.0], // Blue Mountain / Waterfall Tunnel (1,378 ft)
+      [-77.9620, 40.0495, 300.0], // Fort Littleton, PA
+      [-77.5560, 40.1340, 240.0], // Newburg, PA
+      [-77.1889, 40.2014, 150.0], // Carlisle, PA (Cumberland Valley - 492 ft)
+      [-76.8867, 40.2732, 105.0], // Harrisburg, PA (Susquehanna Valley)
+      [-76.7314, 40.1989, 110.0], // Middletown, PA
+      [-76.0000, 40.1500, 190.0], // Bowmansville / Welsh Mountain
+      [-75.6268, 40.0934, 120.0], // Chester Springs / Valley Forge
+      [-75.1652, 39.9526, 15.0],  // Philadelphia, PA
+      [-74.9218, 39.8912, 15.0],  // Marlton, NJ (50 ft)
+      // Maryland I-68 / I-70 Corridor Points
+      [-79.9559, 39.6295, 290.0], // Morgantown, WV
+      [-78.9284, 39.6582, 620.0], // Frostburg, MD (Big Savage Mountain - 2,034 ft)
+      [-78.7625, 39.6529, 210.0], // Cumberland, MD
+      [-78.3500, 39.7100, 460.0], // Sideling Hill, MD (1,509 ft)
+      [-78.1797, 39.6998, 140.0], // Hancock, MD
+      [-77.7200, 39.6418, 170.0], // Hagerstown, MD
+      [-77.5500, 39.5000, 380.0], // South Mountain Pass, MD (1,246 ft)
+      [-77.4105, 39.4143, 90.0],  // Frederick, MD
+      [-76.6122, 39.2904, 30.0],  // Baltimore, MD
+      [-75.8333, 39.6068, 25.0]   // Elkton, MD
+    ];
+
+    function getTopographicElevation(lon, lat) {
+      if (lon == null || lat == null) return 150.0;
+      let tot_w = 0.0, tot_e = 0.0;
+      for (let i = 0; i < TOPOGRAPHIC_ELEVATION_POINTS.length; i++) {
+        const p = TOPOGRAPHIC_ELEVATION_POINTS[i];
+        const d = Math.hypot(lon - p[0], lat - p[1]);
+        if (d < 0.001) return p[2];
+        const w = 1.0 / (d * d);
+        tot_w += w;
+        tot_e += (w * p[2]);
+      }
+      return tot_w > 0 ? (tot_e / tot_w) : 150.0;
+    }
+
+    function calcBearingDeg(lon1, lat1, lon2, lat2) {
+      if (lon1 == null || lat1 == null || lon2 == null || lat2 == null) return 90.0;
+      const y = Math.sin((lon2 - lon1) * Math.PI / 180.0) * Math.cos(lat2 * Math.PI / 180.0);
+      const x = Math.cos(lat1 * Math.PI / 180.0) * Math.sin(lat2 * Math.PI / 180.0) -
+                Math.sin(lat1 * Math.PI / 180.0) * Math.cos(lat2 * Math.PI / 180.0) * Math.cos((lon2 - lon1) * Math.PI / 180.0);
+      return (Math.atan2(y, x) * 180.0 / Math.PI + 360.0) % 360.0;
+    }
+
     // --- GEODETIC & VECTOR PROJECTION ENGINE ---
     function haversineMiles(lat1, lon1, lat2, lon2) {
       const R = 3958.8;
@@ -1269,8 +1327,9 @@
       return 25.0;
     }
 
-    // High-resolution interval physics simulator: integrates specific posted speed limits,
-    // local road surface penalties, intersection traffic signal/stop cycles, and maneuver turns.
+    // High-resolution physics simulator: integrates specific posted speed limits,
+    // 3D topographic road incline / elevation grade, highway banking & curve scrub,
+    // surface condition friction & hydrodynamic spray, and 2D vector wind aerodynamics with yaw angles.
     function simulateLegFromSteps(steps, start_mile, end_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed) {
       if (!steps || steps.length === 0) {
         return simulateLegPhysics(end_mile - start_mile, fallback_speed || 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
@@ -1322,59 +1381,120 @@
           const slice_hours = ov_len / Math.max(15.0, target_mph);
           const dist_m = ov_len * 1609.34;
 
-          // 1. Aerodynamic Drag
+          // 1. Step Heading Bearing & 2D Vector Aerodynamics with Yaw Angle
+          let step_bearing = 90.0; // Default Eastbound
+          if (s.maneuver && s.maneuver.bearing_after != null) {
+            step_bearing = s.maneuver.bearing_after;
+          } else if (s.geometry && s.geometry.coordinates && s.geometry.coordinates.length >= 2) {
+            const c = s.geometry.coordinates;
+            step_bearing = calcBearingDeg(c[0][0], c[0][1], c[c.length - 1][0], c[c.length - 1][1]);
+          }
+
           const temp_c = (temp_f - 32) * 5 / 9;
           const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
-          const drag_area = 0.332 * 2.60;
           const v_wind_ms = wind_speed * 0.44704;
-          const v_airspeed_ms = Math.max(5.0, v_ms + (v_wind_ms * Math.cos((wind_dir - 90) * Math.PI / 180)));
-          const f_aero = 0.5 * rho * drag_area * Math.pow(v_airspeed_ms, 2);
+          const rel_wind_rad = (step_bearing - wind_dir) * Math.PI / 180.0;
+          const v_head_ms = v_wind_ms * Math.cos(rel_wind_rad);
+          const v_cross_ms = v_wind_ms * Math.sin(rel_wind_rad);
+          const v_airspeed_ms = Math.max(3.0, Math.hypot(v_ms + v_head_ms, v_cross_ms));
+          const yaw_deg = Math.abs(Math.atan2(v_cross_ms, Math.max(0.1, v_ms + v_head_ms))) * 180.0 / Math.PI;
+          const cd_yaw = 0.332 * (1.0 + (0.008 * Math.min(25.0, yaw_deg)));
+          const f_aero = 0.5 * rho * (cd_yaw * 2.60) * Math.pow(v_airspeed_ms, 2);
 
-          // 2. Rolling Resistance (Local / ramp roads have higher Crr due to surface texture & turn friction)
+          // 2. Rolling Resistance & Road Surface Condition (Wet spray / Snow deformation)
           let crr = is_local ? 0.0105 : 0.0095;
           if (road_cond === "wet") crr *= 1.40;
           else if (road_cond === "snow_ice") crr *= 2.20;
           const f_rr = crr * total_mass_kg * 9.80665;
+          const f_spray = (road_cond === "wet") ? (0.5 * 0.35 * 1000.0 * (4 * 0.235) * 0.0005 * Math.pow(v_ms, 2)) : 0.0;
 
-          const steady_tractive_kwh = ((f_aero + f_rr) * 1.02 * dist_m) / 3.6e6 / 0.91;
+          // 3. Highway Curvature & Superelevation (Banked Turn Scrub)
+          const mBearingDiff = (s.maneuver && s.maneuver.bearing_after != null && s.maneuver.bearing_before != null) 
+            ? Math.abs(s.maneuver.bearing_after - s.maneuver.bearing_before) : 0;
+          const turn_deflection = Math.min(180, mBearingDiff > 180 ? 360 - mBearingDiff : mBearingDiff);
+          const f_cornering = (turn_deflection > 10.0) 
+            ? (total_mass_kg * 9.80665 * 0.0008 * Math.min(4.0, (turn_deflection / 45.0) * Math.pow(v_ms / 30.0, 2))) 
+            : 0.0;
 
-          // 3. Kinetic Stop-and-Go Inefficiency (Traffic Lights & Stop Signs on local roads)
+          // 4. Incline / Elevation Grade Resistance & Regenerative Braking Recovery
+          let elev_start = null, elev_end = null;
+          if (s.geometry && s.geometry.coordinates && s.geometry.coordinates.length >= 2) {
+            const c = s.geometry.coordinates;
+            elev_start = getTopographicElevation(c[0][0], c[0][1]);
+            elev_end = getTopographicElevation(c[c.length - 1][0], c[c.length - 1][1]);
+          } else if (s.maneuver && s.maneuver.location) {
+            elev_start = getTopographicElevation(s.maneuver.location[0], s.maneuver.location[1]);
+            elev_end = elev_start;
+            if (steps[i + 1] && steps[i + 1].maneuver && steps[i + 1].maneuver.location) {
+              elev_end = getTopographicElevation(steps[i + 1].maneuver.location[0], steps[i + 1].maneuver.location[1]);
+            }
+          }
+
+          if (elev_start == null) {
+            // Geographic interpolation along Appalachian Highway Corridor (Ohio Plain -> Laurel Ridge -> Coastal Plain)
+            const f1 = Math.max(0, Math.min(1, step_start / 450.0));
+            const f2 = Math.max(0, Math.min(1, step_end / 450.0));
+            const lon_interp1 = -83.0750 + f1 * (-74.9218 - (-83.0750));
+            const lat_interp1 = 39.9512 + f1 * (39.8912 - 39.9512);
+            const lon_interp2 = -83.0750 + f2 * (-74.9218 - (-83.0750));
+            const lat_interp2 = 39.9512 + f2 * (39.8912 - 39.9512);
+            elev_start = getTopographicElevation(lon_interp1, lat_interp1);
+            elev_end = getTopographicElevation(lon_interp2, lat_interp2);
+          }
+
+          const delta_elev_m = (elev_end - elev_start) * (ov_len / Math.max(0.001, step_len));
+          const grade = dist_m > 0 ? (delta_elev_m / dist_m) : 0.0;
+          const f_grade = total_mass_kg * 9.80665 * Math.sin(Math.atan(grade));
+
+          // Combined Net Force at Wheels
+          const f_wheel = f_aero + f_rr + f_spray + f_cornering + f_grade;
+          let steady_tractive_kwh = 0.0;
+          if (f_wheel >= 0) {
+            // Climbing / cruising under positive motor power
+            steady_tractive_kwh = (f_wheel * dist_m) / 3.6e6 / 0.91;
+          } else {
+            // Mountain downhill descent: regenerative braking recovers kinetic & potential energy
+            const p_regen_kw = Math.abs(f_wheel * v_ms / 1000.0);
+            const clamped_regen = Math.min(p_regen_kw, 150.0); // Equinox EV 150 kW max regen limit
+            const regen_eff = (road_cond === "snow_ice") ? 0.65 : 0.85; // derated on slippery road conditions
+            steady_tractive_kwh = - (clamped_regen * slice_hours * regen_eff);
+          }
+
+          // 5. Kinetic Stop-and-Go Inefficiency (Traffic Lights & Stop Signs on local roads)
           let kinetic_kwh = 0.0;
           let idle_hours = 0.0;
           const num_intersections = (s.intersections && s.intersections.length) ? s.intersections.length : 0;
           if (is_local && num_intersections > 0) {
-            // Approx 28% of intersections require a complete stop or heavy braking cycle
             const stops = (ov_len / step_len) * num_intersections * 0.28;
             const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
             const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
             kinetic_kwh += (stops * cycle_loss) / 3.6e6;
-            idle_hours += (stops * 18.0) / 3600.0; // 18 seconds avg wait per stop
+            idle_hours += (stops * 18.0) / 3600.0;
           }
 
-          // 4. Maneuver Turns & Ramp Curvature Deceleration/Acceleration
+          // 6. Maneuver Turns & Ramp Curvature Deceleration/Acceleration
           let maneuver_delay_hours = 0.0;
           if (['turn', 'roundabout', 'on ramp', 'off ramp'].includes(mType) || is_ramp) {
             const v_turn_ms = Math.min(v_ms, 18.0 * 0.44704);
             const delta_ke_turn = 0.5 * total_mass_kg * Math.max(0.0, Math.pow(v_ms, 2) - Math.pow(v_turn_ms, 2));
             kinetic_kwh += (delta_ke_turn * ((1.0 / 0.91) - 0.78)) / 3.6e6;
-            // 18 seconds of deceleration/acceleration delay per ramp or turn maneuver
             maneuver_delay_hours = (18.0 / 3600.0) * (ov_len / Math.max(0.01, step_len));
           }
 
           const step_tot_hours = slice_hours + idle_hours + maneuver_delay_hours;
 
-          // 5. HVAC & Thermal Management
+          // 7. HVAC & Thermal Management
           let hvac_kw = 0.35;
           if (temp_f < 45) hvac_kw = Math.min(5.2, 0.45 + (0.09 * (45 - temp_f)));
           else if (temp_f > 75) hvac_kw = Math.min(2.8, 0.40 + (0.06 * (temp_f - 75)));
           const aux_kwh = (0.35 + hvac_kw) * step_tot_hours;
 
-          // 6. Battery Internal Resistance / Cold Efficiency
+          // 8. Battery Internal Resistance / Cold Efficiency
           let batt_eff = 1.0;
           if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.0045));
           else if (temp_f < 55) batt_eff = 0.90 + ((temp_f - 32) / 23) * 0.10;
 
-          const slice_total_kwh = ((steady_tractive_kwh + kinetic_kwh) / batt_eff) + aux_kwh;
+          const slice_total_kwh = ((steady_tractive_kwh + kinetic_kwh) / (steady_tractive_kwh >= 0 ? batt_eff : 1.0)) + aux_kwh;
 
           total_kwh += slice_total_kwh;
           total_hours += step_tot_hours;
@@ -1431,11 +1551,12 @@
       if (road_cond === "wet") crr *= 1.40;
       else if (road_cond === "snow_ice") crr *= 2.20;
       const f_rr = crr * total_mass_kg * 9.80665;
+      const f_spray = (road_cond === "wet") ? (0.5 * 0.35 * 1000.0 * (4 * 0.235) * 0.0005 * Math.pow(v_ms, 2)) : 0.0;
 
       const temp_c = (temp_f - 32) * 5 / 9;
       const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
       const f_aero = 0.5 * rho * (0.332 * 2.60) * Math.pow(v_ms, 2);
-      const steady_kwh = ((f_rr + f_aero) * dist_m) / 3.6e6 / 0.91;
+      const steady_kwh = ((f_rr + f_spray + f_aero) * dist_m) / 3.6e6 / 0.91;
 
       // Stop-and-go intersection cycles (service plazas: 1 parking stop; off-highway exits: 2-3 intersection stops)
       const num_stops = is_plaza ? 1.0 : Math.max(2.0, detour_miles * 2.2);
@@ -1480,23 +1601,27 @@
       const hours = distance_miles / Math.max(20, target_mph);
       const dist_meters = distance_miles * 1609.34;
 
-      // 1. Aerodynamic Drag: 0.5 * rho * Cd * A * v_air^2
+      // 1. Aerodynamic Drag: 2D vector wind and yaw angle on Eastbound highway heading (~90 deg)
       const temp_c = (temp_f - 32) * 5 / 9;
       const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
-      const drag_area = 0.332 * 2.60;
-
       const v_wind_ms = wind_speed * 0.44704;
-      const v_airspeed_ms = Math.max(5, v_ms + (v_wind_ms * Math.cos((wind_dir - 90) * Math.PI / 180)));
-      const f_aero = 0.5 * rho * drag_area * Math.pow(v_airspeed_ms, 2);
+      const rel_wind_rad = (90.0 - wind_dir) * Math.PI / 180.0;
+      const v_head_ms = v_wind_ms * Math.cos(rel_wind_rad);
+      const v_cross_ms = v_wind_ms * Math.sin(rel_wind_rad);
+      const v_airspeed_ms = Math.max(3.0, Math.hypot(v_ms + v_head_ms, v_cross_ms));
+      const yaw_deg = Math.abs(Math.atan2(v_cross_ms, Math.max(0.1, v_ms + v_head_ms))) * 180.0 / Math.PI;
+      const cd_yaw = 0.332 * (1.0 + (0.008 * Math.min(25.0, yaw_deg)));
+      const f_aero = 0.5 * rho * (cd_yaw * 2.60) * Math.pow(v_airspeed_ms, 2);
 
-      // 2. Rolling Resistance: Crr * m * g
+      // 2. Rolling Resistance & Surface Condition
       let crr = 0.0095;
       if (road_cond === "wet") crr = 0.0135;
       if (road_cond === "snow_ice") crr = 0.0210;
       const f_rr = crr * total_mass_kg * 9.80665;
+      const f_spray = (road_cond === "wet") ? (0.5 * 0.35 * 1000.0 * (4 * 0.235) * 0.0005 * Math.pow(v_ms, 2)) : 0.0;
 
-      // 3. Dynamic micro-acceleration & grade fluctuation overhead (3%)
-      const f_total = (f_aero + f_rr) * 1.03;
+      // 3. Dynamic micro-acceleration, road grade fluctuation & curve scrub overhead
+      const f_total = (f_aero + f_rr + f_spray) * 1.025;
       let tractive_kwh = (f_total * dist_meters) / 3.6e6;
       tractive_kwh /= 0.91; // 91% traction inverter efficiency
 
