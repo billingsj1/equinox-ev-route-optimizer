@@ -223,7 +223,7 @@
           <div class="border-t border-slate-800/80 pt-3 space-y-3">
             <div class="flex justify-between items-center text-xs">
               <span class="text-slate-300 font-medium">Driving Time Between Stops</span>
-              <span id="idealWindowBadge" class="font-mono text-[11px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">75 – 150 mins</span>
+              <span id="idealWindowBadge" class="font-mono text-[11px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">75 – 120 mins</span>
             </div>
 
             <div>
@@ -238,9 +238,9 @@
             <div>
               <div class="flex justify-between text-slate-400 mb-1">
                 <span>Max Time Between Stops</span>
-                <span id="maxTimeDisplay" class="font-mono text-cyan-400">150 mins (~188 mi)</span>
+                <span id="maxTimeDisplay" class="font-mono text-cyan-400">120 mins (~150 mi)</span>
               </div>
-              <input type="range" id="maxTimeSlider" min="90" max="240" value="150" step="10" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Maximum continuous driving stretch before requiring a rest/charge break.</span>
             </div>
           </div>
@@ -474,18 +474,18 @@
               <i data-lucide="timer" class="w-3.5 h-3.5 text-blue-400"></i>
               <span>Max Route Duration Cap:</span>
             </span>
-            <span id="maxTimePenaltyBadge" class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">+10% (max --)</span>
+            <span id="maxTimePenaltyBadge" class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">+8% (max --)</span>
           </div>
           <div class="flex items-center gap-2.5">
             <span class="text-[10px] text-slate-500 font-mono">0%</span>
-            <input type="range" id="maxDurationToleranceSlider" min="0" max="30" step="1" value="10" 
+            <input type="range" id="maxDurationToleranceSlider" min="0" max="30" step="1" value="8" 
               class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
               oninput="onDurationToleranceChange(this.value)">
             <span class="text-[10px] text-slate-500 font-mono">+30%</span>
           </div>
           <div class="text-[10px] text-slate-400 mt-1 flex justify-between">
-            <span>Excludes routes taking &gt; <b id="maxTolerancePctText" class="text-cyan-300 font-semibold">+10%</b> over fastest</span>
-            <span class="text-slate-500">Default: 10%</span>
+            <span>Excludes routes taking &gt; <b id="maxTolerancePctText" class="text-cyan-300 font-semibold">+8%</b> over fastest</span>
+            <span class="text-slate-500">Default: 8%</span>
           </div>
           
           <!-- Checkbox: Exclude Cheapest route from duration cap -->
@@ -852,7 +852,7 @@
 
     function updateSpeedAndGaps() {
       const minVal = parseInt(document.getElementById('minTimeSlider').value) || 75;
-      const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 150;
+      const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 120;
       updateTimeGapDisplays(minVal, maxVal);
     }
 
@@ -1970,12 +1970,11 @@
     function initDurationTolerance() {
       try {
         const saved = localStorage.getItem('equinox_max_duration_tolerance');
-        if (saved !== null) {
-          const slider = document.getElementById('maxDurationToleranceSlider');
-          if (slider) slider.value = saved;
-          const maxTolText = document.getElementById('maxTolerancePctText');
-          if (maxTolText) maxTolText.innerText = `+${saved}%`;
-        }
+        const slider = document.getElementById('maxDurationToleranceSlider');
+        const maxTolText = document.getElementById('maxTolerancePctText');
+        const activeVal = (saved !== null && saved !== "10" && saved !== "20") ? saved : "8";
+        if (slider) slider.value = activeVal;
+        if (maxTolText) maxTolText.innerText = `+${activeVal}%`;
         const savedExclude = localStorage.getItem('equinox_exclude_cheapest_cap');
         const excludeCheckbox = document.getElementById('excludeCheapestFromCap');
         if (excludeCheckbox) {
@@ -1989,11 +1988,11 @@
       } catch (e) {}
     }
 
-    function applyRouteSelectionFromPool(finalPool) {
+    function applyRouteSelectionFromPool(finalPool, fastestNonStop = null) {
       if (!finalPool || finalPool.length === 0) return;
 
       const maxToleranceSlider = document.getElementById('maxDurationToleranceSlider');
-      const maxTolerancePct = maxToleranceSlider ? parseFloat(maxToleranceSlider.value) : 10.0;
+      const maxTolerancePct = maxToleranceSlider ? parseFloat(maxToleranceSlider.value) : 8.0;
       const excludeCheapestCheckbox = document.getElementById('excludeCheapestFromCap');
       const excludeCheapest = excludeCheapestCheckbox ? excludeCheapestCheckbox.checked : false;
 
@@ -2013,7 +2012,25 @@
       const cheapestSource = excludeCheapest ? finalPool : validCappedPool;
       const sortedByCost = [...cheapestSource].sort((a, b) => a.total_cost - b.total_cost);
       let cheapest = sortedByCost[0];
-      const cheapSeqKey = cheapest.route.id + '|' + cheapest.stops.map(s => s.station.name).join('->');
+      let cheapSeqKey = cheapest.route.id + '|' + cheapest.stops.map(s => s.station.name).join('->');
+
+      // Contrast preservation: If cheapest has the exact same stop sequence as fastest,
+      // and a distinct physical sequence exists in cheapestSource, prefer the distinct route
+      // if the cost is within a reasonable threshold ($3.00) or if cheapest is virtually identical in cost to fastest
+      if (cheapSeqKey === fastSeqKey && sortedByCost.length > 1) {
+        const distinctCandidate = sortedByCost.find(c => {
+          const sKey = c.route.id + '|' + c.stops.map(s => s.station.name).join('->');
+          return sKey !== fastSeqKey;
+        });
+        if (distinctCandidate) {
+          const costDiffOverFastest = Math.abs(cheapest.total_cost - fastest.total_cost);
+          const costDiffToDistinct = distinctCandidate.total_cost - cheapest.total_cost;
+          if (costDiffOverFastest < 1.00 || costDiffToDistinct <= 3.00) {
+            cheapest = distinctCandidate;
+            cheapSeqKey = cheapest.route.id + '|' + cheapest.stops.map(s => s.station.name).join('->');
+          }
+        }
+      }
 
       // 3. BALANCED: Optimal Pareto knee balancing time vs cost within the duration cap
       const kneePool = validCappedPool;
@@ -2034,14 +2051,16 @@
         return sKey !== fastSeqKey && sKey !== cheapSeqKey;
       });
       if (!best_balanced) {
-        best_balanced = (kneePool[0] !== fastest && kneePool[0] !== cheapest) ? kneePool[0] : (kneePool[1] || kneePool[0]);
+        best_balanced = kneePool.find(c => c !== fastest && c !== cheapest) || kneePool[0];
       }
+
+      const nonStop = fastestNonStop || (calculatedResults && calculatedResults.nonStop) || window.lastFastestNonStop || null;
 
       calculatedResults = {
         fastest: fastest,
         cheapest: cheapest,
         balanced: best_balanced,
-        nonStop: calculatedResults ? calculatedResults.nonStop : null,
+        nonStop: nonStop,
         maxAllowedHours: maxAllowedHours,
         maxTolerancePct: maxTolerancePct
       };
@@ -2068,7 +2087,7 @@
       const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
       const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 75);
-      const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 150);
+      const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 120);
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
       const wind_dir = parseFloat(document.getElementById('windDir').value);
@@ -2121,6 +2140,15 @@
           };
         }
       });
+      window.lastFastestNonStop = fastestNonStop;
+      if (fastestNonStop) {
+        const durEl = document.getElementById('nonStopDuration');
+        const distEl = document.getElementById('nonStopDistance');
+        const spdEl = document.getElementById('nonStopSpeed');
+        if (durEl) durEl.innerText = formatHours(fastestNonStop.hours);
+        if (distEl) distEl.innerText = `${Math.round(fastestNonStop.distance)} mi`;
+        if (spdEl) spdEl.innerText = `${Math.round(fastestNonStop.avg_speed)} mph avg`;
+      }
 
       // =========================================================================
       // STAGE 1: FORWARD STATE-SPACE SEARCH TREE (EXPANDED TARGETS & DYNAMIC PROGRAMMING)
@@ -2435,12 +2463,18 @@
       const uniqueSequencesCount = sequenceGroups.size;
       const totalItinerariesCount = stage1_candidates.length;
 
-      // Metric 2: Select Top 20 Fastest, Top 20 Cheapest, Top 20 Pareto Knee
+      // Metric 2: Select Top candidates across speed, cost (capped & global), Pareto knee, and per-corridor diversity
       const sortedBySpeed = [...stage1_candidates].sort((a, b) => a.total_hours - b.total_hours);
-      const top_fastest = sortedBySpeed.slice(0, 20);
+      const top_fastest = sortedBySpeed.slice(0, 15);
 
       const sortedByCost = [...stage1_candidates].sort((a, b) => a.total_cost - b.total_cost);
-      const top_cheapest = sortedByCost.slice(0, 20);
+      const top_cheapest_global = sortedByCost.slice(0, 15);
+
+      // Top cheapest candidates within duration cap (+15% of Stage-1 fastest)
+      // This guarantees the faster corridor (e.g. PA Turnpike) has its lowest-cost options selected even when toll-free corridors dominate global cost
+      const min_stage1_hours = sortedBySpeed[0].total_hours;
+      const capped_candidates = stage1_candidates.filter(c => c.total_hours <= (min_stage1_hours * 1.15));
+      const top_cheapest_capped = [...capped_candidates].sort((a, b) => a.total_cost - b.total_cost).slice(0, 15);
 
       const min_t = sortedBySpeed[0].total_hours;
       const max_t = Math.max(...stage1_candidates.map(c => c.total_hours));
@@ -2453,12 +2487,24 @@
         c.knee_dist = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
       });
       const sortedByKnee = [...stage1_candidates].sort((a, b) => a.knee_dist - b.knee_dist);
-      const top_balanced = sortedByKnee.slice(0, 20);
+      const top_balanced = sortedByKnee.slice(0, 15);
 
-      // Deduplicate across Top 20 Fastest + Top 20 Cheapest + Top 20 Pareto
+      // Per-Corridor Diversity: ensure each active highway corridor is represented with its best fast, cheap, and balanced variants
+      const perCorridorTop = [];
+      activeRoutesData.forEach(r => {
+        const routeCands = stage1_candidates.filter(c => c.route.id === r.id);
+        if (routeCands.length > 0) {
+          const rFast = [...routeCands].sort((a, b) => a.total_hours - b.total_hours).slice(0, 8);
+          const rCheap = [...routeCands].sort((a, b) => a.total_cost - b.total_cost).slice(0, 8);
+          const rKnee = [...routeCands].sort((a, b) => a.knee_dist - b.knee_dist).slice(0, 8);
+          perCorridorTop.push(...rFast, ...rCheap, ...rKnee);
+        }
+      });
+
+      // Deduplicate across all candidate buckets
       const combinedTop = [];
       const seenTopKeys = new Set();
-      [...top_fastest, ...top_cheapest, ...top_balanced].forEach(cand => {
+      [...top_fastest, ...top_cheapest_capped, ...top_cheapest_global, ...top_balanced, ...perCorridorTop].forEach(cand => {
         const cKey = cand.route.id + '|' + cand.stops.map(s => `${s.station.id}@${s.tgt_soc}`).join('-');
         if (!seenTopKeys.has(cKey)) {
           seenTopKeys.add(cKey);
@@ -2496,7 +2542,7 @@
               <span class="font-bold text-teal-400">*</span> <span><b>${totalItinerariesCount.toLocaleString()} different SoC combinations</b> generated across 50%–90% charge targets</span>
             </div>
             <div class="text-cyan-300 animate-pulse flex items-center gap-2">
-              <span class="font-bold text-cyan-400">*</span> <span>Step 2/3: Analyzing ${combinedTop.length} best routes (top 20 fastest, cheapest, & Pareto knee deduplicated)...</span>
+              <span class="font-bold text-cyan-400">*</span> <span>Step 2/3: Analyzing ${combinedTop.length} best routes (fastest, cheapest, & Pareto across all corridors)...</span>
             </div>
           </div>
         `;
@@ -2526,7 +2572,7 @@
                 <span class="font-bold text-teal-400">*</span> <span><b>${totalItinerariesCount.toLocaleString()} different SoC combinations</b> generated across 50%–90% charge targets</span>
               </div>
               <div class="text-slate-300 flex items-center gap-2">
-                <span class="font-bold text-cyan-400">*</span> <span><b>Analyzed ${combinedTop.length} best routes</b> (top 20 fastest, cheapest, & Pareto knee)</span>
+                <span class="font-bold text-cyan-400">*</span> <span><b>Analyzed ${combinedTop.length} best routes</b> (fastest, cheapest, & Pareto across all corridors)</span>
               </div>
               <div class="text-indigo-300 animate-pulse flex items-center gap-2">
                 <span class="font-bold text-indigo-400">*</span> <span>Step 3/3: Verifying physical route geometry via OSRM (${completedSoFar}/${seqEntries.length})...</span>
@@ -2693,7 +2739,7 @@
       window.lastEvaluatedPool = finalPool;
 
       // Select fastest, cheapest, balanced according to duration cap and checkbox settings
-      applyRouteSelectionFromPool(finalPool);
+      applyRouteSelectionFromPool(finalPool, fastestNonStop);
 
       // Persistent Audit Bar Completion Update
       if (auditStatusText) auditStatusText.innerText = "Optimization Complete";
@@ -2724,7 +2770,7 @@
               <span class="font-bold text-teal-400">*</span> <span><b>${totalItinerariesCount.toLocaleString()} different SoC combinations</b> generated across 50%–90% charge targets</span>
             </div>
             <div class="text-slate-200 flex items-center gap-2">
-              <span class="font-bold text-cyan-400">*</span> <span><b>Analyzed ${combinedTop.length} best routes</b> (top 20 fastest, top 20 cheapest, top 20 Pareto, minus overlapping routes)</span>
+              <span class="font-bold text-cyan-400">*</span> <span><b>Analyzed ${combinedTop.length} best routes</b> (top fastest, cheapest, & Pareto across all corridors, minus overlapping routes)</span>
             </div>
             <div class="text-slate-200 flex items-center gap-2">
               <span class="font-bold text-indigo-400">*</span> <span><b>Verified ${uniqueSequencesMap.size} physical routes with live OSRM</b> (turn-by-turn ramps, speed limits, & detours)</span>
@@ -3933,7 +3979,7 @@ window.onload = () => {
       initStationData();
       initDurationTolerance();
       initMap();
-      updateTimeGapDisplays(75, 150);
+      updateTimeGapDisplays(75, 120);
       updatePhysicsHUD();
       // Route calculation is not run automatically on load, allowing settings adjustment first
       lucide.createIcons();
