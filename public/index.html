@@ -1891,62 +1891,117 @@
       const has_ezpass = document.getElementById('hasEzPass').checked;
       const q = destGeo.name.toLowerCase();
 
-      if (q.includes("sewickley")) {
-        activeRoutesData = [{
-          id: "sewickley_route",
-          name: "I-70 East to I-79 North (Sewickley, PA)",
-          distance: 172.0,
-          base_speed_limit: 60.0,
-          speed_mph: 60.0,
-          speed_profile_text: "70 mph I-70 (42%) · 60 mph US-22 (45%) · 65 mph PA-576 (3%) · 35-55 mph Local (10%)",
-          steps: [
-            { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
-            { name: "East Freeway", ref: "I 70", distance_miles: 74.9, posted_speed: 70.0 },
-            { name: "Cadiz / Steubenville Expressway", ref: "US 22", distance_miles: 78.5, posted_speed: 60.0 },
-            { name: "Southern Beltway", ref: "PA 576", distance_miles: 4.4, posted_speed: 65.0 },
-            { name: "Local Access", ref: "PA 51", distance_miles: 12.7, posted_speed: 35.0 }
-          ],
-          toll: 0.00,
-          coordinates: [
-            [originGeo.lon, originGeo.lat],
-            [-81.5833, 40.0345], // Cambridge OH
-            [-80.2462, 40.1740], // Washington PA
-            [-80.1834, 40.5401]  // Sewickley PA
-          ],
-          origin: originGeo,
-          destination: destGeo
-        }];
-      } else if (q.includes("carlisle")) {
-        activeRoutesData = [{
-          id: "carlisle_route",
-          name: "I-70 East to PA Turnpike (Carlisle Exit 226)",
-          distance: 348.0,
-          base_speed_limit: 68.5,
-          speed_mph: 68.5,
-          speed_profile_text: "70 mph Turnpike/I-70 (82%) · 65 mph I-470/PA (16%) · 35-55 mph Local (2%)",
-          steps: [
-            { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
-            { name: "East Freeway", ref: "I 70", distance_miles: 118.5, posted_speed: 70.0 },
-            { name: "Wheeling Bypass", ref: "I 470", distance_miles: 20.1, posted_speed: 65.0 },
-            { name: "Eisenhower Highway", ref: "I 70", distance_miles: 57.3, posted_speed: 65.0 },
-            { name: "Pennsylvania Turnpike", ref: "I 76", distance_miles: 147.0, posted_speed: 70.0 },
-            { name: "Harrisburg Pike", ref: "US 11", distance_miles: 3.6, posted_speed: 35.0 }
-          ],
-          toll: has_ezpass ? 19.50 : 39.00,
-          coordinates: [
-            [originGeo.lon, originGeo.lat],
-            [-81.5833, 40.0345], // Cambridge OH
-            [-80.2462, 40.1740], // Washington PA
-            [-79.6103, 40.2187], // New Stanton
-            [-79.0700, 40.0150], // Somerset
-            [-78.5039, 40.0187], // Bedford
-            [-77.9620, 40.0495], // Fort Littleton
-            [-77.5500, 40.1350], // Newburg
-            [-77.1889, 40.2014]  // Carlisle PA
-          ],
-          origin: originGeo,
-          destination: destGeo
-        }];
+      if (q.includes("sewickley") || q.includes("billings")) {
+        activeRoutesData = [
+          {
+            id: "sewickley_route_us22",
+            name: "Route 1: I-70 to US-22 East (Direct Highway)",
+            distance: 172.0,
+            base_speed_limit: 60.0,
+            speed_mph: 60.0,
+            speed_profile_text: "70 mph I-70 (42%) · 60 mph US-22 (45%) · 65 mph PA-576 (3%) · 35-55 mph Local (10%)",
+            steps: [
+              { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+              { name: "East Freeway", ref: "I 70", distance_miles: 74.9, posted_speed: 70.0 },
+              { name: "Cadiz / Steubenville Expressway", ref: "US 22", distance_miles: 78.5, posted_speed: 60.0 },
+              { name: "Southern Beltway", ref: "PA 576", distance_miles: 4.4, posted_speed: 65.0 },
+              { name: "Local Access", ref: "PA 51", distance_miles: 12.7, posted_speed: 35.0 }
+            ],
+            toll: 0.00,
+            coordinates: [
+              [originGeo.lon, originGeo.lat],
+              [-81.5833, 40.0345], // Cambridge OH
+              [-80.7209, 40.0639], // Wheeling
+              [-80.1834, 40.5401]  // Sewickley PA
+            ],
+            origin: originGeo,
+            destination: destGeo
+          },
+          {
+            id: "sewickley_route_i79",
+            name: "Route 2: I-70 East to I-79 North (via Washington, PA)",
+            distance: 184.0,
+            base_speed_limit: 67.0,
+            speed_mph: 67.0,
+            speed_profile_text: "70 mph I-70 (70%) · 65 mph I-79 (22%) · 35-55 mph Local (8%)",
+            steps: [
+              { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+              { name: "East Freeway", ref: "I 70", distance_miles: 118.5, posted_speed: 70.0 },
+              { name: "Raymond P Shafer Highway", ref: "I 79", distance_miles: 50.0, posted_speed: 65.0 },
+              { name: "Local Access", ref: "PA 65", distance_miles: 14.0, posted_speed: 45.0 }
+            ],
+            toll: 0.00,
+            coordinates: [
+              [originGeo.lon, originGeo.lat],
+              [-81.5833, 40.0345], // Cambridge OH
+              [-80.2462, 40.1740], // Washington PA (Mercedes-Benz HPC)
+              [-80.1834, 40.5401]  // Sewickley PA
+            ],
+            origin: originGeo,
+            destination: destGeo
+          }
+        ];
+      } else if (q.includes("carlisle") || q.includes("dillsburg") || q.includes("decamilla") || q.includes("gettysburg")) {
+        activeRoutesData = [
+          {
+            id: "dillsburg_turnpike",
+            name: "Route 1: I-70 to PA Turnpike & US-15 (Dillsburg / Carlisle)",
+            distance: 348.0,
+            base_speed_limit: 68.5,
+            speed_mph: 68.5,
+            speed_profile_text: "70 mph Turnpike/I-70 (82%) · 65 mph I-470/PA (16%) · 35-55 mph Local (2%)",
+            steps: [
+              { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+              { name: "East Freeway", ref: "I 70", distance_miles: 118.5, posted_speed: 70.0 },
+              { name: "Wheeling Bypass", ref: "I 470", distance_miles: 20.1, posted_speed: 65.0 },
+              { name: "Eisenhower Highway", ref: "I 70", distance_miles: 57.3, posted_speed: 65.0 },
+              { name: "Pennsylvania Turnpike", ref: "I 76", distance_miles: 147.0, posted_speed: 70.0 },
+              { name: "Gettysburg Pike", ref: "US 15", distance_miles: 3.6, posted_speed: 45.0 }
+            ],
+            toll: has_ezpass ? 19.50 : 39.00,
+            coordinates: [
+              [originGeo.lon, originGeo.lat],
+              [-81.5833, 40.0345], // Cambridge OH
+              [-80.2462, 40.1740], // Washington PA
+              [-79.6103, 40.2187], // New Stanton
+              [-79.0700, 40.0150], // Somerset
+              [-78.5039, 40.0187], // Bedford
+              [-77.9620, 40.0495], // Fort Littleton
+              [-77.5500, 40.1350], // Newburg
+              [-77.1889, 40.2014], // Carlisle PA
+              [-77.0156, 40.1413]  // Dillsburg PA
+            ],
+            origin: originGeo,
+            destination: destGeo
+          },
+          {
+            id: "dillsburg_md_toll_free",
+            name: "Route 2: Maryland I-68 to I-81 North (Toll-Free Scenic)",
+            distance: 382.0,
+            base_speed_limit: 65.0,
+            speed_mph: 65.0,
+            speed_profile_text: "65 mph I-68 (70%) · 70 mph I-81 (22%) · 45-55 mph Local (8%)",
+            steps: [
+              { name: "South Innerbelt", ref: "I 70", distance_miles: 1.5, posted_speed: 55.0 },
+              { name: "East Freeway", ref: "I 70", distance_miles: 118.5, posted_speed: 70.0 },
+              { name: "National Freeway", ref: "I 68", distance_miles: 140.0, posted_speed: 65.0 },
+              { name: "Interstate 81 North", ref: "I 81", distance_miles: 95.0, posted_speed: 70.0 },
+              { name: "Gettysburg Pike", ref: "US 15", distance_miles: 27.0, posted_speed: 55.0 }
+            ],
+            toll: 0.00,
+            coordinates: [
+              [originGeo.lon, originGeo.lat],
+              [-81.5833, 40.0345],
+              [-80.2462, 40.1740],
+              [-78.9284, 39.6582],
+              [-78.1797, 39.6998],
+              [-77.7200, 39.6418],
+              [-77.0156, 40.1413]
+            ],
+            origin: originGeo,
+            destination: destGeo
+          }
+        ];
       } else if (q.includes("charleston") || q.includes("wv")) {
         activeRoutesData = [{
           id: "wv_i77",
@@ -2285,11 +2340,11 @@
         const routeStations = projection.matched;
         const total_miles = projection.total_dist || route.distance;
 
-        // 1. Direct 0-Stop Candidate Check
+        // 1. Direct 0-Stop Candidate Check (Permitted whenever battery is safe to destination)
         const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
         const rem_soc0 = start_soc - (leg0.kwh / 85.0);
         const dur_mins0 = leg0.hours * 60.0;
-        if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_leg_mins) {
+        if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= Math.max(max_leg_mins, 240)) {
           stage1_candidates.push({
             route: route,
             base_miles: total_miles,
@@ -2342,7 +2397,7 @@
           const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
           if (final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_leg_mins) {
-            if (curr.stops.length === 0 || leg_to_dest_mins >= 45.0) {
+            if (curr.stops.length === 0 || leg_to_dest_mins >= 15.0) {
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
 
@@ -2437,7 +2492,7 @@
             }
           }
 
-          if (leg_to_dest_mins < 45.0) continue;
+          if (leg_to_dest_mins < 15.0) continue;
           if (curr.stops.length >= 4) continue;
 
           for (let j = 0; j < routeStations.length; j++) {
@@ -2445,7 +2500,7 @@
             if (st.mile <= curr.mile + 5.0) continue;
 
             const legToDestFromSt = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
-            if ((legToDestFromSt.hours * 60.0) < 45.0) continue;
+            if ((legToDestFromSt.hours * 60.0) < 15.0) continue;
 
             const legSim = simulateLegFromSteps(route.steps, curr.mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
             const leg_mins = legSim.hours * 60.0;
