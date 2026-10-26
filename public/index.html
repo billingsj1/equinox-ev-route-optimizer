@@ -1526,11 +1526,28 @@
       };
     }
 
-    // Ultium 85 kWh Pack Fast-Charging Curve (Empirically Calibrated to 2024/2025 Equinox EV Real Tests)
-    function calculateCharging(start_soc, target_soc, station_kw, rate_per_kwh) {
+    // Helper: Determine real cable amperage based on dispenser hardware & network
+    function getStationMaxAmps(station) {
+      if (!station) return 350;
+      const kw = station.kw || 150;
+      const net = station.network || '';
+      // 500A liquid-cooled dispensers (Tesla Superchargers, IONNA, Mercedes-Benz, 350kW EVgo/EA)
+      if (kw >= 250) return 500;
+      if (net === "Tesla" || net === "IONNA" || net === "Mercedes-Benz") return 500;
+      // Standard 150kW units (Applegreen on PA Turnpike, Francis Energy) use 350A cables
+      if (net === "Applegreen" || net === "Francis Energy") return 350;
+      if (kw <= 125) return 250;
+      return 350; // Default for standard 150 kW CCS1 units
+    }
+
+    // Ultium 85 kWh Pack Fast-Charging Curve (incorporates 288V pack voltage & station amperage physics)
+    function calculateCharging(start_soc, target_soc, station_kw, rate_per_kwh, station) {
       if (target_soc <= start_soc) return { added_kwh: 0, mins: 0, cost: 0 };
       const usable = 85.0;
       const needed_kwh = (target_soc - start_soc) * usable;
+
+      // Determine dispenser amperage based on Equinox EV 288V pack physics
+      const max_amps = (typeof station === 'object' && station) ? getStationMaxAmps(station) : (station_kw >= 250 ? 500 : 350);
 
       let total_hours = 0;
       const steps = 50;
@@ -1538,16 +1555,25 @@
 
       for (let i = 0; i < steps; i++) {
         const s = start_soc + (i + 0.5) * ds;
-        let p = 150;
-        if (s <= 0.10) p = 70.0 + (s / 0.10) * 80.0;
-        else if (s <= 0.22) p = 150.0;
-        else if (s <= 0.45) p = 150.0 - ((s - 0.22) / 0.23) * 40.0; // 150 -> 110 kW
-        else if (s <= 0.65) p = 110.0 - ((s - 0.45) / 0.20) * 35.0; // 110 -> 75 kW
-        else if (s <= 0.80) p = 75.0 - ((s - 0.65) / 0.15) * 30.0;  // 75 -> 45 kW
-        else if (s <= 0.90) p = 45.0 - ((s - 0.80) / 0.10) * 20.0;  // 45 -> 25 kW
-        else p = 25.0 - ((s - 0.90) / 0.10) * 13.0;                 // 25 -> 12 kW
+        // Equinox EV Ultium 80s pack voltage: ~265V at 0% to ~335V at 100%
+        const pack_v = 265.0 + s * 70.0;
 
-        const effective_p = Math.min(p, station_kw);
+        // 1. Vehicle BMS requested power (optimal 500A curve)
+        let p_bms = 150;
+        if (s <= 0.10) p_bms = 70.0 + (s / 0.10) * 80.0;
+        else if (s <= 0.22) p_bms = 150.0;
+        else if (s <= 0.45) p_bms = 150.0 - ((s - 0.22) / 0.23) * 40.0; // 150 -> 110 kW
+        else if (s <= 0.65) p_bms = 110.0 - ((s - 0.45) / 0.20) * 35.0; // 110 -> 75 kW
+        else if (s <= 0.80) p_bms = 75.0 - ((s - 0.65) / 0.15) * 30.0;  // 75 -> 45 kW
+        else if (s <= 0.90) p_bms = 45.0 - ((s - 0.80) / 0.10) * 20.0;  // 45 -> 25 kW
+        else p_bms = 25.0 - ((s - 0.90) / 0.10) * 13.0;                 // 25 -> 12 kW
+
+        // 2. Hardware physical delivery limit: V_pack * Amperage
+        // At 288V nominal, 350A cable delivers max ~101 kW; 500A cable delivers full 150 kW
+        const p_amps = (pack_v * max_amps) / 1000.0;
+        const p_dispenser = Math.min(station_kw, p_amps);
+
+        const effective_p = Math.min(p_bms, p_dispenser);
         total_hours += (ds * usable) / Math.max(10, effective_p);
       }
 
@@ -2319,7 +2345,7 @@
             const targetList = Array.from(targetSet).sort((a, b) => a - b);
             for (let tIdx = 0; tIdx < targetList.length; tIdx++) {
               const target_soc = targetList[tIdx];
-              const ch = calculateCharging(arr_soc, target_soc, st.kw, rate);
+              const ch = calculateCharging(arr_soc, target_soc, st.kw, rate, st);
               const total_stop_mins = Math.round(ch.mins + setup_mins);
 
               const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
@@ -2614,7 +2640,7 @@
           let target_soc = Math.max(cand_target, min_safe_departure);
           target_soc = Math.min(0.92, Math.max(current_soc + 0.05, target_soc));
 
-          const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate);
+          const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate, sp.station);
           const stop_mins = Math.round(ch.mins + sp.setup_mins);
           total_ch_hrs += (stop_mins / 60.0);
           total_ch_cost += ch.cost;

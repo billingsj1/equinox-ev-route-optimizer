@@ -66,21 +66,17 @@ class EquinoxEVFWD:
     def get_total_mass_kg(self, payload: PayloadConfig) -> float:
         return self.curb_weight_kg + payload.total_payload_kg()
 
-    def get_max_charge_power_kw(self, soc: float, station_kw: float = 150.0) -> float:
+    def get_max_charge_power_kw(self, soc: float, station_kw: float = 150.0, max_amps: float = 500.0) -> float:
         """
         Calculates maximum DC fast charging power (kW) at a given State of Charge (0.0 to 1.0).
-        Empirically calibrated for 2024/2025 Chevrolet Equinox EV (Ultium 85 kWh usable, 288V nominal pack):
-        - 0% to 10%: Rapid thermal/voltage ramp 70 -> 150 kW
-        - 10% to 22%: Peak 150 kW plateau (~500A limit on high-power stalls)
-        - 22% to 45%: Initial step-down taper 150 -> 110 kW
-        - 45% to 65%: Mid-pack thermal taper 110 -> 75 kW
-        - 65% to 80%: High-voltage taper 75 -> 45 kW
-        - 80% to 90%: Protection taper 45 -> 25 kW
-        - 90% to 100%: CV finish taper 25 -> 12 kW
-        Yields an empirical 10% to 80% duration of ~37-39 minutes (~97 kW average), matching
-        real-world tests from InsideEVs (Tom Moloughney / State of Charge) and EVKX.net.
+        Empirically calibrated for 2024/2025 Chevrolet Equinox EV (Ultium 85 kWh usable, 288V nominal pack).
+        Incorporates 288V pack voltage physics and station cable amperage limits:
+        - Pack voltage curve: ~265V at 0% to ~335V at 100%
+        - 500A dispensers (Tesla, IONNA, Mercedes, EVgo 350kW): Full 150 kW peak
+        - 350A dispensers (Applegreen PA Turnpike, standard 150kW): Capped at ~95-102 kW due to 288V low voltage
         """
         soc = max(0.0, min(1.0, soc))
+        pack_v = 265.0 + soc * 70.0
 
         if soc <= 0.10:
             car_power = 70.0 + (soc / 0.10) * 80.0
@@ -102,7 +98,9 @@ class EquinoxEVFWD:
             t = (soc - 0.90) / (1.00 - 0.90)
             car_power = 25.0 - t * 13.0
 
-        return min(car_power, station_kw)
+        p_amps = (pack_v * max_amps) / 1000.0
+        p_dispenser = min(station_kw, p_amps)
+        return min(car_power, p_dispenser)
 
     def calculate_charge_session(
         self,
@@ -111,7 +109,8 @@ class EquinoxEVFWD:
         station_kw: float,
         rate_per_kwh: float,
         session_fee: float = 0.0,
-        preconditioned: bool = True
+        preconditioned: bool = True,
+        max_amps: float = 500.0
     ) -> Dict[str, Any]:
         """
         Integrates along the charging curve to determine exact minutes and cost.
@@ -136,7 +135,7 @@ class EquinoxEVFWD:
 
         for i in range(steps):
             current_soc = start_soc + (i + 0.5) * delta_soc
-            power_kw = self.get_max_charge_power_kw(current_soc, station_kw)
+            power_kw = self.get_max_charge_power_kw(current_soc, station_kw, max_amps)
             step_energy_kwh = delta_soc * self.usable_battery_kwh
             total_hours += step_energy_kwh / max(1.0, power_kw)
 
