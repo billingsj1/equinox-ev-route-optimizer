@@ -1526,24 +1526,26 @@
       };
     }
 
-    // Ultium 85 kWh Pack Fast-Charging Curve
+    // Ultium 85 kWh Pack Fast-Charging Curve (Empirically Calibrated to 2024/2025 Equinox EV Real Tests)
     function calculateCharging(start_soc, target_soc, station_kw, rate_per_kwh) {
       if (target_soc <= start_soc) return { added_kwh: 0, mins: 0, cost: 0 };
       const usable = 85.0;
       const needed_kwh = (target_soc - start_soc) * usable;
 
       let total_hours = 0;
-      const steps = 40;
+      const steps = 50;
       const ds = (target_soc - start_soc) / steps;
 
       for (let i = 0; i < steps; i++) {
         const s = start_soc + (i + 0.5) * ds;
         let p = 150;
-        if (s > 0.32 && s <= 0.58) p = 150 - ((s - 0.32) / 0.26) * 50;
-        else if (s > 0.58 && s <= 0.70) p = 100 - ((s - 0.58) / 0.12) * 25;
-        else if (s > 0.70 && s <= 0.80) p = 75 - ((s - 0.70) / 0.10) * 23;
-        else if (s > 0.80 && s <= 0.90) p = 52 - ((s - 0.80) / 0.10) * 20;
-        else if (s > 0.90) p = 32 - ((s - 0.90) / 0.10) * 20;
+        if (s <= 0.10) p = 70.0 + (s / 0.10) * 80.0;
+        else if (s <= 0.22) p = 150.0;
+        else if (s <= 0.45) p = 150.0 - ((s - 0.22) / 0.23) * 40.0; // 150 -> 110 kW
+        else if (s <= 0.65) p = 110.0 - ((s - 0.45) / 0.20) * 35.0; // 110 -> 75 kW
+        else if (s <= 0.80) p = 75.0 - ((s - 0.65) / 0.15) * 30.0;  // 75 -> 45 kW
+        else if (s <= 0.90) p = 45.0 - ((s - 0.80) / 0.10) * 20.0;  // 45 -> 25 kW
+        else p = 25.0 - ((s - 0.90) / 0.10) * 13.0;                 // 25 -> 12 kW
 
         const effective_p = Math.min(p, station_kw);
         total_hours += (ds * usable) / Math.max(10, effective_p);

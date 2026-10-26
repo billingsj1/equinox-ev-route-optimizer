@@ -68,42 +68,41 @@ class EquinoxEVFWD:
 
     def get_max_charge_power_kw(self, soc: float, station_kw: float = 150.0) -> float:
         """
-        Calculates the maximum charging power (kW) at a given State of Charge (0.0 to 1.0).
-        Empirical curve based on 2025 Equinox EV FWD (85 kWh usable, 288V pack):
-        - 0% to 32%: 150 kW peak
-        - 32% to 58%: linear drop 150 -> 100 kW
-        - 58% to 70%: linear drop 100 -> 75 kW
-        - 70% to 80%: linear drop 75 -> 52 kW
-        - 80% to 90%: linear drop 52 -> 32 kW
-        - 90% to 100%: linear drop 32 -> 12 kW
-        Clamped by the station's max power rating.
+        Calculates maximum DC fast charging power (kW) at a given State of Charge (0.0 to 1.0).
+        Empirically calibrated for 2024/2025 Chevrolet Equinox EV (Ultium 85 kWh usable, 288V nominal pack):
+        - 0% to 10%: Rapid thermal/voltage ramp 70 -> 150 kW
+        - 10% to 22%: Peak 150 kW plateau (~500A limit on high-power stalls)
+        - 22% to 45%: Initial step-down taper 150 -> 110 kW
+        - 45% to 65%: Mid-pack thermal taper 110 -> 75 kW
+        - 65% to 80%: High-voltage taper 75 -> 45 kW
+        - 80% to 90%: Protection taper 45 -> 25 kW
+        - 90% to 100%: CV finish taper 25 -> 12 kW
+        Yields an empirical 10% to 80% duration of ~37-39 minutes (~97 kW average), matching
+        real-world tests from InsideEVs (Tom Moloughney / State of Charge) and EVKX.net.
         """
         soc = max(0.0, min(1.0, soc))
 
-        if soc <= 0.32:
+        if soc <= 0.10:
+            car_power = 70.0 + (soc / 0.10) * 80.0
+        elif soc <= 0.22:
             car_power = 150.0
-        elif soc <= 0.58:
-            # 0.32 -> 150, 0.58 -> 100
-            t = (soc - 0.32) / (0.58 - 0.32)
-            car_power = 150.0 - t * (150.0 - 100.0)
-        elif soc <= 0.70:
-            # 0.58 -> 100, 0.70 -> 75
-            t = (soc - 0.58) / (0.70 - 0.58)
-            car_power = 100.0 - t * (100.0 - 75.0)
+        elif soc <= 0.45:
+            t = (soc - 0.22) / (0.45 - 0.22)
+            car_power = 150.0 - t * 40.0
+        elif soc <= 0.65:
+            t = (soc - 0.45) / (0.65 - 0.45)
+            car_power = 110.0 - t * 35.0
         elif soc <= 0.80:
-            # 0.70 -> 75, 0.80 -> 52
-            t = (soc - 0.70) / (0.80 - 0.70)
-            car_power = 75.0 - t * (75.0 - 52.0)
+            t = (soc - 0.65) / (0.80 - 0.65)
+            car_power = 75.0 - t * 30.0
         elif soc <= 0.90:
-            # 0.80 -> 52, 0.90 -> 32
             t = (soc - 0.80) / (0.90 - 0.80)
-            car_power = 52.0 - t * (52.0 - 32.0)
+            car_power = 45.0 - t * 20.0
         else:
-            # 0.90 -> 32, 1.00 -> 12
             t = (soc - 0.90) / (1.00 - 0.90)
-            car_power = 32.0 - t * (32.0 - 12.0)
+            car_power = 25.0 - t * 13.0
 
-        return min(car_power, float(station_kw))
+        return min(car_power, station_kw)
 
     def calculate_charge_session(
         self,
