@@ -2340,22 +2340,24 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       let cheapest = sortedByCost[0];
       let cheapSeqKey = cheapest.route.id + '|' + cheapest.stops.map(s => s.station.name).join('->');
 
-      // Contrast preservation: If cheapest has the exact same stop sequence as fastest,
-      // and a distinct physical sequence exists in cheapestSource, prefer the distinct route
-      // if the cost is within a reasonable threshold ($3.00) or if cheapest is virtually identical in cost to fastest
+      // Strict Invariant: The Cheapest route MUST ALWAYS be <= the Fastest route in total cost.
+      // Contrast preservation: If the cheapest candidate has the exact same stop sequence as fastest,
+      // we only swap to an alternate distinct route if that alternate route is ACTUALLY CHEAPER than fastest.
       if (cheapSeqKey === fastSeqKey && sortedByCost.length > 1) {
-        const distinctCandidate = sortedByCost.find(c => {
+        const strictlyCheaperDistinct = sortedByCost.find(c => {
           const sKey = c.route.id + '|' + c.stops.map(s => s.station.name).join('->');
-          return sKey !== fastSeqKey;
+          return sKey !== fastSeqKey && c.total_cost < fastest.total_cost;
         });
-        if (distinctCandidate) {
-          const costDiffOverFastest = Math.abs(cheapest.total_cost - fastest.total_cost);
-          const costDiffToDistinct = distinctCandidate.total_cost - cheapest.total_cost;
-          if (costDiffOverFastest < 1.00 || costDiffToDistinct <= 3.00) {
-            cheapest = distinctCandidate;
-            cheapSeqKey = cheapest.route.id + '|' + cheapest.stops.map(s => s.station.name).join('->');
-          }
+        if (strictlyCheaperDistinct) {
+          cheapest = strictlyCheaperDistinct;
+          cheapSeqKey = cheapest.route.id + '|' + cheapest.stops.map(s => s.station.name).join('->');
         }
+      }
+
+      // Final safety assertion: Cheapest must never cost more than Fastest
+      if (cheapest.total_cost > fastest.total_cost) {
+        cheapest = fastest;
+        cheapSeqKey = fastSeqKey;
       }
 
       // 3. BALANCED: Optimal Pareto knee balancing time vs cost within the duration cap
