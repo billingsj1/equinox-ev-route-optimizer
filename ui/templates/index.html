@@ -229,9 +229,9 @@
             <div>
               <div class="flex justify-between text-slate-400 mb-1">
                 <span>Min Time Between Stops</span>
-                <span id="minTimeDisplay" class="font-mono text-emerald-400">75 mins (~94 mi)</span>
+                <span id="minTimeDisplay" class="font-mono text-emerald-400">45 mins (~47 mi)</span>
               </div>
-              <input type="range" id="minTimeSlider" min="30" max="120" value="75" step="5" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="minTimeSlider" min="30" max="120" value="45" step="5" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Lowering allows shorter legs to take advantage of cheaper charging stations.</span>
             </div>
 
@@ -859,7 +859,7 @@
     }
 
     function updateSpeedAndGaps() {
-      const minVal = parseInt(document.getElementById('minTimeSlider').value) || 75;
+      const minVal = parseInt(document.getElementById('minTimeSlider').value) || 45;
       const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 120;
       updateTimeGapDisplays(minVal, maxVal);
     }
@@ -1261,10 +1261,14 @@
 
       // 2. Interstate Freeways & Major Turnpikes (I-70, I-76, I-77, I-79, I-80, I-68, I-470, I-676, I-376)
       if (ref.includes('I ') || ref.includes('I-') || (ref.startsWith('I') && /\d/.test(ref))) {
+        // Specific Tunnels (Allegheny, Tuscarora, Kittatinny, Blue Mountain, Wheeling)
+        if (lowerName.includes('tunnel') || (lon >= -80.75 && lon <= -80.70 && lat >= 40.05 && lat <= 40.08)) {
+          return (lowerName.includes('wheeling') || (lon >= -80.75 && lon <= -80.70)) ? 45.0 : 55.0;
+        }
         // Specific Urban Expressways & Beltway Bottlenecks
         if (lowerName.includes('innerbelt') || lowerName.includes('downtown') || lowerName.includes('vine street') ||
             lowerName.includes('airport expressway') || lowerName.includes('schuylkill') || lowerName.includes('pkwy') ||
-            lowerName.includes('tunnel') || lowerName.includes('beltway')) {
+            lowerName.includes('beltway')) {
           return 55.0;
         }
 
@@ -1284,6 +1288,7 @@
             return 55.0; // Pittsburgh Metro Parkway East/West
           }
           if (lowerName.includes('turnpike') || ref.includes('76')) {
+            if (lowerName.includes('tunnel')) return 55.0; // PA Turnpike Tunnels strictly 55 mph
             if (lon >= -75.4) return 55.0; // Approaching King of Prussia / Philadelphia Schuylkill
             return 70.0; // PA Turnpike (I-76) Mainline posted limit is 70 mph
           }
@@ -1438,28 +1443,58 @@
             base_mph = Math.min(posted_speed + speed_offset, max_cap);
           }
 
-          // Empirical Traffic Estimation for Urban Bottlenecks:
-          // Urban corridors (Schuylkill I-76, Vine St I-676, Columbus Innerbelt, Pittsburgh Parkway East/West)
-          // experience heavy speed degradation and delay during typical daytime and rush hour.
+          // Empirical Traffic Estimation for Urban Bottlenecks, Tunnels, & Multi-State Corridor Flow:
+          const is_tunnel = sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel'));
           const is_urban_bottleneck = (
             sName.includes('schuylkill') ||
             sName.includes('vine st') ||
             sName.includes('innerbelt') ||
+            sName.includes('downtown') ||
             (s.ref && (s.ref.includes('676') || s.ref.includes('376'))) ||
             (sName.includes('parkway') && posted_speed <= 55.0)
+          );
+          const is_suburban_arterial = (
+            sName.includes('marlton') ||
+            (s.ref && s.ref.includes('70') && posted_speed <= 50.0) ||
+            (sName.includes('pike') && posted_speed <= 50.0) ||
+            (sName.includes('boulevard') && posted_speed <= 50.0)
           );
 
           let target_mph = base_mph;
           let traffic_delay_hours = 0.0;
-          if (is_urban_bottleneck) {
+
+          if (is_tunnel) {
+            target_mph = sName.includes('wheeling') ? 45.0 : 55.0;
+          } else if (is_urban_bottleneck) {
             if (traffic_profile === 'typical') {
-              // Daytime congestion reduces speeds ~35% on urban bottlenecks
-              target_mph = Math.max(22.0, base_mph * 0.65);
-              traffic_delay_hours = (ov_len / target_mph) - (ov_len / base_mph);
+              // Daytime congestion reduces speeds ~38% on urban bottlenecks
+              target_mph = Math.max(22.0, base_mph * 0.62);
             } else if (traffic_profile === 'rush_hour') {
-              // Rush hour heavy stop-and-go congestion (~60% speed drop)
+              // Rush hour heavy stop-and-go congestion (~62% speed drop)
               target_mph = Math.max(14.0, base_mph * 0.38);
-              traffic_delay_hours = (ov_len / target_mph) - (ov_len / base_mph);
+            } else {
+              target_mph = Math.max(45.0, base_mph * 0.90);
+            }
+          } else if (is_suburban_arterial && posted_speed <= 50.0) {
+            if (traffic_profile === 'typical') {
+              target_mph = Math.min(base_mph, 35.0);
+            } else if (traffic_profile === 'rush_hour') {
+              target_mph = Math.min(base_mph, 25.0);
+            }
+          } else if (posted_speed >= 65.0) {
+            // Multi-State Highway Flow Realism:
+            // Under typical daytime conditions, average speeds across multi-state journeys (400+ miles)
+            // reflect real-world vehicle volume, truck passing queues, and interchange weaves (~63.5 mph).
+            if (traffic_profile === 'typical') {
+              target_mph = Math.min(base_mph, 63.5);
+            } else if (traffic_profile === 'rush_hour') {
+              target_mph = Math.min(base_mph, 54.0);
+            }
+          } else if (posted_speed > 45.0) {
+            if (traffic_profile === 'typical') {
+              target_mph = Math.min(base_mph, 50.0);
+            } else if (traffic_profile === 'rush_hour') {
+              target_mph = Math.min(base_mph, 40.0);
             }
           }
 
@@ -1565,6 +1600,12 @@
           const climb_elec_kwh = ((total_mass_kg * 9.80665 * climb_m) / 3.6e6) / 0.91;
           const regen_elec_kwh = ((total_mass_kg * 9.80665 * regen_m) / 3.6e6) * regen_eff;
           total_kwh += (climb_elec_kwh - regen_elec_kwh);
+
+          // Mountain Pass Incline Crawl: heavy freight truck friction on sustained Appalachian climbs
+          if (climb_m > 200.0 && traffic_profile === 'typical') {
+            const grade_crawl_hours = (climb_m / 250.0) * (1.2 / 60.0);
+            total_hours += grade_crawl_hours;
+          }
         }
       }
 
@@ -2414,7 +2455,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const target_arrival_soc = parseFloat(document.getElementById('targetArrivalSlider').value) / 100.0;
       const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
-      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 75);
+      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 45);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 120);
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
@@ -2641,7 +2682,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
 
           if (leg_to_dest_mins < 30.0) continue;
-          if (curr.stops.length >= 4) continue;
+          const max_stops_budget = Math.max(5, Math.ceil(total_miles / 85.0));
+          if (curr.stops.length >= max_stops_budget) continue;
 
           for (let j = 0; j < routeStations.length; j++) {
             const st = routeStations[j];
