@@ -1923,48 +1923,55 @@
       return 350; // Default for standard 150 kW CCS1 units
     }
 
-    // Ultium 85 kWh Pack Fast-Charging Curve (incorporates 288V pack voltage & station amperage physics)
+    // Ultium 85 kWh Pack Fast-Charging BMS Curve
+    function getUltiumBmsPower(s) {
+      if (s <= 0.10) return 70.0 + (s / 0.10) * 80.0;
+      if (s <= 0.22) return 150.0;
+      if (s <= 0.45) return 150.0 - ((s - 0.22) / 0.23) * 40.0;
+      if (s <= 0.65) return 110.0 - ((s - 0.45) / 0.20) * 35.0;
+      if (s <= 0.80) return 75.0 - ((s - 0.65) / 0.15) * 30.0;
+      if (s <= 0.90) return 45.0 - ((s - 0.80) / 0.10) * 20.0;
+      return 25.0 - ((s - 0.90) / 0.10) * 13.0;
+    }
+
+    // High-Performance O(1) Cumulative Fast-Charging LUT Cache
+    const CHARGING_LUT_CACHE = new Map();
+
+    function getCumulativeChargingLUT(station_kw, max_amps) {
+      const key = `${station_kw}_${max_amps}`;
+      if (CHARGING_LUT_CACHE.has(key)) return CHARGING_LUT_CACHE.get(key);
+
+      const table = new Float64Array(101);
+      const usable = 85.0;
+      let cum_hours = 0.0;
+      for (let i = 0; i < 100; i++) {
+        const s = (i + 0.5) / 100.0;
+        const pack_v = 265.0 + s * 70.0;
+        const p_bms = getUltiumBmsPower(s);
+        const p_amps = (pack_v * max_amps) / 1000.0;
+        const p_dispenser = Math.min(station_kw, p_amps);
+        const effective_p = Math.min(p_bms, p_dispenser);
+        cum_hours += (0.01 * usable) / Math.max(10, effective_p);
+        table[i + 1] = cum_hours;
+      }
+      CHARGING_LUT_CACHE.set(key, table);
+      return table;
+    }
+
     function calculateCharging(start_soc, target_soc, station_kw, rate_per_kwh, station) {
       if (target_soc <= start_soc) return { added_kwh: 0, mins: 0, cost: 0 };
       const usable = 85.0;
       const needed_kwh = (target_soc - start_soc) * usable;
-
-      // Determine dispenser amperage based on Equinox EV 288V pack physics
       const max_amps = (typeof station === 'object' && station) ? getStationMaxAmps(station) : (station_kw >= 250 ? 500 : 350);
 
-      let total_hours = 0;
-      const steps = 50;
-      const ds = (target_soc - start_soc) / steps;
-
-      for (let i = 0; i < steps; i++) {
-        const s = start_soc + (i + 0.5) * ds;
-        // Equinox EV Ultium 80s pack voltage: ~265V at 0% to ~335V at 100%
-        const pack_v = 265.0 + s * 70.0;
-
-        // 1. Vehicle BMS requested power (optimal 500A curve)
-        let p_bms = 150;
-        if (s <= 0.10) p_bms = 70.0 + (s / 0.10) * 80.0;
-        else if (s <= 0.22) p_bms = 150.0;
-        else if (s <= 0.45) p_bms = 150.0 - ((s - 0.22) / 0.23) * 40.0; // 150 -> 110 kW
-        else if (s <= 0.65) p_bms = 110.0 - ((s - 0.45) / 0.20) * 35.0; // 110 -> 75 kW
-        else if (s <= 0.80) p_bms = 75.0 - ((s - 0.65) / 0.15) * 30.0;  // 75 -> 45 kW
-        else if (s <= 0.90) p_bms = 45.0 - ((s - 0.80) / 0.10) * 20.0;  // 45 -> 25 kW
-        else p_bms = 25.0 - ((s - 0.90) / 0.10) * 13.0;                 // 25 -> 12 kW
-
-        // 2. Hardware physical delivery limit: V_pack * Amperage
-        // At 288V nominal, 350A cable delivers max ~101 kW; 500A cable delivers full 150 kW
-        const p_amps = (pack_v * max_amps) / 1000.0;
-        const p_dispenser = Math.min(station_kw, p_amps);
-
-        const effective_p = Math.min(p_bms, p_dispenser);
-        total_hours += (ds * usable) / Math.max(10, effective_p);
-      }
-
-      const mins = total_hours * 60; // pure charging duration
+      const lut = getCumulativeChargingLUT(station_kw, max_amps);
+      const iStart = Math.max(0, Math.min(100, Math.round(start_soc * 100)));
+      const iTarget = Math.max(0, Math.min(100, Math.round(target_soc * 100)));
+      const total_hours = Math.max(0.0, lut[iTarget] - lut[iStart]);
+      const mins = total_hours * 60;
       const cost = needed_kwh * rate_per_kwh;
       return { added_kwh: needed_kwh, mins: mins, cost: cost };
     }
-
     // --- RELIABLE GEOCODING & DYNAMIC ROUTE SEARCH ---
     async function geocodeAddress(query) {
       const q = query.trim().toLowerCase();
@@ -2692,15 +2699,54 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           });
         }
 
-        // Precompute destination leg for all stations on this corridor once (O(1) map lookup)
-        const destLegPerStation = new Map();
+        // Precompute start-to-dest leg
+        const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+
+        // Precompute station-to-destination legs and detour physics for all corridor stations
+        const destLegPerStation = new Array(routeStations.length);
+        const stationDetours = new Array(routeStations.length);
+        const startToStationLegs = new Array(routeStations.length);
+        const stationToStationLegs = [];
+
         for (let j = 0; j < routeStations.length; j++) {
           const st = routeStations[j];
-          destLegPerStation.set(st.id, simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph));
+          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+          startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+
+          const isPlaza = isServicePlaza(st);
+          let detour_miles, detour_mins;
+          if (isPlaza) {
+            detour_miles = 0.5;
+            detour_mins = 2.5;
+          } else {
+            detour_miles = Math.round((0.6 + (2.0 * Math.max(0.15, st.detour_mi || 0.2))) * 10) / 10;
+            detour_mins = Math.round((2.5 + (detour_miles / 30.0 * 60.0)) * 10) / 10;
+          }
+          const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
+          const lastExitSim = simulateDetourPhysics(detour_miles / 2.0, isPlaza, payload_lbs, temp_f, road_cond);
+
+          stationDetours[j] = {
+            isPlaza: isPlaza,
+            detour_miles: detour_miles,
+            detour_mins: detour_mins,
+            kwh: detourSim.kwh,
+            last_exit_detour: detour_miles / 2.0,
+            last_exit_kwh: lastExitSim.kwh
+          };
+        }
+
+        for (let i = 0; i < routeStations.length; i++) {
+          stationToStationLegs[i] = new Array(routeStations.length);
+          for (let j = i + 1; j < routeStations.length; j++) {
+            if (routeStations[j].mile > routeStations[i].mile + 5.0) {
+              stationToStationLegs[i][j] = simulateLegFromSteps(route.steps, routeStations[i].mile, routeStations[j].mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+            }
+          }
         }
 
         // Forward Tree Search Queue with Pareto State Dominance
         const queue = [{
+          stationIdx: -1,
           mile: 0.0,
           soc: start_soc,
           drive_hrs: 0.0,
@@ -2708,21 +2754,21 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           ch_cost: 0.0,
           stops: []
         }];
+        let queueHead = 0;
         let queueIterCount = 0;
         const paretoFrontier = new Map();
 
-        while (queue.length > 0) {
-          const curr = queue.shift();
+        while (queueHead < queue.length) {
+          const curr = queue[queueHead++];
 
           // A. Destination reachability check
-          const destLeg = simulateLegFromSteps(route.steps, curr.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+          const destLeg = (curr.stationIdx === -1) ? startToDestLeg : destLegPerStation[curr.stationIdx];
           let last_exit_detour = 0;
           let last_exit_kwh = 0;
-          if (curr.stops.length > 0) {
-            const lastStop = curr.stops[curr.stops.length - 1];
-            last_exit_detour = lastStop.detour_miles / 2.0;
-            const detourSim = simulateDetourPhysics(last_exit_detour, lastStop.is_plaza, payload_lbs, temp_f, road_cond);
-            last_exit_kwh = detourSim.kwh;
+          if (curr.stationIdx >= 0) {
+            const lastDetour = stationDetours[curr.stationIdx];
+            last_exit_detour = lastDetour.last_exit_detour;
+            last_exit_kwh = lastDetour.last_exit_kwh;
           }
 
           const leg_to_dest_kwh = destLeg.kwh + last_exit_kwh;
@@ -2830,35 +2876,31 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const max_stops_budget = Math.max(5, Math.ceil(total_miles / 85.0));
           if (curr.stops.length >= max_stops_budget) continue;
 
-          if (++queueIterCount % 250 === 0) {
+          if (++queueIterCount % 1000 === 0) {
             await new Promise(r => setTimeout(r, 0));
           }
 
-          for (let j = 0; j < routeStations.length; j++) {
+          const startJ = (curr.stationIdx === -1) ? 0 : curr.stationIdx + 1;
+          for (let j = startJ; j < routeStations.length; j++) {
             const st = routeStations[j];
             if (st.mile <= curr.mile + 5.0) continue;
 
-            const legToDestFromSt = destLegPerStation.get(st.id);
+            const legToDestFromSt = destLegPerStation[j];
             if ((legToDestFromSt.hours * 60.0) < 30.0) continue;
 
-            const legSim = simulateLegFromSteps(route.steps, curr.mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+            const legSim = (curr.stationIdx === -1) ? startToStationLegs[j] : stationToStationLegs[curr.stationIdx][j];
+            if (!legSim) continue;
             const leg_mins = legSim.hours * 60.0;
 
             if (leg_mins > max_mins) continue;
             if (leg_mins < min_mins) continue;
 
-            const isPlaza = isServicePlaza(st);
-            let detour_miles, detour_mins;
-            if (isPlaza) {
-              detour_miles = 0.5;
-              detour_mins = 2.5;
-            } else {
-              detour_miles = Math.round((0.6 + (2.0 * Math.max(0.15, st.detour_mi || 0.2))) * 10) / 10;
-              detour_mins = Math.round((2.5 + (detour_miles / 30.0 * 60.0)) * 10) / 10;
-            }
-            const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
+            const stDetour = stationDetours[j];
+            const isPlaza = stDetour.isPlaza;
+            const detour_miles = stDetour.detour_miles;
+            const detour_mins = stDetour.detour_mins;
 
-            const total_leg_energy = legSim.kwh + (detourSim.kwh / 2.0);
+            const total_leg_energy = legSim.kwh + (stDetour.kwh / 2.0);
             const total_leg_hrs = legSim.hours + (detour_mins / 60.0 / 2.0);
             const arr_soc = curr.soc - (total_leg_energy / 85.0);
 
@@ -2943,6 +2985,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               };
 
               queue.push({
+                stationIdx: j,
                 mile: st.mile,
                 soc: target_soc,
                 drive_hrs: leg_drive_hrs,
@@ -2954,7 +2997,6 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
       }
-
         return candidates;
       }
 
