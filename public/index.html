@@ -1535,64 +1535,25 @@
         if (is_plaza) {
           target_mph = 20.0;
         } else if (is_ramp) {
-          target_mph = 25.0;
+          target_mph = Math.min(posted_speed, 25.0 + Math.min(speed_offset, 5.0));
         } else if (posted_speed <= 30.0) {
-          target_mph = 22.0; // Local city streets (Powell Ave, Beaver Rd)
+          target_mph = Math.min(posted_speed, 22.0 + (speed_offset * 0.2)); // Local city streets (Powell Ave, Beaver Rd)
         } else if (posted_speed <= 35.0) {
-          target_mph = 26.0; // Urban arterials (Sullivant Ave)
+          target_mph = Math.min(posted_speed, 26.0 + (speed_offset * 0.3)); // Urban arterials with signals (Sullivant Ave)
         } else if (sName.includes('turnpike') || sRef.includes('turnpike')) {
           if (sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel')) || posted_speed <= 55.0) {
-            target_mph = 52.0; // PA Turnpike Tunnels
+            target_mph = Math.min(posted_speed + Math.min(speed_offset, 3.0), max_cap); // PA Turnpike Tunnels
           } else {
             target_mph = Math.min(posted_speed + speed_offset, max_cap); // Mainline PA Turnpike cruising
           }
-        } else if (lon < -80.52) {
-          // Ohio Corridor & Metro
-          if (lon >= -83.08 && lon <= -82.98) {
-            target_mph = 52.0; // Downtown Columbus Innerbelt
-          } else if (lon > -82.98 && lon <= -82.72) {
-            target_mph = 60.0; // Columbus East Metro inside I-270 Outerbelt
-          } else if (lon > -82.72 && lon <= -82.04) {
-            target_mph = Math.min(posted_speed + speed_offset, max_cap); // Rural Central Ohio
-          } else if (lon > -82.04 && lon <= -81.97) {
-            target_mph = 56.0; // Zanesville S-curves
-          } else {
-            target_mph = Math.min(posted_speed + speed_offset, max_cap); // Rural Eastern Ohio
-          }
-        } else if (lon >= -80.75 && lon < -80.52) {
-          // WV & Wheeling Tunnels
-          if (sName.includes('tunnel') || sName.includes('wheeling')) {
-            target_mph = 45.0;
-          } else {
-            target_mph = 56.0;
-          }
-        } else if (lon >= -80.52 && lon < -79.60) {
-          // PA I-70 older expressway (Washington PA to New Stanton)
-          target_mph = 54.0;
-        } else if (lon > -75.40) {
-          // Philadelphia & NJ-70
-          if (sName.includes('schuylkill') || sRef.includes('76')) {
-            target_mph = 40.0;
-          } else if (sName.includes('vine') || sRef.includes('676')) {
-            target_mph = 32.0;
-          } else if (sName.includes('marlton') || sRef.includes('nj 70') || lon >= -75.10) {
-            target_mph = 30.0;
-          } else {
-            target_mph = 45.0;
-          }
-        } else if (sRef.includes('15') || sName.includes('gettysburg')) {
-          // US-15 Dillsburg / Carlisle
-          target_mph = (posted_speed <= 45.0) ? 38.0 : 52.0;
-        } else if (sRef.includes('22')) {
-          // US-22 Steubenville / Weirton
-          target_mph = Math.min(posted_speed + speed_offset, Math.min(max_cap, 62.0));
-        } else if (sRef.includes('79')) {
-          // I-79 Sewickley / Washington
-          target_mph = (lat >= 40.40) ? 55.0 : Math.min(posted_speed + speed_offset, max_cap);
-        } else if (sRef.includes('65') || sRef.includes('51') || sName.includes('beaver')) {
-          // PA-65 / Beaver Rd into Sewickley
-          target_mph = sName.includes('beaver') ? 28.0 : 42.0;
+        } else if (sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.40)) {
+          target_mph = Math.min(40.0 + (speed_offset * 0.4), max_cap); // Schuylkill Expressway flow
+        } else if (sName.includes('vine') || (sRef.includes('676') && lon > -75.40)) {
+          target_mph = Math.min(32.0 + (speed_offset * 0.3), max_cap); // Vine St Expressway & Ben Franklin Bridge
+        } else if ((sName.includes('marlton') || sRef.includes('nj 70') || lon >= -75.10) && posted_speed <= 45.0) {
+          target_mph = Math.min(30.0 + (speed_offset * 0.4), posted_speed + speed_offset); // NJ-70 suburban traffic signals
         } else {
+          // All Interstates, US highways, state routes, and beltways (55, 60, 65, 70 mph posted zones)
           target_mph = Math.min(posted_speed + speed_offset, max_cap);
         }
 
