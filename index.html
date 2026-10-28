@@ -1455,7 +1455,10 @@
         const s = steps[i];
         tot_mi += (s.distance_miles || 0.0);
         if (s.geometry && s.geometry.coordinates && s.geometry.coordinates.length > 0) {
-          all_coords.push(...s.geometry.coordinates);
+          const coords = s.geometry.coordinates;
+          for (let k = 0; k < coords.length; k++) {
+            all_coords.push(coords[k]);
+          }
         }
       }
       if (tot_mi <= 0.01) return null;
@@ -2511,10 +2514,14 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // 3. BALANCED: Optimal Pareto knee balancing time vs cost within the duration cap
       const kneePool = validCappedPool;
-      const f_min_t = Math.min(...kneePool.map(c => c.total_hours));
-      const f_max_t = Math.max(...kneePool.map(c => c.total_hours));
-      const f_min_c = Math.min(...kneePool.map(c => c.total_cost));
-      const f_max_c = Math.max(...kneePool.map(c => c.total_cost));
+      let f_min_t = Infinity, f_max_t = -Infinity, f_min_c = Infinity, f_max_c = -Infinity;
+      for (let i = 0; i < kneePool.length; i++) {
+        const c = kneePool[i];
+        if (c.total_hours < f_min_t) f_min_t = c.total_hours;
+        if (c.total_hours > f_max_t) f_max_t = c.total_hours;
+        if (c.total_cost < f_min_c) f_min_c = c.total_cost;
+        if (c.total_cost > f_max_c) f_max_c = c.total_cost;
+      }
 
       kneePool.forEach(c => {
         const norm_t = (c.total_hours - f_min_t) / Math.max(0.01, f_max_t - f_min_t);
@@ -2978,9 +2985,13 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const top_cheapest_capped = [...capped_candidates].sort((a, b) => a.total_cost - b.total_cost).slice(0, 15);
 
       const min_t = sortedBySpeed[0].total_hours;
-      const max_t = Math.max(...stage1_candidates.map(c => c.total_hours));
-      const min_c = Math.min(...stage1_candidates.map(c => c.total_cost));
-      const max_c = Math.max(...stage1_candidates.map(c => c.total_cost));
+      let max_t = -Infinity, min_c = Infinity, max_c = -Infinity;
+      for (let i = 0; i < stage1_candidates.length; i++) {
+        const c = stage1_candidates[i];
+        if (c.total_hours > max_t) max_t = c.total_hours;
+        if (c.total_cost < min_c) min_c = c.total_cost;
+        if (c.total_cost > max_c) max_c = c.total_cost;
+      }
 
       stage1_candidates.forEach(c => {
         const norm_t = (c.total_hours - min_t) / Math.max(0.01, max_t - min_t);
@@ -2995,23 +3006,30 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       activeRoutesData.forEach(r => {
         const routeCands = stage1_candidates.filter(c => c.route.id === r.id);
         if (routeCands.length > 0) {
-          const rFast = [...routeCands].sort((a, b) => a.total_hours - b.total_hours).slice(0, 8);
-          const rCheap = [...routeCands].sort((a, b) => a.total_cost - b.total_cost).slice(0, 8);
-          const rKnee = [...routeCands].sort((a, b) => a.knee_dist - b.knee_dist).slice(0, 8);
-          perCorridorTop.push(...rFast, ...rCheap, ...rKnee);
+          const rFast = routeCands.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, 8);
+          const rCheap = routeCands.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, 8);
+          const rKnee = routeCands.slice().sort((a, b) => a.knee_dist - b.knee_dist).slice(0, 8);
+          for (let i = 0; i < rFast.length; i++) perCorridorTop.push(rFast[i]);
+          for (let i = 0; i < rCheap.length; i++) perCorridorTop.push(rCheap[i]);
+          for (let i = 0; i < rKnee.length; i++) perCorridorTop.push(rKnee[i]);
         }
       });
 
       // Deduplicate across all candidate buckets
       const combinedTop = [];
       const seenTopKeys = new Set();
-      [...top_fastest, ...top_cheapest_capped, ...top_cheapest_global, ...top_balanced, ...perCorridorTop].forEach(cand => {
-        const cKey = cand.route.id + '|' + cand.stops.map(s => `${s.station.id}@${s.tgt_soc}`).join('-');
-        if (!seenTopKeys.has(cKey)) {
-          seenTopKeys.add(cKey);
-          combinedTop.push(cand);
+      const candidateGroups = [top_fastest, top_cheapest_capped, top_cheapest_global, top_balanced, perCorridorTop];
+      for (let g = 0; g < candidateGroups.length; g++) {
+        const group = candidateGroups[g];
+        for (let i = 0; i < group.length; i++) {
+          const cand = group[i];
+          const cKey = cand.route.id + '|' + cand.stops.map(s => s.station.id + '@' + s.tgt_soc).join('-');
+          if (!seenTopKeys.has(cKey)) {
+            seenTopKeys.add(cKey);
+            combinedTop.push(cand);
+          }
         }
-      });
+      }
 
       // Metric 3: Unique physical sequences among top candidates to verify with OSRM
       const uniqueSequencesMap = new Map();
