@@ -689,6 +689,7 @@
               <thead>
                 <tr class="border-b border-slate-800 text-slate-400 font-medium">
                   <th class="py-2 px-3">Stop # & Station</th>
+                  <th class="py-2 px-3">Drive Time</th>
                   <th class="py-2 px-3">Mile Marker</th>
                   <th class="py-2 px-3">Highway Detour</th>
                   <th class="py-2 px-3">Power</th>
@@ -2836,6 +2837,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const total_time = total_drive_hrs + curr.ch_hrs;
               const total_cost = Math.round((discounted_ch_cost + membership_fees + route.toll) * 100) / 100;
 
+              const final_leg_miles = curr.stops.length === 0 ? total_miles : Math.round((total_miles - curr.stops[curr.stops.length - 1].mile) * 10) / 10;
               candidates.push({
                 route: route,
                 base_miles: total_miles,
@@ -2844,6 +2846,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 drive_hours: total_drive_hrs,
                 ch_hours: curr.ch_hrs,
                 total_hours: total_time,
+                final_leg_hrs: leg_to_dest_hrs,
+                final_leg_mins: Math.round(leg_to_dest_mins),
+                final_leg_miles: final_leg_miles,
                 ch_cost: Math.round(discounted_ch_cost * 100) / 100,
                 membership_fees: membership_fees,
                 toll_cost: route.toll,
@@ -2969,6 +2974,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const stopPlan = {
                 station: st,
                 mile: st.mile,
+                leg_drive_hrs: total_leg_hrs,
+                leg_drive_mins: Math.round(total_leg_hrs * 60.0),
+                leg_miles: (curr.stationIdx === -1) ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[curr.stationIdx].mile) * 10) / 10,
+                from_label: curr.stops.length === 0 ? "from Start" : `from Stop ${curr.stops.length}`,
                 is_plaza: isPlaza,
                 detour_mi: st.detour_mi || 0,
                 detour_miles: detour_miles,
@@ -3276,6 +3285,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           polishedStops.push({
             ...sp,
+            leg_drive_hrs: legSim.hours,
+            leg_drive_mins: Math.round(legSim.hours * 60.0),
+            leg_miles: Math.round(leg.distance_miles * 10) / 10,
+            from_label: idx === 0 ? "from Start" : `from Stop ${idx}`,
             detour_miles: actual_detour_miles > 0 ? actual_detour_miles : sp.detour_miles,
             arr_soc: Math.round(current_soc * 100),
             tgt_soc: Math.round(target_soc * 100),
@@ -3308,6 +3321,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           drive_hours: total_drive_hrs,
           ch_hours: total_ch_hrs,
           total_hours: total_time,
+          final_leg_hrs: finalLegSim.hours,
+          final_leg_mins: Math.round(finalLegSim.hours * 60.0),
+          final_leg_miles: Math.round(finalLeg.distance_miles * 10) / 10,
           ch_cost: Math.round(total_ch_cost * 100) / 100,
           total_cost: total_cost,
           final_soc: Math.round(current_soc * 100),
@@ -3620,8 +3636,12 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       if (itin.stops.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = `<td colspan="11" class="py-4 text-center text-slate-400 font-sans italic">Direct route — No charging stops required! Battery has sufficient capacity to reach destination.</td>`;
+        const driveStr = formatDriveDuration(itin.drive_hours);
+        row.innerHTML = `<td colspan="12" class="py-4 text-center text-slate-300 font-sans italic">
+          <span class="inline-flex items-center gap-1.5 text-cyan-400 font-semibold"><i data-lucide="check-circle" class="w-4 h-4"></i> Direct Route</span> — No charging stops required! Non-stop drive time: <b>${driveStr}</b> (${Math.round(itin.total_actual_miles)} mi), arriving with <b>${itin.final_soc}% SoC</b>.
+        </td>`;
         tbody.appendChild(row);
+        if (window.lucide) lucide.createIcons();
         return;
       }
 
@@ -3635,10 +3655,25 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           ? '<span class="text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[10px] inline-flex items-center gap-1"><i data-lucide="coffee" class="w-3 h-3 text-emerald-400"></i>Plaza (~3m loop)</span>'
           : `<span class="text-amber-400 font-mono font-medium">+${s.detour_miles} mi</span> <span class="text-slate-500 text-[10px]">(~${s.detour_mins}m exit)</span>`;
 
+        const prevMile = (idx === 0) ? 0 : itin.stops[idx - 1].mile;
+        const fallbackLegMiles = Math.max(1, Math.round((s.mile - prevMile) * 10) / 10);
+        const legDriveHrs = s.leg_drive_hrs || (fallbackLegMiles / Math.max(30, itin.route.speed_mph || 65));
+        const fromLabel = s.from_label || (idx === 0 ? "from Start" : `from Stop ${idx}`);
+        const legMiles = s.leg_miles || fallbackLegMiles;
+
         row.innerHTML = `
           <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-1.5">
             <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-mono font-bold">${idx+1}</span>
             <span>${s.station.name}</span>
+          </td>
+          <td class="py-2.5 px-3 text-slate-200 font-semibold font-mono">
+            <div class="flex items-center gap-1.5 text-cyan-300">
+              <i data-lucide="car" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>${formatDriveDuration(legDriveHrs)}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-normal font-mono">
+              ${fromLabel} (${Math.round(legMiles)} mi)
+            </div>
           </td>
           <td class="py-2.5 px-3 text-slate-300 font-mono">Mile ${Math.round(s.mile)}</td>
           <td class="py-2.5 px-3 text-xs">${detourBadge}</td>
@@ -3664,6 +3699,43 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         tbody.appendChild(row);
       });
 
+      // Destination arrival leg
+      if (itin.stops.length > 0) {
+        const destRow = document.createElement('tr');
+        destRow.className = "bg-slate-900/40 text-slate-300 border-t border-slate-800/80 hover:bg-slate-800/30 transition";
+        const destName = itin.route.destination?.name || document.getElementById('destAddress')?.value.trim() || "Destination";
+        const lastStopMile = itin.stops[itin.stops.length - 1].mile;
+        const finalLegMiles = itin.final_leg_miles || Math.max(1, Math.round((itin.total_actual_miles - lastStopMile) * 10) / 10);
+        const finalLegHrs = itin.final_leg_hrs || (finalLegMiles / Math.max(30, itin.route.speed_mph || 65));
+
+        destRow.innerHTML = `
+          <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-1.5">
+            <span class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center text-[10px] font-mono font-bold">🏁</span>
+            <span class="text-cyan-300 font-semibold">${destName} (Arrival)</span>
+          </td>
+          <td class="py-2.5 px-3 text-slate-200 font-semibold font-mono">
+            <div class="flex items-center gap-1.5 text-cyan-300">
+              <i data-lucide="car" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>${formatDriveDuration(finalLegHrs)}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-normal font-mono">
+              from Stop ${itin.stops.length} (${Math.round(finalLegMiles)} mi)
+            </div>
+          </td>
+          <td class="py-2.5 px-3 text-slate-300 font-mono">Mile ${Math.round(itin.total_actual_miles)}</td>
+          <td class="py-2.5 px-3 text-xs text-slate-500">—</td>
+          <td class="py-2.5 px-3 text-slate-500">—</td>
+          <td class="py-2.5 px-3 text-emerald-400 font-semibold">${itin.final_soc}%</td>
+          <td class="py-2.5 px-3 text-slate-500">—</td>
+          <td class="py-2.5 px-3 text-slate-500">—</td>
+          <td class="py-2.5 px-3 text-slate-400 font-mono text-[11px]">Arrival</td>
+          <td class="py-2.5 px-3 text-slate-500">—</td>
+          <td class="py-2.5 px-3 text-slate-500">—</td>
+          <td class="py-2.5 px-3 text-slate-500">—</td>
+        `;
+        tbody.appendChild(destRow);
+      }
+
       // Render Cost Summary Footer
       const tfoot = document.getElementById('stopsTableFoot');
       if (tfoot) {
@@ -3673,20 +3745,20 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         tfoot.innerHTML = `
           <tr class="border-t border-slate-700 bg-slate-950/60 font-mono text-xs">
-            <td colspan="7" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
+            <td colspan="8" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
             <td colspan="4" class="py-2.5 px-3 text-white font-semibold">$${itin.ch_cost.toFixed(2)}</td>
           </tr>
           ${itin.membership_fees > 0 ? `
           <tr class="bg-slate-950/60 font-mono text-xs">
-            <td colspan="7" class="py-1.5 px-3 text-right text-amber-400/90 font-sans">+ One-Way Membership Fees (${feeLabels.join(', ')}):</td>
+            <td colspan="8" class="py-1.5 px-3 text-right text-amber-400/90 font-sans">+ One-Way Membership Fees (${feeLabels.join(', ')}):</td>
             <td colspan="4" class="py-1.5 px-3 text-amber-400 font-semibold">+$${itin.membership_fees.toFixed(2)}</td>
           </tr>` : ''}
           <tr class="bg-slate-950/60 font-mono text-xs">
-            <td colspan="7" class="py-1.5 px-3 text-right text-slate-400 font-sans">Highway Tolls:</td>
+            <td colspan="8" class="py-1.5 px-3 text-right text-slate-400 font-sans">Highway Tolls:</td>
             <td colspan="4" class="py-1.5 px-3 text-slate-300 font-semibold">$${itin.toll_cost.toFixed(2)}</td>
           </tr>
           <tr class="text-sm font-bold border-t border-slate-800 bg-slate-900/80">
-            <td colspan="7" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
+            <td colspan="8" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
             <td colspan="4" class="py-2.5 px-3 text-emerald-400 text-base font-mono">
               $${itin.total_cost.toFixed(2)}
               ${itin.memberships.ea.active && !itin.memberships.ea.pre_owned && itin.memberships.ea.net > 0 ? `<span class="block text-[11px] text-emerald-300 font-sans font-normal">(Net Pass+ Savings: $${itin.memberships.ea.net.toFixed(2)})</span>` : ''}
@@ -3694,6 +3766,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           </tr>
         `;
       }
+
+      if (window.lucide) lucide.createIcons();
     }
 
     function renderBanners(itin) {
@@ -3736,6 +3810,16 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     function formatHours(hrs) {
       const h = Math.floor(hrs);
       const m = Math.round((hrs - h) * 60);
+      return `${h}h ${m}m`;
+    }
+
+    function formatDriveDuration(hrs) {
+      if (!hrs || hrs <= 0) return "0 min";
+      const totalMins = Math.round(hrs * 60);
+      const h = Math.floor(totalMins / 60);
+      const m = totalMins % 60;
+      if (h === 0) return `${m} min`;
+      if (m === 0) return `${h} hr`;
       return `${h}h ${m}m`;
     }
 
