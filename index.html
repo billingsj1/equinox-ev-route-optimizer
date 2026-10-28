@@ -2439,6 +2439,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
     // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---    // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---
     async function recomputeCurrentRoute() {
+      try {
       if (!activeRoutesData || activeRoutesData.length === 0) {
         buildCalibratedCorridor(DEFAULT_ORIGIN, CITY_COORDINATES["marlton, nj"]);
       }
@@ -2522,9 +2523,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // =========================================================================
       // STAGE 1: FORWARD STATE-SPACE SEARCH TREE (EXPANDED TARGETS & DYNAMIC PROGRAMMING)
       // =========================================================================
-      const stage1_candidates = [];
+      function runStage1Search(min_mins, max_mins) {
+        const candidates = [];
 
-      activeRoutesData.forEach(route => {
+        activeRoutesData.forEach(route => {
         const projection = matchStationsToPolyline(route.coordinates);
         const routeStations = projection.matched;
         const total_miles = projection.total_dist || route.distance;
@@ -2533,8 +2535,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
         const rem_soc0 = start_soc - (leg0.kwh / 85.0);
         const dur_mins0 = leg0.hours * 60.0;
-        if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_leg_mins) {
-          stage1_candidates.push({
+        if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
+          candidates.push({
             route: route,
             base_miles: total_miles,
             total_actual_miles: total_miles,
@@ -2585,7 +2587,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const leg_to_dest_mins = leg_to_dest_hrs * 60.0;
           const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
-          if (final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_leg_mins) {
+          if (final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
             if (curr.stops.length === 0 || leg_to_dest_mins >= 30.0) {
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
@@ -2645,7 +2647,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const total_time = total_drive_hrs + curr.ch_hrs;
               const total_cost = Math.round((discounted_ch_cost + membership_fees + route.toll) * 100) / 100;
 
-              stage1_candidates.push({
+              candidates.push({
                 route: route,
                 base_miles: total_miles,
                 total_actual_miles: total_actual_miles,
@@ -2695,12 +2697,12 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const legSim = simulateLegFromSteps(route.steps, curr.mile, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
             const leg_mins = legSim.hours * 60.0;
 
-            if (leg_mins > max_leg_mins) continue;
+            if (leg_mins > max_mins) continue;
 
             if (curr.mile === 0.0) {
               if (start_soc >= 0.80 && leg_mins < 45.0) continue;
             } else {
-              if (leg_mins < min_leg_mins) continue;
+              if (leg_mins < min_mins) continue;
             }
 
             const isPlaza = isServicePlaza(st);
@@ -2725,7 +2727,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             // Generate expanded targets: 50% to 90% in 5% increments plus exact finish targets
             const targetSet = new Set();
-            if (dest_mins_from_st <= max_leg_mins && dest_needed_soc <= 0.90) {
+            if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
               const tgtFinish = Math.max(arr_soc + 0.05, Math.round(dest_needed_soc * 100) / 100.0);
               if (tgtFinish <= 0.90) targetSet.add(tgtFinish);
               if (tgtFinish + 0.05 <= 0.90) targetSet.add(Math.round((tgtFinish + 0.05) * 100) / 100.0);
@@ -2802,6 +2804,26 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       });
 
+        return candidates;
+      }
+
+      // Pass 1: Strict User Preferences
+      let stage1_candidates = runStage1Search(min_leg_mins, max_leg_mins);
+      let wasRelaxed = false;
+
+      // Pass 2: Automatic Bridging Relaxation
+      // If strict constraints yielded 0 or too few candidates due to discrete turnpike plaza spacing,
+      // relax min_leg_mins down to 35m (and allow max_leg_mins up to 135m if needed) so viable routes are always found.
+      if (stage1_candidates.length < 3) {
+        const relaxed_min = Math.min(min_leg_mins, 35.0);
+        const relaxed_max = Math.max(max_leg_mins, 135.0);
+        const relaxed_candidates = runStage1Search(relaxed_min, relaxed_max);
+        if (relaxed_candidates.length > stage1_candidates.length) {
+          stage1_candidates = relaxed_candidates;
+          wasRelaxed = true;
+        }
+      }
+
       const alertBanner = document.getElementById('alertBanner');
       const alertMsg = document.getElementById('alertMessage');
 
@@ -2812,6 +2834,13 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
         if (auditStatusText) auditStatusText.innerText = "No Routes Found";
         if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-red-400";
+        if (auditLogSummary) {
+          auditLogSummary.innerHTML = `
+            <div class="text-rose-400 font-mono text-xs">
+              * No viable routes found within current constraints (try lowering min time between stops or raising start SoC).
+            </div>
+          `;
+        }
         if (searchBtn) {
           searchBtn.disabled = false;
           searchBtn.innerHTML = `<i data-lucide="compass" class="w-4 h-4"></i><span>Calculate Route</span>`;
@@ -2903,8 +2932,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (auditOsrmCount) auditOsrmCount.innerText = uniqueSequencesMap.size.toLocaleString();
       if (auditStatusText) auditStatusText.innerText = `Analyzing ${combinedTop.length} Best Variations...`;
       if (auditLogSummary) {
+        const relaxedNote = wasRelaxed ? `<div class="text-amber-400 flex items-center gap-2"><span class="font-bold">*</span> <span><b>Turnpike Bridging:</b> Automatically relaxed stop spacing to accommodate PA Turnpike service plaza intervals</span></div>` : '';
         auditLogSummary.innerHTML = `
           <div class="space-y-1 font-mono text-xs">
+            ${relaxedNote}
             <div class="text-slate-300 flex items-center gap-2">
               <span class="font-bold text-emerald-400">*</span> <span><b>${uniqueSequencesCount} different routes</b> (unique stop combinations) evaluated</span>
             </div>
@@ -2933,8 +2964,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
 
         if (auditLogSummary) {
+          const relaxedNote = wasRelaxed ? `<div class="text-amber-400 flex items-center gap-2"><span class="font-bold">*</span> <span><b>Turnpike Bridging:</b> Automatically relaxed stop spacing to accommodate PA Turnpike service plaza intervals</span></div>` : '';
           auditLogSummary.innerHTML = `
             <div class="space-y-1 font-mono text-xs">
+              ${relaxedNote}
               <div class="text-slate-300 flex items-center gap-2">
                 <span class="font-bold text-emerald-400">*</span> <span><b>${uniqueSequencesCount} different routes</b> (unique stop combinations) evaluated</span>
               </div>
@@ -3131,8 +3164,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       if (auditLogSummary) {
+        const relaxedNote = wasRelaxed ? `<div class="text-amber-400 flex items-center gap-2"><span class="font-bold">*</span> <span><b>Turnpike Bridging:</b> Automatically relaxed stop spacing to accommodate PA Turnpike service plaza intervals</span></div>` : '';
         auditLogSummary.innerHTML = `
           <div class="space-y-1 font-mono text-xs">
+            ${relaxedNote}
             <div class="text-slate-200 flex items-center gap-2">
               <span class="font-bold text-emerald-400">*</span> <span><b>${uniqueSequencesCount} different routes</b> (unique stop combinations) evaluated</span>
             </div>
@@ -3148,6 +3183,23 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           </div>
         `;
       }      renderResultsUI();
+      } catch (err) {
+        console.error("Route computation error:", err);
+        const auditStatusText = document.getElementById('auditStatusText');
+        const auditPulseDot = document.getElementById('auditPulseDot');
+        const auditLogSummary = document.getElementById('auditLogSummary');
+        const searchBtn = document.getElementById('searchBtn');
+        if (auditStatusText) auditStatusText.innerText = "Error";
+        if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-red-400";
+        if (auditLogSummary) {
+          auditLogSummary.innerHTML = `<div class="text-rose-400 font-mono text-xs">* Error calculating route: ${err.message || err}</div>`;
+        }
+        if (searchBtn) {
+          searchBtn.disabled = false;
+          searchBtn.innerHTML = `<i data-lucide="compass" class="w-4 h-4"></i><span>Calculate Route</span>`;
+          if (window.lucide) lucide.createIcons();
+        }
+      }
     }
 
 
