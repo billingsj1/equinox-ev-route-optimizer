@@ -1231,7 +1231,7 @@
     // --- SPECIFIC SPEED LIMIT RESOLVER ---
     // Pulls specific posted speed limits from OpenStreetMap/OSRM step metadata across Interstate corridors,
     // state turnpikes, US divided expressways, urban beltways, and local access roads.
-    function resolveStepSpeedLimit(step) {
+    function resolveStepSpeedLimit(step, coordOverride = null) {
       const ref = step.ref || '';
       const name = step.name || '';
       const dist_m = step.distance || 0;
@@ -1240,14 +1240,19 @@
       const maneuver_type = (step.maneuver && step.maneuver.type) ? step.maneuver.type : '';
 
       let lon = 0, lat = 0;
-      const coords = (step.geometry && step.geometry.coordinates) ? step.geometry.coordinates : [];
-      if (coords.length > 0) {
-        const midIdx = Math.floor(coords.length / 2);
-        lon = coords[midIdx][0];
-        lat = coords[midIdx][1];
-      } else if (step.maneuver && step.maneuver.location) {
-        lon = step.maneuver.location[0];
-        lat = step.maneuver.location[1];
+      if (coordOverride && coordOverride.length >= 2) {
+        lon = coordOverride[0];
+        lat = coordOverride[1];
+      } else {
+        const coords = (step.geometry && step.geometry.coordinates) ? step.geometry.coordinates : [];
+        if (coords.length > 0) {
+          const midIdx = Math.floor(coords.length / 2);
+          lon = coords[midIdx][0];
+          lat = coords[midIdx][1];
+        } else if (step.maneuver && step.maneuver.location) {
+          lon = step.maneuver.location[0];
+          lat = step.maneuver.location[1];
+        }
       }
 
       const lowerName = name.toLowerCase();
@@ -1274,11 +1279,20 @@
 
         // State-by-State Specific Speed Limits
         if (lon < -80.52) {
-          // Ohio
-          if (lon >= -83.08 && lon <= -82.95) {
-            return lowerName.includes('inner') ? 55.0 : 65.0; // Columbus Metro Area
+          // Ohio I-70 Corridor
+          if (lon >= -83.08 && lon <= -82.98) {
+            return 55.0; // Columbus Downtown & Innerbelt (SR-315 to I-71)
           }
-          return 70.0; // Ohio Rural Interstates (I-70, I-71, I-77)
+          if (lon > -82.98 && lon <= -82.72) {
+            return 65.0; // Columbus East Metro (Bexley, Whitehall to I-270 Outerbelt & Pickerington)
+          }
+          if (lon > -82.72 && lon <= -82.04) {
+            return 70.0; // Rural Central Ohio
+          }
+          if (lon > -82.04 && lon <= -81.97) {
+            return 60.0; // Zanesville S-curves across Muskingum River
+          }
+          return 70.0; // Rural Eastern Ohio (Zanesville to Cambridge / WV border)
         } else if (lon >= -80.75 && lon < -80.52) {
           // West Virginia (Wheeling & Northern Panhandle)
           return (ref.includes('470') || lowerName.includes('tunnel')) ? 60.0 : 65.0;
@@ -1338,6 +1352,57 @@
       if (osrm_mph >= 35.0) return 40.0;
       if (osrm_mph >= 25.0) return 30.0;
       return 25.0;
+    }
+
+    function parseStepsWithHighResSpeedLimits(rawSteps) {
+      const parsedSteps = [];
+      rawSteps.forEach(s => {
+        const d_mi = (s.distance || 0) * 0.000621371;
+        const pts = (s.geometry && s.geometry.coordinates) ? s.geometry.coordinates : [];
+        const name = s.name || '';
+        const ref = s.ref || '';
+        const maneuver = s.maneuver;
+        const intersections = s.intersections || [];
+
+        // If a highway step is longer than 4 miles and has rich coordinate geometry,
+        // subdivide into ~2-mile segments so localized urban/rural posted speed zones apply accurately!
+        if (d_mi > 4.0 && pts.length >= 8) {
+          const chunk_size = Math.max(4, Math.floor(pts.length / (d_mi / 2.0)));
+          for (let i = 0; i < pts.length - 1; i += chunk_size) {
+            const slice_pts = pts.slice(i, Math.min(pts.length, i + chunk_size + 1));
+            const mid = slice_pts[Math.floor(slice_pts.length / 2)];
+            const slice_fraction = (slice_pts.length - 1) / (pts.length - 1);
+            const slice_dist = d_mi * slice_fraction;
+            const spd = resolveStepSpeedLimit(s, mid);
+            parsedSteps.push({
+              name: name,
+              ref: ref,
+              distance_miles: slice_dist,
+              posted_speed: spd,
+              mid_lon: mid[0],
+              mid_lat: mid[1],
+              geometry: { coordinates: slice_pts },
+              maneuver: maneuver,
+              intersections: (i === 0) ? intersections : []
+            });
+          }
+        } else {
+          const mid_coord = pts.length > 0 ? pts[Math.floor(pts.length / 2)] : (maneuver && maneuver.location ? maneuver.location : [0, 0]);
+          const spd = resolveStepSpeedLimit(s, mid_coord);
+          parsedSteps.push({
+            name: name,
+            ref: ref,
+            distance_miles: d_mi,
+            posted_speed: spd,
+            mid_lon: mid_coord[0],
+            mid_lat: mid_coord[1],
+            geometry: s.geometry,
+            maneuver: maneuver,
+            intersections: intersections
+          });
+        }
+      });
+      return parsedSteps;
     }
 
     // High-resolution physics simulator: integrates specific posted speed limits,
@@ -1423,72 +1488,71 @@
           const posted_speed = s.posted_speed || fallback_speed || 70.0;
           const mType = (s.maneuver && s.maneuver.type) ? s.maneuver.type : '';
           const sName = (s.name || '').toLowerCase();
+          const sRef = (s.ref || '').toLowerCase();
+          const lon = (s.mid_lon !== undefined) ? s.mid_lon : 0.0;
           const is_ramp = mType.includes('ramp') || sName.includes('ramp') || sName.includes('exit') || sName.includes('sliproad');
           const is_plaza = sName.includes('service plaza') || sName.includes('travel plaza') || sName.includes('rest area');
           const is_local = (posted_speed <= 45.0) || is_ramp || is_plaza;
-
-          // Road Speed Policy:
-          // - Service Plazas: strictly 20 mph loop
-          // - Ramps & Interchanges: strictly 25-35 mph
-          // - Arterials & Local: posted limits
-          // - Highways / Freeways: posted limit + speed offset (capped at max speed cap)
-          let base_mph;
-          if (is_plaza) {
-            base_mph = 20.0;
-          } else if (is_ramp) {
-            base_mph = Math.min(posted_speed, 35.0);
-          } else if (posted_speed <= 45.0) {
-            base_mph = posted_speed;
-          } else {
-            base_mph = Math.min(posted_speed + speed_offset, max_cap);
-          }
-
-          // Empirical Traffic Estimation for Urban Bottlenecks, Tunnels, & Highway Realism
-          const is_tunnel = sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel'));
-          const is_urban_bottleneck = (
-            sName.includes('schuylkill') ||
-            sName.includes('vine st') ||
-            sName.includes('innerbelt') ||
-            sName.includes('downtown') ||
-            (s.ref && (s.ref.includes('676') || s.ref.includes('376'))) ||
-            (sName.includes('parkway') && posted_speed <= 55.0)
-          );
-          const is_suburban_arterial = (
-            sName.includes('marlton') ||
-            (s.ref && s.ref.includes('70') && posted_speed <= 50.0) ||
-            (sName.includes('pike') && posted_speed <= 50.0) ||
-            (sName.includes('boulevard') && posted_speed <= 50.0)
-          );
-
-          let target_mph = base_mph;
           let traffic_delay_hours = 0.0;
 
-          if (is_tunnel) {
-            target_mph = sName.includes('wheeling') ? 45.0 : 55.0;
-          } else if (is_urban_bottleneck) {
-            if (traffic_profile === 'typical') {
-              target_mph = Math.max(30.0, base_mph * 0.75);
-            } else if (traffic_profile === 'rush_hour') {
-              target_mph = Math.max(18.0, base_mph * 0.45);
+          let target_mph;
+          if (is_plaza) {
+            target_mph = 20.0;
+          } else if (is_ramp) {
+            target_mph = 25.0;
+          } else if (posted_speed <= 30.0) {
+            target_mph = 22.0; // Local city streets with stop signs & traffic signals (e.g. Powell Ave)
+          } else if (posted_speed <= 35.0) {
+            target_mph = 26.0; // Urban arterial with traffic signals (e.g. Sullivant Ave)
+          } else if (sName.includes('turnpike') || sRef.includes('turnpike')) {
+            if (sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel')) || posted_speed <= 55.0) {
+              target_mph = 52.0; // PA Turnpike Tunnels (55 mph speed limit + tunnel approach)
+            } else {
+              // Open PA Turnpike: true cruising speed up to max cap (75 mph)
+              target_mph = Math.min(posted_speed + speed_offset, max_cap);
             }
-          } else if (is_suburban_arterial && posted_speed <= 50.0) {
-            if (traffic_profile === 'typical') {
-              target_mph = Math.min(base_mph, 40.0);
-            } else if (traffic_profile === 'rush_hour') {
-              target_mph = Math.min(base_mph, 30.0);
+          } else if (lon < -80.52) {
+            // Ohio I-70 Corridor
+            if (lon >= -83.08 && lon <= -82.98) {
+              target_mph = 52.0; // Downtown Columbus Innerbelt
+            } else if (lon > -82.98 && lon <= -82.72) {
+              target_mph = 60.0; // Columbus East Metro inside I-270 Outerbelt (traffic & 65 mph limit)
+            } else if (lon > -82.72 && lon <= -82.04) {
+              target_mph = Math.min(posted_speed + speed_offset, max_cap); // Rural Central Ohio (75 mph cruising)
+            } else if (lon > -82.04 && lon <= -81.97) {
+              target_mph = 56.0; // Zanesville S-curves across Muskingum River
+            } else {
+              target_mph = Math.min(posted_speed + speed_offset, max_cap); // Rural Eastern Ohio to Cambridge (75 mph cruising)
             }
-          } else if (posted_speed >= 65.0) {
-            if (traffic_profile === 'rush_hour') {
-              target_mph = Math.min(base_mph, 56.0);
+          } else if (lon >= -80.75 && lon < -80.52) {
+            // WV & Wheeling Tunnels
+            if (sName.includes('tunnel') || sName.includes('wheeling')) {
+              target_mph = 45.0;
+            } else {
+              target_mph = 56.0;
             }
-          } else if (posted_speed > 45.0) {
-            if (traffic_profile === 'typical') {
-              target_mph = Math.min(base_mph, 50.0);
-            } else if (traffic_profile === 'rush_hour') {
-              target_mph = Math.min(base_mph, 40.0);
+          } else if (lon >= -80.52 && lon < -79.60) {
+            // PA I-70 older expressway alignment between WV border, Washington PA, and New Stanton
+            target_mph = 54.0;
+          } else if (lon > -75.40) {
+            // Philadelphia Metro approach & NJ-70
+            if (sName.includes('schuylkill') || sRef.includes('76')) {
+              target_mph = 40.0; // Schuylkill Expressway real flow
+            } else if (sName.includes('vine') || sRef.includes('676')) {
+              target_mph = 32.0; // Vine St Expressway & Ben Franklin Bridge
+            } else if (sName.includes('marlton') || sRef.includes('nj 70') || lon >= -75.10) {
+              target_mph = 30.0; // NJ-70 suburban arterial with traffic lights
+            } else {
+              target_mph = 45.0;
             }
+          } else {
+            target_mph = Math.min(posted_speed + speed_offset, max_cap);
           }
 
+          if (traffic_profile === 'rush_hour') {
+            if (target_mph > 45.0) target_mph = Math.max(35.0, target_mph * 0.80);
+            else target_mph = Math.max(18.0, target_mph * 0.70);
+          }
           const v_ms = target_mph * 0.44704;
           const slice_hours = ov_len / Math.max(15.0, target_mph);
           const dist_m = ov_len * 1609.34;
@@ -1862,18 +1926,7 @@
 
                 // Parse specific step-by-step posted speed limits
                 const rawSteps = (r.legs && r.legs[0] && r.legs[0].steps) ? r.legs[0].steps : [];
-                const parsedSteps = rawSteps.map(s => {
-                  const d_mi = (s.distance || 0) * 0.000621371;
-                  const spd = resolveStepSpeedLimit(s);
-                  return {
-                    name: s.name || '',
-                    ref: s.ref || '',
-                    distance_miles: d_mi,
-                    posted_speed: spd,
-                    geometry: s.geometry,
-                    maneuver: s.maneuver
-                  };
-                });
+                const parsedSteps = parseStepsWithHighResSpeedLimits(rawSteps);
 
                 // Calculate weighted speed limit & speed distribution profile
                 let weightedLimit = 70.0;
@@ -1927,14 +1980,7 @@
                       (r.legs || []).forEach(leg => {
                         (leg.steps || []).forEach(s => rawSteps.push(s));
                       });
-                      const parsedSteps = rawSteps.map(s => ({
-                        name: s.name || '',
-                        ref: s.ref || '',
-                        distance_miles: (s.distance || 0) * 0.000621371,
-                        posted_speed: resolveStepSpeedLimit(s),
-                        geometry: s.geometry,
-                        maneuver: s.maneuver
-                      }));
+                      const parsedSteps = parseStepsWithHighResSpeedLimits(rawSteps);
                       const totalStepDist = parsedSteps.reduce((acc, s) => acc + s.distance_miles, 0);
                       const sumSpdDist = parsedSteps.reduce((acc, s) => acc + (s.posted_speed * s.distance_miles), 0);
                       const weightedLimit = totalStepDist > 0 ? (sumSpdDist / totalStepDist) : 68.0;
@@ -1972,14 +2018,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                       (r.legs || []).forEach(leg => {
                         (leg.steps || []).forEach(s => rawSteps.push(s));
                       });
-                      const parsedSteps = rawSteps.map(s => ({
-                        name: s.name || '',
-                        ref: s.ref || '',
-                        distance_miles: (s.distance || 0) * 0.000621371,
-                        posted_speed: resolveStepSpeedLimit(s),
-                        geometry: s.geometry,
-                        maneuver: s.maneuver
-                      }));
+                      const parsedSteps = parseStepsWithHighResSpeedLimits(rawSteps);
                       const totalStepDist = parsedSteps.reduce((acc, s) => acc + s.distance_miles, 0);
                       const sumSpdDist = parsedSteps.reduce((acc, s) => acc + (s.posted_speed * s.distance_miles), 0);
                       const weightedLimit = totalStepDist > 0 ? (sumSpdDist / totalStepDist) : 65.0;
@@ -2978,15 +3017,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 const parsedLegs = (r.legs || []).map(leg => {
                   const legMiles = (leg.distance || 0) * 0.000621371;
                   const rawSteps = leg.steps || [];
-                  const pSteps = rawSteps.map(s => ({
-                    name: s.name || '',
-                    ref: s.ref || '',
-                    distance_miles: (s.distance || 0) * 0.000621371,
-                    posted_speed: resolveStepSpeedLimit(s),
-                    geometry: s.geometry,
-                    maneuver: s.maneuver,
-                    intersections: s.intersections || []
-                  }));
+                  const pSteps = parseStepsWithHighResSpeedLimits(rawSteps);
                   return {
                     distance_miles: legMiles,
                     duration_hours: (leg.duration || 0) / 3600.0,
