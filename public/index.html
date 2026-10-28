@@ -1443,7 +1443,7 @@
             base_mph = Math.min(posted_speed + speed_offset, max_cap);
           }
 
-          // Empirical Traffic Estimation for Urban Bottlenecks, Tunnels, & Multi-State Corridor Flow:
+          // Empirical Traffic Estimation for Urban Bottlenecks, Tunnels, & Highway Realism
           const is_tunnel = sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel'));
           const is_urban_bottleneck = (
             sName.includes('schuylkill') ||
@@ -1467,28 +1467,22 @@
             target_mph = sName.includes('wheeling') ? 45.0 : 55.0;
           } else if (is_urban_bottleneck) {
             if (traffic_profile === 'typical') {
-              // Daytime congestion reduces speeds ~38% on urban bottlenecks
-              target_mph = Math.max(22.0, base_mph * 0.62);
+              target_mph = Math.max(30.0, base_mph * 0.75);
             } else if (traffic_profile === 'rush_hour') {
-              // Rush hour heavy stop-and-go congestion (~62% speed drop)
-              target_mph = Math.max(14.0, base_mph * 0.38);
-            } else {
-              target_mph = Math.max(45.0, base_mph * 0.90);
+              target_mph = Math.max(18.0, base_mph * 0.45);
             }
           } else if (is_suburban_arterial && posted_speed <= 50.0) {
             if (traffic_profile === 'typical') {
-              target_mph = Math.min(base_mph, 35.0);
+              target_mph = Math.min(base_mph, 40.0);
             } else if (traffic_profile === 'rush_hour') {
-              target_mph = Math.min(base_mph, 25.0);
+              target_mph = Math.min(base_mph, 30.0);
             }
           } else if (posted_speed >= 65.0) {
-            // Multi-State Highway Flow Realism:
-            // Under typical daytime conditions, average speeds across multi-state journeys (400+ miles)
-            // reflect real-world vehicle volume, truck passing queues, and interchange weaves (~63.5 mph).
+            // Calibrated multi-state highway cruising speed (~66.8 mph) yielding ~7:45 non-stop driving baseline for 486 mi route
             if (traffic_profile === 'typical') {
-              target_mph = Math.min(base_mph, 63.5);
+              target_mph = Math.min(base_mph, 67.0);
             } else if (traffic_profile === 'rush_hour') {
-              target_mph = Math.min(base_mph, 54.0);
+              target_mph = Math.min(base_mph, 56.0);
             }
           } else if (posted_speed > 45.0) {
             if (traffic_profile === 'typical') {
@@ -1550,7 +1544,7 @@
             const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
             const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
             kinetic_kwh += (stops * cycle_loss) / 3.6e6;
-            idle_hours += (stops * 18.0) / 3600.0;
+            idle_hours += (stops * 5.0) / 3600.0;
           }
 
           // 6. Maneuver Turns & Ramp Curvature Deceleration/Acceleration
@@ -1559,7 +1553,7 @@
             const v_turn_ms = Math.min(v_ms, 18.0 * 0.44704);
             const delta_ke_turn = 0.5 * total_mass_kg * Math.max(0.0, Math.pow(v_ms, 2) - Math.pow(v_turn_ms, 2));
             kinetic_kwh += (delta_ke_turn * ((1.0 / 0.91) - 0.78)) / 3.6e6;
-            maneuver_delay_hours = (18.0 / 3600.0) * (ov_len / Math.max(0.01, step_len));
+            maneuver_delay_hours = (3.0 / 3600.0) * (ov_len / Math.max(0.01, step_len));
           }
 
           const step_tot_hours = slice_hours + idle_hours + maneuver_delay_hours + traffic_delay_hours;
@@ -1601,11 +1595,7 @@
           const regen_elec_kwh = ((total_mass_kg * 9.80665 * regen_m) / 3.6e6) * regen_eff;
           total_kwh += (climb_elec_kwh - regen_elec_kwh);
 
-          // Mountain Pass Incline Crawl: heavy freight truck friction on sustained Appalachian climbs
-          if (climb_m > 200.0 && traffic_profile === 'typical') {
-            const grade_crawl_hours = (climb_m / 250.0) * (1.2 / 60.0);
-            total_hours += grade_crawl_hours;
-          }
+
         }
       }
 
@@ -2698,12 +2688,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const leg_mins = legSim.hours * 60.0;
 
             if (leg_mins > max_mins) continue;
-
-            if (curr.mile === 0.0) {
-              if (start_soc >= 0.80 && leg_mins < 45.0) continue;
-            } else {
-              if (leg_mins < min_mins) continue;
-            }
+            if (leg_mins < min_mins) continue;
 
             const isPlaza = isServicePlaza(st);
             let detour_miles, detour_mins;
@@ -2807,22 +2792,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         return candidates;
       }
 
-      // Pass 1: Strict User Preferences
-      let stage1_candidates = runStage1Search(min_leg_mins, max_leg_mins);
-      let wasRelaxed = false;
-
-      // Pass 2: Automatic Bridging Relaxation
-      // If strict constraints yielded 0 or too few candidates due to discrete turnpike plaza spacing,
-      // relax min_leg_mins down to 35m (and allow max_leg_mins up to 135m if needed) so viable routes are always found.
-      if (stage1_candidates.length < 3) {
-        const relaxed_min = Math.min(min_leg_mins, 35.0);
-        const relaxed_max = Math.max(max_leg_mins, 135.0);
-        const relaxed_candidates = runStage1Search(relaxed_min, relaxed_max);
-        if (relaxed_candidates.length > stage1_candidates.length) {
-          stage1_candidates = relaxed_candidates;
-          wasRelaxed = true;
-        }
-      }
+      // Run forward search strictly adhering to user's min/max stop spacing guidelines
+      const stage1_candidates = runStage1Search(min_leg_mins, max_leg_mins);
 
       const alertBanner = document.getElementById('alertBanner');
       const alertMsg = document.getElementById('alertMessage');
@@ -2830,14 +2801,14 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (stage1_candidates.length === 0) {
         if (alertBanner && alertMsg) {
           alertBanner.classList.remove('hidden');
-          alertMsg.innerText = "No charging combinations found under current slider constraints. Try loosening Min/Max time between stops or starting with a higher SoC.";
+          alertMsg.innerText = `No charging combinations found under current slider constraints (Min: ${min_leg_mins}m, Max: ${max_leg_mins}m). Try loosening stop interval limits or starting with a higher SoC.`;
         }
         if (auditStatusText) auditStatusText.innerText = "No Routes Found";
         if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-red-400";
         if (auditLogSummary) {
           auditLogSummary.innerHTML = `
             <div class="text-rose-400 font-mono text-xs">
-              * No viable routes found within current constraints (try lowering min time between stops or raising start SoC).
+              * No viable routes found within your slider constraints (Min stop: ${min_leg_mins}m, Max: ${max_leg_mins}m). Try loosening stop interval limits or raising start SoC.
             </div>
           `;
         }
@@ -2932,11 +2903,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (auditOsrmCount) auditOsrmCount.innerText = uniqueSequencesMap.size.toLocaleString();
       if (auditStatusText) auditStatusText.innerText = `Analyzing ${combinedTop.length} Best Variations...`;
       if (auditLogSummary) {
-        const relaxedNote = wasRelaxed ? `<div class="text-amber-400 flex items-center gap-2"><span class="font-bold">*</span> <span><b>Turnpike Bridging:</b> Automatically relaxed stop spacing to accommodate PA Turnpike service plaza intervals</span></div>` : '';
-        auditLogSummary.innerHTML = `
+                auditLogSummary.innerHTML = `
           <div class="space-y-1 font-mono text-xs">
-            ${relaxedNote}
-            <div class="text-slate-300 flex items-center gap-2">
+                        <div class="text-slate-300 flex items-center gap-2">
               <span class="font-bold text-emerald-400">*</span> <span><b>${uniqueSequencesCount} different routes</b> (unique stop combinations) evaluated</span>
             </div>
             <div class="text-slate-300 flex items-center gap-2">
@@ -2964,11 +2933,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
 
         if (auditLogSummary) {
-          const relaxedNote = wasRelaxed ? `<div class="text-amber-400 flex items-center gap-2"><span class="font-bold">*</span> <span><b>Turnpike Bridging:</b> Automatically relaxed stop spacing to accommodate PA Turnpike service plaza intervals</span></div>` : '';
-          auditLogSummary.innerHTML = `
+                    auditLogSummary.innerHTML = `
             <div class="space-y-1 font-mono text-xs">
-              ${relaxedNote}
-              <div class="text-slate-300 flex items-center gap-2">
+                            <div class="text-slate-300 flex items-center gap-2">
                 <span class="font-bold text-emerald-400">*</span> <span><b>${uniqueSequencesCount} different routes</b> (unique stop combinations) evaluated</span>
               </div>
               <div class="text-slate-300 flex items-center gap-2">
@@ -3164,11 +3131,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       if (auditLogSummary) {
-        const relaxedNote = wasRelaxed ? `<div class="text-amber-400 flex items-center gap-2"><span class="font-bold">*</span> <span><b>Turnpike Bridging:</b> Automatically relaxed stop spacing to accommodate PA Turnpike service plaza intervals</span></div>` : '';
-        auditLogSummary.innerHTML = `
+                auditLogSummary.innerHTML = `
           <div class="space-y-1 font-mono text-xs">
-            ${relaxedNote}
-            <div class="text-slate-200 flex items-center gap-2">
+                        <div class="text-slate-200 flex items-center gap-2">
               <span class="font-bold text-emerald-400">*</span> <span><b>${uniqueSequencesCount} different routes</b> (unique stop combinations) evaluated</span>
             </div>
             <div class="text-slate-200 flex items-center gap-2">
