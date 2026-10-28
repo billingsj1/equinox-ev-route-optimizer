@@ -243,6 +243,15 @@
               <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Maximum continuous driving stretch before requiring a rest/charge break.</span>
             </div>
+
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>Minimum Charge Added Per Stop</span>
+                <span id="minChargePctDisplay" class="font-mono text-emerald-400">15% (~12.8 kWh / ~12 min)</span>
+              </div>
+              <input type="range" id="minChargePctSlider" min="5" max="40" value="15" step="5" oninput="handleMinChargePctChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <span class="text-[10px] text-slate-500 block mt-0.5">Minimum battery % added at any stop. Prevents brief 4-min micro-stops so every break is meaningful for bathroom/stretching.</span>
+            </div>
           </div>
         </div>
       </div>
@@ -712,6 +721,7 @@
     // --- VERIFIED CHARGING NETWORK DATABASE (CCS1 / >= 100 kW) ---
     let ALL_STATIONS = [
       {"id":"ionna-cambridge-oh","name":"IONNA - Cambridge, OH","network":"IONNA","lat":40.0345,"lon":-81.5833,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/454141"},
+      {"id":"evgo-pilot-belmont-oh","name":"EVgo - Pilot Travel Center - Belmont, OH","network":"EVgo","lat":40.0578,"lon":-81.0507,"city":"Belmont","state":"OH","kw":350,"off":0.53,"on":0.53,"gm":false,"gm_pct":0.0,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/306630","ocm_id":306630},
       {"id":"mb-washington-pa","name":"Mercedes-Benz HPC - Washington, PA","network":"Mercedes-Benz","lat":40.1740,"lon":-80.2462,"kw":150,"off":0.44,"on":0.44,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/"},
       {"id":"ea-belle-vernon-pa","name":"Electrify America - Belle Vernon, PA","network":"Electrify America","lat":40.1265,"lon":-79.8695,"kw":150,"off":0.40,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/237974"},
       {"id":"ea-new-stanton-pa","name":"Sheetz / EA - New Stanton, PA","network":"Electrify America","lat":40.2187,"lon":-79.6103,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/451444"},
@@ -885,6 +895,14 @@
         minSlider.value = minVal;
       }
       updateTimeGapDisplays(minVal, maxVal);
+    }
+
+    function handleMinChargePctChange(val) {
+      const pct = parseInt(val) || 15;
+      const kwh = (pct * 0.85).toFixed(1);
+      const approx_mins = Math.max(5, Math.round((pct * 0.85 / 70.0) * 60 + 2));
+      const disp = document.getElementById('minChargePctDisplay');
+      if (disp) disp.innerText = `${pct}% (~${kwh} kWh / ~${approx_mins} min)`;
     }
 
     function updateTimeGapDisplays(minVal, maxVal) {
@@ -2573,6 +2591,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
       const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 45);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 120);
+      const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 15) / 100.0;
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
       const wind_dir = parseFloat(document.getElementById('windDir').value);
@@ -2850,15 +2869,18 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             // Generate expanded targets: 50% to 90% in 5% increments plus exact finish targets
             const targetSet = new Set();
+            const min_target_allowed = arr_soc + min_charge_pct;
+            if (min_target_allowed > 0.95) continue; // Cannot charge minimum required without exceeding max safe SoC
+
             if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
-              const tgtFinish = Math.max(arr_soc + 0.05, Math.round(dest_needed_soc * 100) / 100.0);
+              const tgtFinish = Math.max(min_target_allowed, Math.round(dest_needed_soc * 100) / 100.0);
               if (tgtFinish <= 0.90) targetSet.add(tgtFinish);
               if (tgtFinish + 0.05 <= 0.90) targetSet.add(Math.round((tgtFinish + 0.05) * 100) / 100.0);
             }
             [0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90].forEach(t => {
-              if (t >= (arr_soc + 0.05)) targetSet.add(t);
+              if (t >= min_target_allowed) targetSet.add(t);
             });
-            const min_target = Math.min(0.90, Math.max(arr_soc + 0.05, Math.ceil((arr_soc + 0.05) * 20.0) / 20.0));
+            const min_target = Math.min(0.90, Math.max(min_target_allowed, Math.ceil(min_target_allowed * 20.0) / 20.0));
             targetSet.add(min_target);
 
             const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
@@ -3195,7 +3217,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const cand_target = sp.tgt_soc / 100.0;
           let target_soc = Math.max(cand_target, min_safe_departure);
-          target_soc = Math.min(0.92, Math.max(current_soc + 0.05, target_soc));
+          target_soc = Math.min(0.92, Math.max(current_soc + min_charge_pct, target_soc));
 
           const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate, sp.station);
           const stop_mins = Math.round(ch.mins + sp.setup_mins);
@@ -3838,6 +3860,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       'ag-waterfall-pa': { on: 0.55, off: 0.55, url: 'https://dcfctracker.com/stations/451875', verified: true },
       'ea-belle-vernon-pa': { on: 0.60, off: 0.40, url: 'https://dcfctracker.com/stations/237974', verified: true },
       'ionna-cambridge-oh': { on: 0.39, off: 0.39, url: 'https://dcfctracker.com/stations/454141', verified: true },
+      'evgo-pilot-belmont-oh': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
+      'ocm-306630': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
       'mb-washington-pa': { on: 0.44, off: 0.44, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
       'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://dcfctracker.com/stations/194073', verified: true },
       'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://dcfctracker.com/stations/397535', verified: true },

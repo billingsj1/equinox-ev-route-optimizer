@@ -617,5 +617,38 @@
     "session_fee": 0.0,
     "plugshare_url": "https://dcfctracker.com/stations/448358",
     "price_verified": true
+  },
+  {
+    "id": "evgo-pilot-belmont-oh",
+    "name": "EVgo - Pilot Travel Center - Belmont, OH",
+    "network": "EVgo",
+    "city": "Belmont",
+    "state": "OH",
+    "latitude": 40.0578,
+    "longitude": -81.0507,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.53,
+      "on_peak": 0.53
+    },
+    "gm_discount_eligible": false,
+    "gm_discount_pct": 0.0,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.53,
+      "on_peak": 0.53
+    },
+    "tou_hours": {
+      "off_peak": "00:00-24:00",
+      "on_peak": "00:00-24:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://dcfctracker.com/stations/306630",
+    "price_verified": true,
+    "ocm_id": 306630
   }
 ]
