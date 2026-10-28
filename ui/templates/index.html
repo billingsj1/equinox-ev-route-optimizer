@@ -3011,6 +3011,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Run forward search strictly adhering to user's min/max stop spacing guidelines
       const stage1_candidates = await runStage1Search(min_leg_mins, max_leg_mins);
+      window.lastStage1Candidates = stage1_candidates;
 
       const alertBanner = document.getElementById('alertBanner');
       const alertMsg = document.getElementById('alertMessage');
@@ -3052,16 +3053,16 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Metric 2: Select Top candidates across speed, cost (capped & global), Pareto knee, and per-corridor diversity
       const sortedBySpeed = [...stage1_candidates].sort((a, b) => a.total_hours - b.total_hours);
-      const top_fastest = sortedBySpeed.slice(0, 15);
+      const top_fastest = sortedBySpeed.slice(0, 25);
 
       const sortedByCost = [...stage1_candidates].sort((a, b) => a.total_cost - b.total_cost);
-      const top_cheapest_global = sortedByCost.slice(0, 15);
+      const top_cheapest_global = sortedByCost.slice(0, 25);
 
       // Top cheapest candidates within duration cap (+15% of Stage-1 fastest)
       // This guarantees the faster corridor (e.g. PA Turnpike) has its lowest-cost options selected even when toll-free corridors dominate global cost
       const min_stage1_hours = sortedBySpeed[0].total_hours;
       const capped_candidates = stage1_candidates.filter(c => c.total_hours <= (min_stage1_hours * 1.15));
-      const top_cheapest_capped = [...capped_candidates].sort((a, b) => a.total_cost - b.total_cost).slice(0, 15);
+      const top_cheapest_capped = [...capped_candidates].sort((a, b) => a.total_cost - b.total_cost).slice(0, 25);
 
       const min_t = sortedBySpeed[0].total_hours;
       let max_t = -Infinity, min_c = Infinity, max_c = -Infinity;
@@ -3078,16 +3079,16 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         c.knee_dist = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
       });
       const sortedByKnee = [...stage1_candidates].sort((a, b) => a.knee_dist - b.knee_dist);
-      const top_balanced = sortedByKnee.slice(0, 15);
+      const top_balanced = sortedByKnee.slice(0, 25);
 
       // Per-Corridor Diversity: ensure each active highway corridor is represented with its best fast, cheap, and balanced variants
       const perCorridorTop = [];
       activeRoutesData.forEach(r => {
         const routeCands = stage1_candidates.filter(c => c.route.id === r.id);
         if (routeCands.length > 0) {
-          const rFast = routeCands.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, 8);
-          const rCheap = routeCands.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, 8);
-          const rKnee = routeCands.slice().sort((a, b) => a.knee_dist - b.knee_dist).slice(0, 8);
+          const rFast = routeCands.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, 10);
+          const rCheap = routeCands.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, 10);
+          const rKnee = routeCands.slice().sort((a, b) => a.knee_dist - b.knee_dist).slice(0, 10);
           for (let i = 0; i < rFast.length; i++) perCorridorTop.push(rFast[i]);
           for (let i = 0; i < rCheap.length; i++) perCorridorTop.push(rCheap[i]);
           for (let i = 0; i < rKnee.length; i++) perCorridorTop.push(rKnee[i]);
