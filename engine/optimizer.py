@@ -177,7 +177,8 @@ class MultiObjectiveOptimizer:
                     min_needed_target = remaining_leg_soc + profile.min_safety_buffer_soc + 0.05
                     target_soc = max(min_needed_target, 0.75)
 
-                target_soc = min(0.95, max(current_soc + 0.05, target_soc))
+                min_floor = current_soc + getattr(profile, 'min_charge_added_soc', 0.15)
+                target_soc = min(0.95, max(min_floor, target_soc))
 
                 effective_rate = self.station_mgr.get_effective_rate(
                     station,
