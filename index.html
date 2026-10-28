@@ -1478,10 +1478,7 @@
               target_mph = Math.min(base_mph, 30.0);
             }
           } else if (posted_speed >= 65.0) {
-            // Calibrated multi-state highway cruising speed (~66.8 mph) yielding ~7:45 non-stop driving baseline for 486 mi route
-            if (traffic_profile === 'typical') {
-              target_mph = Math.min(base_mph, 67.0);
-            } else if (traffic_profile === 'rush_hour') {
+            if (traffic_profile === 'rush_hour') {
               target_mph = Math.min(base_mph, 56.0);
             }
           } else if (posted_speed > 45.0) {
