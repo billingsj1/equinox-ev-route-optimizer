@@ -2274,6 +2274,23 @@
                       const sumSpdDist = parsedSteps.reduce((acc, s) => acc + (s.posted_speed * s.distance_miles), 0);
                       const weightedLimit = totalStepDist > 0 ? (sumSpdDist / totalStepDist) : 68.0;
 
+                      // 2026 NJ Turnpike Entry 6 to Exit 4 toll calculation:
+                      // Cash: $4.70, Peak E-ZPass: $4.60, Off-Peak E-ZPass: $3.45
+                      // 10% EV Green Pass Discount (Off-Peak): $3.11
+                      const has_green_pass = document.getElementById('hasNjGreenPass')?.checked ?? true;
+                      const depVal = document.getElementById('departureTime')?.value || "08:00";
+                      const depParts = depVal.split(':');
+                      const depHour = parseFloat(depParts[0]) + (parseFloat(depParts[1] || 0) / 60.0);
+                      const njArrHour = (depHour + 6.5) % 24.0;
+                      const isNjPeak = (njArrHour >= 7.0 && njArrHour < 9.0) || (njArrHour >= 16.5 && njArrHour < 18.5);
+
+                      let njToll = 4.70;
+                      if (has_ezpass) {
+                        njToll = isNjPeak ? 4.60 : (has_green_pass ? 3.11 : 3.45);
+                      }
+                      const paTollToDelRiver = has_ezpass ? 45.46 : 90.90;
+                      const njBypassToll = Math.round((paTollToDelRiver + njToll) * 100) / 100;
+
                       activeRoutesData.push({
                         id: "pa_turnpike_njtpk_osrm",
                         name: "Route: PA Turnpike to NJ Turnpike Bypass (Exit 6 to 4 / Mount Laurel)",
@@ -2282,7 +2299,7 @@
                         speed_mph: Math.round(weightedLimit * 10) / 10,
                         steps: parsedSteps,
                         speed_profile_text: "65-70 mph PA Turnpike & NJ Turnpike Bypass (Free-Flow Congestion Bypass)",
-                        toll: has_ezpass ? 47.56 : 95.10,
+                        toll: njBypassToll,
                         coordinates: r.geometry.coordinates,
                         origin: originGeo,
                         destination: destGeo
@@ -2561,7 +2578,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               { name: "New Jersey Turnpike (Exit 6 to 4)", ref: "NJ Turnpike", distance_miles: 17.5, posted_speed: 65.0 },
               { name: "State Route 73 to Marlton", ref: "NJ 73", distance_miles: 3.2, posted_speed: 45.0 }
             ],
-            toll: has_ezpass ? 47.56 : 95.10,
+            toll: has_ezpass ? ((document.getElementById('hasNjGreenPass')?.checked ?? true) ? 48.57 : 48.91) : 95.60,
             coordinates: [
               [originGeo.lon, originGeo.lat],
               [-81.5833, 40.0345], // Cambridge
@@ -4168,8 +4185,27 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           </tr>` : ''}
           <tr class="bg-slate-950/60 font-mono text-xs">
             <td colspan="8" class="py-1.5 px-3 text-right text-slate-400 font-sans">
-              <div>Highway Tolls (2026 PA Turnpike E-ZPass):</div>
-              <div class="text-[10px] text-slate-500 font-normal">Class 1 (2L) &bull; New Stanton #75 to Valley Forge #326 per Jan 4, 2026 Schedule</div>
+              ${(() => {
+                let tollTitle = "Highway Tolls (2026 PA Turnpike E-ZPass):";
+                let tollSubtitle = "Class 1 (2L) &bull; New Stanton #75 to Valley Forge #326 per Jan 4, 2026 Schedule";
+                if (itin.route && itin.route.id && itin.route.id.includes("njtpk")) {
+                  const hasGreen = document.getElementById('hasNjGreenPass')?.checked ?? true;
+                  tollTitle = "Highway Tolls (2026 PA Turnpike + NJ Turnpike):";
+                  tollSubtitle = hasGreen 
+                    ? "Class 1 &bull; PA Tpk #75 to #43 ($45.46) + NJ Tpk Exit 6 to 4 ($3.11 with 10% EV Green Pass)"
+                    : "Class 1 &bull; PA Tpk #75 to #43 ($45.46) + NJ Tpk Exit 6 to 4 ($3.45 Off-Peak / $4.60 Peak)";
+                } else if (itin.route && itin.route.id && itin.route.id.includes("md_i68")) {
+                  tollTitle = "Highway Tolls (Toll-Free Scenic Corridor):";
+                  tollSubtitle = "I-68 &bull; I-295 &bull; Delaware Memorial Bridge Eastbound into NJ ($0.00 Free)";
+                } else if (itin.toll_cost === 0) {
+                  tollTitle = "Highway Tolls:";
+                  tollSubtitle = "No highway tolls on this route ($0.00)";
+                } else if (itin.route && itin.route.destination && (itin.route.destination.name.toLowerCase().includes("decamilla") || itin.route.destination.name.toLowerCase().includes("dillsburg"))) {
+                  tollTitle = "Highway Tolls (2026 PA Turnpike E-ZPass):";
+                  tollSubtitle = "Class 1 (2L) &bull; New Stanton #75 to Gettysburg Pike #236 ($21.95)";
+                }
+                return `<div>${tollTitle}</div><div class="text-[10px] text-slate-500 font-normal">${tollSubtitle}</div>`;
+              })()}
             </td>
             <td colspan="4" class="py-1.5 px-3 text-slate-300 font-semibold align-top">$${itin.toll_cost.toFixed(2)}</td>
           </tr>
