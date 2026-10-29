@@ -10450,225 +10450,229 @@
   ],
   "tesla": [
     {
-      "id": "tesla-hamilton-nj",
-      "slug": "424861",
+      "id": "tesla-15015",
       "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Hamilton Township, NJ",
-      "city": "Hamilton Township",
+      "name": "Tesla Supercharger (+CCS1) - Piscataway, NJ",
+      "slug": "15015",
+      "city": "Piscataway",
       "state": "NJ",
-      "lat": 40.1923,
-      "lon": -74.6467,
+      "lat": 40.5398,
+      "lon": -74.502,
       "power_kw": 325,
-      "rate_on": 0.72,
-      "rate_off": 0.72,
-      "mem_on": 0.48,
-      "mem_off": 0.34,
-      "is_tou": true,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
       "tou_rates": [
         {
           "start": "00:00",
           "end": "08:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.34,
-          "mem_off": 0.34,
-          "label": "Low Congestion (<20%)"
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
         },
         {
           "start": "08:00",
           "end": "23:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.48,
-          "mem_off": 0.48,
-          "label": "Normal Congestion (20-60%)"
-        },
-        {
-          "start": "23:00",
-          "end": "24:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.34,
-          "mem_off": 0.34,
-          "label": "Low Congestion (<20%)"
-        }
-      ],
-      "url": "https://www.tesla.com/findus/location/supercharger/424861",
-      "verified": true,
-      "last_scraped": "2026-10-28"
-    },
-    {
-      "id": "tesla-medford-nj",
-      "slug": "19516",
-      "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Medford, NJ",
-      "city": "Medford",
-      "state": "NJ",
-      "lat": 39.9046,
-      "lon": -74.8051,
-      "power_kw": 250,
-      "rate_on": 0.72,
-      "rate_off": 0.72,
-      "mem_on": 0.48,
-      "mem_off": 0.34,
-      "is_tou": true,
-      "tou_rates": [
-        {
-          "start": "00:00",
-          "end": "17:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.34,
-          "mem_off": 0.34,
-          "label": "Low Congestion (<20%)"
-        },
-        {
-          "start": "17:00",
-          "end": "19:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.48,
-          "mem_off": 0.48,
-          "label": "Normal Congestion (20-60%)"
-        },
-        {
-          "start": "19:00",
-          "end": "24:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.34,
-          "mem_off": 0.34,
-          "label": "Low Congestion (<20%)"
-        }
-      ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19516",
-      "verified": true,
-      "last_scraped": "2026-10-28"
-    },
-    {
-      "id": "tesla-waynesburg-pa",
-      "slug": "401410",
-      "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Waynesburg, PA",
-      "city": "Waynesburg",
-      "state": "PA",
-      "lat": 39.8978,
-      "lon": -80.1345,
-      "power_kw": 325,
-      "rate_on": 0.57,
-      "rate_off": 0.57,
-      "mem_on": 0.41,
-      "mem_off": 0.41,
-      "is_tou": false,
-      "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/401410",
-      "verified": true,
-      "last_scraped": "2026-10-28"
-    },
-    {
-      "id": "tesla-timonium-md",
-      "slug": "33688",
-      "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Timonium, MD",
-      "city": "Timonium",
-      "state": "MD",
-      "lat": 39.4559,
-      "lon": -76.6365,
-      "power_kw": 325,
-      "rate_on": 0.6,
-      "rate_off": 0.38,
-      "mem_on": 0.43,
-      "mem_off": 0.27,
-      "is_tou": true,
-      "tou_rates": [
-        {
-          "start": "00:00",
-          "end": "08:00",
-          "on": 0.38,
-          "off": 0.38,
-          "mem_on": 0.27,
-          "mem_off": 0.27,
-          "label": "Off-Peak"
-        },
-        {
-          "start": "08:00",
-          "end": "19:00",
-          "on": 0.6,
-          "off": 0.6,
-          "mem_on": 0.43,
-          "mem_off": 0.43,
-          "label": "Day Peak"
-        },
-        {
-          "start": "19:00",
-          "end": "23:00",
-          "on": 0.53,
-          "off": 0.53,
-          "mem_on": 0.38,
-          "mem_off": 0.38,
-          "label": "Evening Mid-Peak"
-        },
-        {
-          "start": "23:00",
-          "end": "24:00",
-          "on": 0.38,
-          "off": 0.38,
-          "mem_on": 0.27,
-          "mem_off": 0.27,
-          "label": "Off-Peak"
-        }
-      ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33688",
-      "verified": true,
-      "last_scraped": "2026-10-28"
-    },
-    {
-      "id": "tesla-shrewsbury-pa",
-      "slug": "36287",
-      "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Shrewsbury, PA",
-      "city": "Shrewsbury",
-      "state": "PA",
-      "lat": 39.7688,
-      "lon": -76.6698,
-      "power_kw": 325,
-      "rate_on": 0.68,
-      "rate_off": 0.3,
-      "mem_on": 0.49,
-      "mem_off": 0.22,
-      "is_tou": true,
-      "tou_rates": [
-        {
-          "start": "00:00",
-          "end": "08:00",
-          "on": 0.3,
-          "off": 0.3,
-          "mem_on": 0.22,
-          "mem_off": 0.22,
-          "label": "Off-Peak"
-        },
-        {
-          "start": "08:00",
-          "end": "22:00",
-          "on": 0.68,
-          "off": 0.68,
-          "mem_on": 0.49,
-          "mem_off": 0.49,
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
           "label": "Peak"
         },
         {
-          "start": "22:00",
+          "start": "23:00",
           "end": "24:00",
-          "on": 0.3,
-          "off": 0.3,
-          "mem_on": 0.22,
-          "mem_off": 0.22,
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/36287",
-      "verified": true,
-      "last_scraped": "2026-10-28"
+      "url": "https://www.tesla.com/findus/location/supercharger/15015"
+    },
+    {
+      "id": "tesla-20521",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Carteret, NJ",
+      "slug": "20521",
+      "city": "Carteret",
+      "state": "NJ",
+      "lat": 40.5885,
+      "lon": -74.227,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/20521"
+    },
+    {
+      "id": "tesla-27409",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - North Brunswick Township, NJ",
+      "slug": "27409",
+      "city": "North Brunswick",
+      "state": "NJ",
+      "lat": 40.4599,
+      "lon": -74.4556,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/27409"
+    },
+    {
+      "id": "tesla-woodclifflakenjsupercharger",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Woodcliff Lake, NJ",
+      "slug": "WoodcliffLakeNJsupercharger",
+      "city": "Woodcliff Lake",
+      "state": "NJ",
+      "lat": 41.0418,
+      "lon": -74.0737,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/WoodcliffLakeNJsupercharger"
+    },
+    {
+      "id": "tesla-20627",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Newark, NJ - Lindbergh Rd",
+      "slug": "20627",
+      "city": "Newark",
+      "state": "NJ",
+      "lat": 40.6916,
+      "lon": -74.1843,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/20627"
     },
     {
       "id": "tesla-aston-pa",
@@ -10728,6 +10732,382 @@
       "last_scraped": "2026-10-28"
     },
     {
+      "id": "tesla-eastonmdsupercharger",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Easton, MD",
+      "slug": "eastonmdsupercharger",
+      "city": "Easton",
+      "state": "MD",
+      "lat": 38.7593,
+      "lon": -76.0614,
+      "power_kw": 250,
+      "rate_on": 0.56,
+      "rate_off": 0.36,
+      "mem_on": 0.39,
+      "mem_off": 0.25,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.56,
+          "off": 0.56,
+          "mem_on": 0.39,
+          "mem_off": 0.39,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/eastonmdsupercharger"
+    },
+    {
+      "id": "tesla-457753",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Woodcliff Lake, NJ - Chestnut Ridge Rd",
+      "slug": "457753",
+      "city": "Woodcliff Lake",
+      "state": "NJ",
+      "lat": 41.0438,
+      "lon": -74.0721,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/457753"
+    },
+    {
+      "id": "tesla-409159",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Laurel, MD - 3470 Fort Meade Rd",
+      "slug": "409159",
+      "city": "Laurel",
+      "state": "MD",
+      "lat": 39.1009,
+      "lon": -76.8175,
+      "power_kw": 325,
+      "rate_on": 0.6,
+      "rate_off": 0.38,
+      "mem_on": 0.43,
+      "mem_off": 0.27,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "19:00",
+          "on": 0.6,
+          "off": 0.6,
+          "mem_on": 0.43,
+          "mem_off": 0.43,
+          "label": "Day Peak"
+        },
+        {
+          "start": "19:00",
+          "end": "23:00",
+          "on": 0.53,
+          "off": 0.53,
+          "mem_on": 0.38,
+          "mem_off": 0.38,
+          "label": "Evening Mid-Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/409159"
+    },
+    {
+      "id": "tesla-waynesburg-pa",
+      "slug": "401410",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Waynesburg, PA",
+      "city": "Waynesburg",
+      "state": "PA",
+      "lat": 39.8978,
+      "lon": -80.1345,
+      "power_kw": 325,
+      "rate_on": 0.57,
+      "rate_off": 0.57,
+      "mem_on": 0.41,
+      "mem_off": 0.41,
+      "is_tou": false,
+      "tou_rates": [],
+      "url": "https://www.tesla.com/findus/location/supercharger/401410",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-shrewsbury-pa",
+      "slug": "36287",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Shrewsbury, PA",
+      "city": "Shrewsbury",
+      "state": "PA",
+      "lat": 39.7688,
+      "lon": -76.6698,
+      "power_kw": 325,
+      "rate_on": 0.68,
+      "rate_off": 0.3,
+      "mem_on": 0.49,
+      "mem_off": 0.22,
+      "is_tou": true,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.3,
+          "off": 0.3,
+          "mem_on": 0.22,
+          "mem_off": 0.22,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "22:00",
+          "on": 0.68,
+          "off": 0.68,
+          "mem_on": 0.49,
+          "mem_off": 0.49,
+          "label": "Peak"
+        },
+        {
+          "start": "22:00",
+          "end": "24:00",
+          "on": 0.3,
+          "off": 0.3,
+          "mem_on": 0.22,
+          "mem_off": 0.22,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/36287",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-26846",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Camp Springs, MD",
+      "slug": "26846",
+      "city": "Camp Springs",
+      "state": "MD",
+      "lat": 38.8072,
+      "lon": -76.904,
+      "power_kw": 325,
+      "rate_on": 0.6,
+      "rate_off": 0.38,
+      "mem_on": 0.43,
+      "mem_off": 0.27,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "19:00",
+          "on": 0.6,
+          "off": 0.6,
+          "mem_on": 0.43,
+          "mem_off": 0.43,
+          "label": "Day Peak"
+        },
+        {
+          "start": "19:00",
+          "end": "23:00",
+          "on": 0.53,
+          "off": 0.53,
+          "mem_on": 0.38,
+          "mem_off": 0.38,
+          "label": "Evening Mid-Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/26846"
+    },
+    {
+      "id": "tesla-salisburysupercharger",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Salisbury, MD",
+      "slug": "salisburysupercharger",
+      "city": "Salisbury",
+      "state": "MD",
+      "lat": 38.4016,
+      "lon": -75.5648,
+      "power_kw": 325,
+      "rate_on": 0.56,
+      "rate_off": 0.36,
+      "mem_on": 0.39,
+      "mem_off": 0.25,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.56,
+          "off": 0.56,
+          "mem_on": 0.39,
+          "mem_off": 0.39,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/salisburysupercharger"
+    },
+    {
+      "id": "tesla-fort-littleton-pa",
+      "slug": "26674",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Fort Littleton, PA",
+      "city": "Fort Littleton",
+      "state": "PA",
+      "lat": 40.0495,
+      "lon": -77.962,
+      "power_kw": 250,
+      "rate_on": 0.56,
+      "rate_off": 0.56,
+      "mem_on": 0.41,
+      "mem_off": 0.41,
+      "is_tou": false,
+      "tou_rates": [],
+      "url": "https://www.tesla.com/findus/location/supercharger/26674",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-4007754",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - East Windsor, NJ",
+      "slug": "4007754",
+      "city": "East Windsor",
+      "state": "NJ",
+      "lat": 40.267,
+      "lon": -74.4926,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/4007754"
+    },
+    {
       "id": "tesla-lawnside-nj",
       "slug": "402407",
       "network": "Tesla",
@@ -10774,6 +11154,866 @@
       "url": "https://www.tesla.com/findus/location/supercharger/402407",
       "verified": true,
       "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-woodlyn-pa",
+      "slug": "59209",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Woodlyn, PA",
+      "city": "Woodlyn",
+      "state": "PA",
+      "lat": 39.8699,
+      "lon": -75.353,
+      "power_kw": 250,
+      "rate_on": 0.62,
+      "rate_off": 0.32,
+      "mem_on": 0.44,
+      "mem_off": 0.23,
+      "is_tou": true,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.32,
+          "off": 0.32,
+          "mem_on": 0.23,
+          "mem_off": 0.23,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "20:00",
+          "on": 0.62,
+          "off": 0.62,
+          "mem_on": 0.44,
+          "mem_off": 0.44,
+          "label": "Peak"
+        },
+        {
+          "start": "20:00",
+          "end": "24:00",
+          "on": 0.43,
+          "off": 0.43,
+          "mem_on": 0.31,
+          "mem_off": 0.31,
+          "label": "Mid-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/59209",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-19520",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Selinsgrove, PA",
+      "slug": "19520",
+      "city": "Selinsgrove",
+      "state": "PA",
+      "lat": 40.8409,
+      "lon": -76.838,
+      "power_kw": 325,
+      "rate_on": 0.56,
+      "rate_off": 0.56,
+      "mem_on": 0.41,
+      "mem_off": 0.41,
+      "tou_rates": [],
+      "url": "https://www.tesla.com/findus/location/supercharger/19520"
+    },
+    {
+      "id": "tesla-blackwood-nj",
+      "slug": "59126",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Blackwood, NJ",
+      "city": "Blackwood",
+      "state": "NJ",
+      "lat": 39.7866,
+      "lon": -75.0546,
+      "power_kw": 250,
+      "rate_on": 0.73,
+      "rate_off": 0.38,
+      "mem_on": 0.52,
+      "mem_off": 0.27,
+      "is_tou": true,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.73,
+          "off": 0.73,
+          "mem_on": 0.52,
+          "mem_off": 0.52,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/59126",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-439816",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Rochelle Park, NJ",
+      "slug": "439816",
+      "city": "Rochelle Park",
+      "state": "NJ",
+      "lat": 40.9142,
+      "lon": -74.0791,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/439816"
+    },
+    {
+      "id": "tesla-14696",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Hackensack, NJ",
+      "slug": "14696",
+      "city": "Hackensack",
+      "state": "NJ",
+      "lat": 40.9077,
+      "lon": -74.0308,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/14696"
+    },
+    {
+      "id": "tesla-34872",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Paramus, NJ - 200 NJ-17",
+      "slug": "34872",
+      "city": "Paramus",
+      "state": "NJ",
+      "lat": 40.9344,
+      "lon": -74.0686,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/34872"
+    },
+    {
+      "id": "tesla-avenelnjsupercharger",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Avenel, NJ",
+      "slug": "AvenelNJSupercharger",
+      "city": "Avenel",
+      "state": "NJ",
+      "lat": 40.5768,
+      "lon": -74.2876,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/AvenelNJSupercharger"
+    },
+    {
+      "id": "tesla-462857",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Bellmawr, NJ - Creek Rd",
+      "slug": "462857",
+      "city": "Bellmawr",
+      "state": "NJ",
+      "lat": 39.8647,
+      "lon": -75.1001,
+      "power_kw": 500,
+      "rate_on": 0.72,
+      "rate_off": 0.72,
+      "mem_on": 0.48,
+      "mem_off": 0.34,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Off-Peak (12am-8am)"
+        },
+        {
+          "start": "08:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.48,
+          "mem_off": 0.48,
+          "label": "Peak (8am-12am)"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/462857"
+    },
+    {
+      "id": "tesla-littleferrynjq322",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Little Ferry, NJ",
+      "slug": "LittleFerryNJQ322",
+      "city": "Little Ferry",
+      "state": "NJ",
+      "lat": 40.8551,
+      "lon": -74.0333,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/LittleFerryNJQ322"
+    },
+    {
+      "id": "tesla-perthamboynjq322",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Perth Amboy, NJ",
+      "slug": "PerthAmboyNJQ322",
+      "city": "Perth Amboy",
+      "state": "NJ",
+      "lat": 40.5176,
+      "lon": -74.2862,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/PerthAmboyNJQ322"
+    },
+    {
+      "id": "tesla-4008208",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Pennsauken Township, NJ",
+      "slug": "4008208",
+      "city": "Pennsauken Township",
+      "state": "NJ",
+      "lat": 39.9638,
+      "lon": -75.0505,
+      "power_kw": 325,
+      "rate_on": 0.72,
+      "rate_off": 0.72,
+      "mem_on": 0.48,
+      "mem_off": 0.34,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Off-Peak (12am-8am)"
+        },
+        {
+          "start": "08:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.48,
+          "mem_off": 0.48,
+          "label": "Peak (8am-12am)"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/4008208"
+    },
+    {
+      "id": "tesla-59230",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Jessup, MD",
+      "slug": "59230",
+      "city": "Jessup",
+      "state": "MD",
+      "lat": 39.1425,
+      "lon": -76.7611,
+      "power_kw": 325,
+      "rate_on": 0.6,
+      "rate_off": 0.38,
+      "mem_on": 0.43,
+      "mem_off": 0.27,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "19:00",
+          "on": 0.6,
+          "off": 0.6,
+          "mem_on": 0.43,
+          "mem_off": 0.43,
+          "label": "Day Peak"
+        },
+        {
+          "start": "19:00",
+          "end": "23:00",
+          "on": 0.53,
+          "off": 0.53,
+          "mem_on": 0.38,
+          "mem_off": 0.38,
+          "label": "Evening Mid-Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/59230"
+    },
+    {
+      "id": "tesla-26134",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Glen Burnie, MD",
+      "slug": "26134",
+      "city": "Glen Burnie",
+      "state": "MD",
+      "lat": 39.1421,
+      "lon": -76.6487,
+      "power_kw": 325,
+      "rate_on": 0.6,
+      "rate_off": 0.38,
+      "mem_on": 0.43,
+      "mem_off": 0.27,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "19:00",
+          "on": 0.6,
+          "off": 0.6,
+          "mem_on": 0.43,
+          "mem_off": 0.43,
+          "label": "Day Peak"
+        },
+        {
+          "start": "19:00",
+          "end": "23:00",
+          "on": 0.53,
+          "off": 0.53,
+          "mem_on": 0.38,
+          "mem_off": 0.38,
+          "label": "Evening Mid-Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.38,
+          "off": 0.38,
+          "mem_on": 0.27,
+          "mem_off": 0.27,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/26134"
+    },
+    {
+      "id": "tesla-493954",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - [Pioneer Coffee] Dalton, OH",
+      "slug": "493954",
+      "city": "Dalton",
+      "state": "OH",
+      "lat": 40.7958,
+      "lon": -81.6962,
+      "power_kw": 325,
+      "rate_on": 0.52,
+      "rate_off": 0.36,
+      "mem_on": 0.37,
+      "mem_off": 0.25,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.52,
+          "off": 0.52,
+          "mem_on": 0.37,
+          "mem_off": 0.37,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/493954"
+    },
+    {
+      "id": "tesla-59145",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Bellmawr, NJ",
+      "slug": "59145",
+      "city": "Bellmawr",
+      "state": "NJ",
+      "lat": 39.8656,
+      "lon": -75.0796,
+      "power_kw": 325,
+      "rate_on": 0.72,
+      "rate_off": 0.72,
+      "mem_on": 0.48,
+      "mem_off": 0.34,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Off-Peak (12am-8am)"
+        },
+        {
+          "start": "08:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.48,
+          "mem_off": 0.48,
+          "label": "Peak (8am-12am)"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/59145"
+    },
+    {
+      "id": "tesla-35810",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Harrison, NJ",
+      "slug": "35810",
+      "city": "Harrison",
+      "state": "NJ",
+      "lat": 40.7435,
+      "lon": -74.1555,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/35810"
+    },
+    {
+      "id": "tesla-4008768",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Teaneck, NJ",
+      "slug": "4008768",
+      "city": "Teaneck",
+      "state": "NJ",
+      "lat": 40.871,
+      "lon": -74.0052,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/4008768"
+    },
+    {
+      "id": "tesla-59149",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Magnolia, NJ",
+      "slug": "59149",
+      "city": "Magnolia",
+      "state": "NJ",
+      "lat": 39.8559,
+      "lon": -75.0285,
+      "power_kw": 325,
+      "rate_on": 0.72,
+      "rate_off": 0.72,
+      "mem_on": 0.48,
+      "mem_off": 0.34,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Off-Peak (12am-8am)"
+        },
+        {
+          "start": "08:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.48,
+          "mem_off": 0.48,
+          "label": "Peak (8am-12am)"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/59149"
+    },
+    {
+      "id": "tesla-eastrutherfordnjsupercharger",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - East Rutherford, NJ",
+      "slug": "EastRutherfordNJSupercharger",
+      "city": "East Rutherford",
+      "state": "NJ",
+      "lat": 40.8116,
+      "lon": -74.0649,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/EastRutherfordNJSupercharger"
+    },
+    {
+      "id": "tesla-45408",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Princeton, NJ",
+      "slug": "45408",
+      "city": "Princeton",
+      "state": "NJ",
+      "lat": 40.4018,
+      "lon": -74.6514,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/45408"
     },
     {
       "id": "tesla-summerdale-pa",
@@ -10831,6 +12071,819 @@
       "url": "https://www.tesla.com/findus/location/supercharger/33951",
       "verified": true,
       "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-453502",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Middle Township, NJ",
+      "slug": "453502",
+      "city": "Middle Township",
+      "state": "NJ",
+      "lat": 39.0781,
+      "lon": -74.8258,
+      "power_kw": 325,
+      "rate_on": 0.65,
+      "rate_off": 0.45,
+      "mem_on": 0.44,
+      "mem_off": 0.3,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.45,
+          "off": 0.45,
+          "mem_on": 0.3,
+          "mem_off": 0.3,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.65,
+          "off": 0.65,
+          "mem_on": 0.44,
+          "mem_off": 0.44,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.45,
+          "off": 0.45,
+          "mem_on": 0.3,
+          "mem_off": 0.3,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/453502"
+    },
+    {
+      "id": "tesla-19498",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - North Bergen, NJ - Tonnelle Ave",
+      "slug": "19498",
+      "city": "North Bergen",
+      "state": "NJ",
+      "lat": 40.803,
+      "lon": -74.0194,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/19498"
+    },
+    {
+      "id": "tesla-453452",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Egg Harbor Township, NJ - 6678 Black Horse Pike",
+      "slug": "453452",
+      "city": "Egg Harbor Township",
+      "state": "NJ",
+      "lat": 39.4108,
+      "lon": -74.5679,
+      "power_kw": 325,
+      "rate_on": 0.65,
+      "rate_off": 0.45,
+      "mem_on": 0.44,
+      "mem_off": 0.3,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.45,
+          "off": 0.45,
+          "mem_on": 0.3,
+          "mem_off": 0.3,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.65,
+          "off": 0.65,
+          "mem_on": 0.44,
+          "mem_off": 0.44,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.45,
+          "off": 0.45,
+          "mem_on": 0.3,
+          "mem_off": 0.3,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/453452"
+    },
+    {
+      "id": "tesla-4008968",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Hackensack, NJ - W Pleasantview Ave",
+      "slug": "4008968",
+      "city": "Hackensack",
+      "state": "NJ",
+      "lat": 40.8759,
+      "lon": -74.0656,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/4008968"
+    },
+    {
+      "id": "tesla-33689",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Easton, MD - Ocean Gtwy",
+      "slug": "33689",
+      "city": "Easton",
+      "state": "MD",
+      "lat": 38.7821,
+      "lon": -76.0613,
+      "power_kw": 325,
+      "rate_on": 0.56,
+      "rate_off": 0.36,
+      "mem_on": 0.39,
+      "mem_off": 0.25,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.56,
+          "off": 0.56,
+          "mem_on": 0.39,
+          "mem_off": 0.39,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.36,
+          "off": 0.36,
+          "mem_on": 0.25,
+          "mem_off": 0.25,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/33689"
+    },
+    {
+      "id": "tesla-edisonnjsupercharger2",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Edison, NJ - U.S. Route 1",
+      "slug": "EdisonNJSupercharger2",
+      "city": "Edison",
+      "state": "NJ",
+      "lat": 40.5062,
+      "lon": -74.3936,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/EdisonNJSupercharger2"
+    },
+    {
+      "id": "tesla-mt-laurel-nj",
+      "slug": "406608",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Mt Laurel, NJ",
+      "city": "Mt Laurel",
+      "state": "NJ",
+      "lat": 39.9337,
+      "lon": -74.9635,
+      "power_kw": 250,
+      "rate_on": 0.51,
+      "rate_off": 0.35,
+      "mem_on": 0.38,
+      "mem_off": 0.26,
+      "is_tou": true,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "10:00",
+          "on": 0.35,
+          "off": 0.35,
+          "mem_on": 0.26,
+          "mem_off": 0.26,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "10:00",
+          "end": "22:00",
+          "on": 0.51,
+          "off": 0.51,
+          "mem_on": 0.38,
+          "mem_off": 0.38,
+          "label": "Peak"
+        },
+        {
+          "start": "22:00",
+          "end": "24:00",
+          "on": 0.35,
+          "off": 0.35,
+          "mem_on": 0.26,
+          "mem_off": 0.26,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/406608",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-425863",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Paramus, NJ - Rt 4",
+      "slug": "425863",
+      "city": "Paramus",
+      "state": "NJ",
+      "lat": 40.9256,
+      "lon": -74.0877,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/425863"
+    },
+    {
+      "id": "tesla-hamilton-nj",
+      "slug": "424861",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Hamilton Township, NJ",
+      "city": "Hamilton Township",
+      "state": "NJ",
+      "lat": 40.1923,
+      "lon": -74.6467,
+      "power_kw": 325,
+      "rate_on": 0.72,
+      "rate_off": 0.72,
+      "mem_on": 0.48,
+      "mem_off": 0.34,
+      "is_tou": true,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Low Congestion (<20%)"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.48,
+          "mem_off": 0.48,
+          "label": "Normal Congestion (20-60%)"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Low Congestion (<20%)"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/424861",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-406305",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Kearny, NJ - Harrison Ave",
+      "slug": "406305",
+      "city": "Kearny",
+      "state": "NJ",
+      "lat": 40.7481,
+      "lon": -74.1354,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/406305"
+    },
+    {
+      "id": "tesla-maple-shade-nj",
+      "slug": "26769",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Maple Shade, NJ",
+      "city": "Maple Shade",
+      "state": "NJ",
+      "lat": 39.9434,
+      "lon": -74.9694,
+      "power_kw": 250,
+      "rate_on": 0.72,
+      "rate_off": 0.72,
+      "mem_on": 0.48,
+      "mem_off": 0.34,
+      "is_tou": true,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "12:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Low Congestion (<20%)"
+        },
+        {
+          "start": "12:00",
+          "end": "20:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.48,
+          "mem_off": 0.48,
+          "label": "Normal Congestion (20-60%)"
+        },
+        {
+          "start": "20:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Low Congestion (<20%)"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/26769",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-cherry-hill-nj",
+      "slug": "cherryhillnjhaddonfieldroadsupercharger",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Cherry Hill, NJ",
+      "city": "Cherry Hill",
+      "state": "NJ",
+      "lat": 39.9259,
+      "lon": -75.0324,
+      "power_kw": 250,
+      "rate_on": 0.72,
+      "rate_off": 0.72,
+      "mem_on": 0.48,
+      "mem_off": 0.34,
+      "is_tou": true,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Low Congestion (<20%)"
+        },
+        {
+          "start": "08:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.48,
+          "mem_off": 0.48,
+          "label": "Normal Congestion (20-60%)"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger",
+      "verified": true,
+      "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-26120",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Hamilton Township, NJ - Flock Rd",
+      "slug": "26120",
+      "city": "Hamilton Township",
+      "state": "NJ",
+      "lat": 40.2483,
+      "lon": -74.6849,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/26120"
+    },
+    {
+      "id": "tesla-19511",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Cranbury, NJ - Forsgate Drive",
+      "slug": "19511",
+      "city": "East Windsor",
+      "state": "NJ",
+      "lat": 40.3455,
+      "lon": -74.4837,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/19511"
+    },
+    {
+      "id": "tesla-31808",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Paramus, NJ - NJ-17",
+      "slug": "31808",
+      "city": "Paramus",
+      "state": "NJ",
+      "lat": 40.9554,
+      "lon": -74.0747,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/31808"
+    },
+    {
+      "id": "tesla-32055",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Elizabeth, NJ - Spring St",
+      "slug": "32055",
+      "city": "Elizabeth",
+      "state": "NJ",
+      "lat": 40.6724,
+      "lon": -74.1996,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/32055"
+    },
+    {
+      "id": "tesla-4160",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Paramus, NJ - Bergen Town Center",
+      "slug": "4160",
+      "city": "Paramus",
+      "state": "NJ",
+      "lat": 40.9128,
+      "lon": -74.0575,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/4160"
+    },
+    {
+      "id": "tesla-27400",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Jersey City, NJ",
+      "slug": "27400",
+      "city": "Jersey City",
+      "state": "NJ",
+      "lat": 40.6855,
+      "lon": -74.0997,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/27400"
     },
     {
       "id": "tesla-pittsburgh-freeport-pa",
@@ -10901,130 +12954,59 @@
       "last_scraped": "2026-10-28"
     },
     {
-      "id": "tesla-fort-littleton-pa",
-      "slug": "26674",
+      "id": "tesla-36228",
       "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Fort Littleton, PA",
-      "city": "Fort Littleton",
-      "state": "PA",
-      "lat": 40.0495,
-      "lon": -77.962,
-      "power_kw": 250,
-      "rate_on": 0.56,
-      "rate_off": 0.56,
-      "mem_on": 0.41,
-      "mem_off": 0.41,
-      "is_tou": false,
-      "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/26674",
-      "verified": true,
-      "last_scraped": "2026-10-28"
-    },
-    {
-      "id": "tesla-mt-laurel-nj",
-      "slug": "406608",
-      "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Mt Laurel, NJ",
-      "city": "Mt Laurel",
+      "name": "Tesla Supercharger (+CCS1) - Clark, NJ",
+      "slug": "36228",
+      "city": "Clark",
       "state": "NJ",
-      "lat": 39.9337,
-      "lon": -74.9635,
+      "lat": 40.6277,
+      "lon": -74.3015,
       "power_kw": 250,
-      "rate_on": 0.51,
-      "rate_off": 0.35,
-      "mem_on": 0.38,
-      "mem_off": 0.26,
-      "is_tou": true,
-      "tou_rates": [
-        {
-          "start": "00:00",
-          "end": "10:00",
-          "on": 0.35,
-          "off": 0.35,
-          "mem_on": 0.26,
-          "mem_off": 0.26,
-          "label": "Off-Peak"
-        },
-        {
-          "start": "10:00",
-          "end": "22:00",
-          "on": 0.51,
-          "off": 0.51,
-          "mem_on": 0.38,
-          "mem_off": 0.38,
-          "label": "Peak"
-        },
-        {
-          "start": "22:00",
-          "end": "24:00",
-          "on": 0.35,
-          "off": 0.35,
-          "mem_on": 0.26,
-          "mem_off": 0.26,
-          "label": "Off-Peak"
-        }
-      ],
-      "url": "https://www.tesla.com/findus/location/supercharger/406608",
-      "verified": true,
-      "last_scraped": "2026-10-28"
-    },
-    {
-      "id": "tesla-woodlyn-pa",
-      "slug": "59209",
-      "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Woodlyn, PA",
-      "city": "Woodlyn",
-      "state": "PA",
-      "lat": 39.8699,
-      "lon": -75.353,
-      "power_kw": 250,
-      "rate_on": 0.62,
-      "rate_off": 0.32,
-      "mem_on": 0.44,
-      "mem_off": 0.23,
-      "is_tou": true,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
       "tou_rates": [
         {
           "start": "00:00",
           "end": "08:00",
-          "on": 0.32,
-          "off": 0.32,
-          "mem_on": 0.23,
-          "mem_off": 0.23,
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
           "label": "Off-Peak"
         },
         {
           "start": "08:00",
-          "end": "20:00",
-          "on": 0.62,
-          "off": 0.62,
-          "mem_on": 0.44,
-          "mem_off": 0.44,
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
           "label": "Peak"
         },
         {
-          "start": "20:00",
+          "start": "23:00",
           "end": "24:00",
-          "on": 0.43,
-          "off": 0.43,
-          "mem_on": 0.31,
-          "mem_off": 0.31,
-          "label": "Mid-Peak"
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59209",
-      "verified": true,
-      "last_scraped": "2026-10-28"
+      "url": "https://www.tesla.com/findus/location/supercharger/36228"
     },
     {
-      "id": "tesla-cherry-hill-nj",
-      "slug": "cherryhillnjhaddonfieldroadsupercharger",
+      "id": "tesla-medford-nj",
+      "slug": "19516",
       "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Cherry Hill, NJ",
-      "city": "Cherry Hill",
+      "name": "Tesla Supercharger (+CCS1) - Medford, NJ",
+      "city": "Medford",
       "state": "NJ",
-      "lat": 39.9259,
-      "lon": -75.0324,
+      "lat": 39.9046,
+      "lon": -74.8051,
       "power_kw": 250,
       "rate_on": 0.72,
       "rate_off": 0.72,
@@ -11034,7 +13016,7 @@
       "tou_rates": [
         {
           "start": "00:00",
-          "end": "08:00",
+          "end": "17:00",
           "on": 0.72,
           "off": 0.72,
           "mem_on": 0.34,
@@ -11042,80 +13024,266 @@
           "label": "Low Congestion (<20%)"
         },
         {
-          "start": "08:00",
-          "end": "24:00",
+          "start": "17:00",
+          "end": "19:00",
           "on": 0.72,
           "off": 0.72,
           "mem_on": 0.48,
           "mem_off": 0.48,
           "label": "Normal Congestion (20-60%)"
+        },
+        {
+          "start": "19:00",
+          "end": "24:00",
+          "on": 0.72,
+          "off": 0.72,
+          "mem_on": 0.34,
+          "mem_off": 0.34,
+          "label": "Low Congestion (<20%)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger",
+      "url": "https://www.tesla.com/findus/location/supercharger/19516",
       "verified": true,
       "last_scraped": "2026-10-28"
     },
     {
-      "id": "tesla-maple-shade-nj",
-      "slug": "26769",
+      "id": "tesla-bridgewaternjsupercharger",
       "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Maple Shade, NJ",
-      "city": "Maple Shade",
+      "name": "Tesla Supercharger (+CCS1) - Bridgewater, NJ",
+      "slug": "BridgewaterNJsupercharger",
+      "city": "Bridgewater Township",
       "state": "NJ",
-      "lat": 39.9434,
-      "lon": -74.9694,
+      "lat": 40.5676,
+      "lon": -74.5639,
       "power_kw": 250,
-      "rate_on": 0.72,
-      "rate_off": 0.72,
-      "mem_on": 0.48,
-      "mem_off": 0.34,
-      "is_tou": true,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
       "tou_rates": [
         {
           "start": "00:00",
-          "end": "12:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.34,
-          "mem_off": 0.34,
-          "label": "Low Congestion (<20%)"
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
         },
         {
-          "start": "12:00",
-          "end": "20:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.48,
-          "mem_off": 0.48,
-          "label": "Normal Congestion (20-60%)"
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
         },
         {
-          "start": "20:00",
+          "start": "23:00",
           "end": "24:00",
-          "on": 0.72,
-          "off": 0.72,
-          "mem_on": 0.34,
-          "mem_off": 0.34,
-          "label": "Low Congestion (<20%)"
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26769",
-      "verified": true,
-      "last_scraped": "2026-10-28"
+      "url": "https://www.tesla.com/findus/location/supercharger/BridgewaterNJsupercharger"
     },
     {
-      "id": "tesla-blackwood-nj",
-      "slug": "59126",
+      "id": "tesla-14427",
       "network": "Tesla",
-      "name": "Tesla Supercharger (+CCS1) - Blackwood, NJ",
-      "city": "Blackwood",
+      "name": "Tesla Supercharger (+CCS1) - Mahwah, NJ",
+      "slug": "14427",
+      "city": "Mahwah",
       "state": "NJ",
-      "lat": 39.7866,
-      "lon": -75.0546,
+      "lat": 41.0901,
+      "lon": -74.1553,
       "power_kw": 250,
-      "rate_on": 0.73,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/14427"
+    },
+    {
+      "id": "tesla-26759",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Monmouth Junction, NJ",
+      "slug": "26759",
+      "city": "Monmouth Junction",
+      "state": "NJ",
+      "lat": 40.3824,
+      "lon": -74.5753,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/26759"
+    },
+    {
+      "id": "tesla-northbergennjq322",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - North Bergen, NJ - John F Kennedy Blvd",
+      "slug": "NorthBergenNJQ322",
+      "city": "North Bergen",
+      "state": "NJ",
+      "lat": 40.7739,
+      "lon": -74.0381,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/NorthBergenNJQ322"
+    },
+    {
+      "id": "tesla-unioncitynjsupercharger",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - North Bergen, NJ",
+      "slug": "UnionCityNJsupercharger",
+      "city": "North Bergen",
+      "state": "NJ",
+      "lat": 40.7754,
+      "lon": -74.0347,
+      "power_kw": 325,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/UnionCityNJsupercharger"
+    },
+    {
+      "id": "tesla-timonium-md",
+      "slug": "33688",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Timonium, MD",
+      "city": "Timonium",
+      "state": "MD",
+      "lat": 39.4559,
+      "lon": -76.6365,
+      "power_kw": 325,
+      "rate_on": 0.6,
       "rate_off": 0.38,
-      "mem_on": 0.52,
+      "mem_on": 0.43,
       "mem_off": 0.27,
       "is_tou": true,
       "tou_rates": [
@@ -11130,12 +13298,21 @@
         },
         {
           "start": "08:00",
+          "end": "19:00",
+          "on": 0.6,
+          "off": 0.6,
+          "mem_on": 0.43,
+          "mem_off": 0.43,
+          "label": "Day Peak"
+        },
+        {
+          "start": "19:00",
           "end": "23:00",
-          "on": 0.73,
-          "off": 0.73,
-          "mem_on": 0.52,
-          "mem_off": 0.52,
-          "label": "Peak"
+          "on": 0.53,
+          "off": 0.53,
+          "mem_on": 0.38,
+          "mem_off": 0.38,
+          "label": "Evening Mid-Peak"
         },
         {
           "start": "23:00",
@@ -11147,9 +13324,99 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59126",
+      "url": "https://www.tesla.com/findus/location/supercharger/33688",
       "verified": true,
       "last_scraped": "2026-10-28"
+    },
+    {
+      "id": "tesla-20974",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Clinton, NJ",
+      "slug": "20974",
+      "city": "Clinton",
+      "state": "NJ",
+      "lat": 40.6339,
+      "lon": -74.9377,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/20974"
+    },
+    {
+      "id": "tesla-400651",
+      "network": "Tesla",
+      "name": "Tesla Supercharger (+CCS1) - Saddle Brook, NJ",
+      "slug": "400651",
+      "city": "Saddle Brook",
+      "state": "NJ",
+      "lat": 40.8972,
+      "lon": -74.0975,
+      "power_kw": 250,
+      "rate_on": 0.7,
+      "rate_off": 0.5,
+      "mem_on": 0.47,
+      "mem_off": 0.33,
+      "tou_rates": [
+        {
+          "start": "00:00",
+          "end": "08:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        },
+        {
+          "start": "08:00",
+          "end": "23:00",
+          "on": 0.7,
+          "off": 0.7,
+          "mem_on": 0.47,
+          "mem_off": 0.47,
+          "label": "Peak"
+        },
+        {
+          "start": "23:00",
+          "end": "24:00",
+          "on": 0.5,
+          "off": 0.5,
+          "mem_on": 0.33,
+          "mem_off": 0.33,
+          "label": "Off-Peak"
+        }
+      ],
+      "url": "https://www.tesla.com/findus/location/supercharger/400651"
     }
   ]
 }

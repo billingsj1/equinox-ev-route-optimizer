@@ -4364,6 +4364,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // 3. Myerstown (EVgo / GM Energy)
       if (allText.includes('myerstown')) return true;
 
+      // 4. Out-of-corridor / NY Tesla stations
+      if (st.network === 'Tesla') {
+        const stState = (st.state || (st.AddressInfo && st.AddressInfo.StateOrProvince) || '').trim().toUpperCase();
+        if (stState === 'NY') return true;
+        const lat = st.lat || (st.AddressInfo && st.AddressInfo.Latitude);
+        const lon = st.lon || (st.AddressInfo && st.AddressInfo.Longitude);
+        if (lat != null && lon != null && (lat < 38.0 || lat > 41.5 || lon < -83.5 || lon > -73.5)) {
+          return true;
+        }
+      }
+
       return false;
     }
 
@@ -4496,10 +4507,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // 2. Check Tesla Magic Dock real scraped stations
       if (station.network === 'Tesla' && db && db.tesla) {
+        const sId = (station.id || '').toLowerCase();
+        const sSlug = (station.tesla_slug || '').toLowerCase();
         for (const t of db.tesla) {
-          const idMatch = station.id === t.id || station.id === `tesla-${t.slug}`;
-          const slugMatch = station.tesla_slug && station.tesla_slug === t.slug;
-          const distMatch = station.lat && station.lon && t.lat && t.lon && (haversineMiles(station.lat, station.lon, t.lat, t.lon) < 0.5);
+          const tId = (t.id || '').toLowerCase();
+          const tSlug = (t.slug || '').toLowerCase();
+          const idMatch = sId && (sId === tId || sId === `tesla-${tSlug}`);
+          const slugMatch = sSlug && (sSlug === tSlug || sSlug === tId.replace('tesla-', ''));
+          const distMatch = station.lat && station.lon && t.lat && t.lon && (haversineMiles(station.lat, station.lon, t.lat, t.lon) < 1.5);
           if (idMatch || slugMatch || distMatch) {
             return {
               on: t.rate_on,
@@ -4507,7 +4522,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               mem_on: t.mem_on,
               mem_off: t.mem_off,
               tou_rates: t.tou_rates || [],
-              url: t.url,
+              url: t.url || `https://www.tesla.com/findus/location/supercharger/${t.slug}`,
               verified: true
             };
           }
@@ -4842,12 +4857,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const teslaResp = await fetch("https://supercharge.info/service/supercharge/allSites");
           if (teslaResp.ok) {
             const allSites = await teslaResp.json();
-            const targetStates = new Set(["OH", "PA", "NJ", "WV", "MD", "DE", "NY"]);
+            const targetStates = new Set(["OH", "PA", "NJ", "WV", "MD", "DE"]);
             const magicSites = (Array.isArray(allSites) ? allSites : []).filter(s =>
               s.status === "OPEN" &&
               s.address && s.address.country === "USA" &&
               targetStates.has(s.address.state) &&
-              s.plugs && s.plugs.ccs1 > 0
+              s.plugs && s.plugs.ccs1 > 0 &&
+              s.gps && s.gps.latitude >= 38.0 && s.gps.latitude <= 41.5 &&
+              s.gps.longitude >= -83.5 && s.gps.longitude <= -73.5
             );
 
             magicSites.forEach(s => {
@@ -4871,11 +4888,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 let touRates = [];
 
                 if (db && db.tesla) {
-                  const match = db.tesla.find(t =>
-                    t.slug === slug ||
-                    t.id === stId ||
-                    (t.lat && t.lon && haversineMiles(t.lat, t.lon, lat, lon) < 0.5)
-                  );
+                  const slugLower = slug.toLowerCase();
+                  const match = db.tesla.find(t => {
+                    const tId = (t.id || '').toLowerCase();
+                    const tSlug = (t.slug || '').toLowerCase();
+                    return tSlug === slugLower ||
+                           tId === stId.toLowerCase() ||
+                           tId === `tesla-${slugLower}` ||
+                           (t.lat && t.lon && haversineMiles(t.lat, t.lon, lat, lon) < 1.5);
+                  });
                   if (match) {
                     onRate = match.rate_on;
                     offRate = match.rate_off;
