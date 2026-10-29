@@ -1966,9 +1966,13 @@
       const max_amps = (typeof station === 'object' && station) ? getStationMaxAmps(station) : (station_kw >= 250 ? 500 : 350);
 
       const lut = getCumulativeChargingLUT(station_kw, max_amps);
-      const iStart = Math.max(0, Math.min(100, Math.round(start_soc * 100)));
-      const iTarget = Math.max(0, Math.min(100, Math.round(target_soc * 100)));
-      const total_hours = Math.max(0.0, lut[iTarget] - lut[iStart]);
+      const lutAt = (soc) => {
+        const x = Math.max(0, Math.min(100, soc * 100));
+        const lo = Math.floor(x);
+        const hi = Math.min(100, lo + 1);
+        return lut[lo] + (lut[hi] - lut[lo]) * (x - lo);
+      };
+      const total_hours = Math.max(0.0, lutAt(target_soc) - lutAt(start_soc));
       const mins = total_hours * 60;
       const cost = needed_kwh * rate_per_kwh;
       return { added_kwh: needed_kwh, mins: mins, cost: cost };
@@ -2925,9 +2929,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             // 2. Exact finish target to destination (ensuring it satisfies the minimum charge floor)
             if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
-              const tgtFinish = Math.round(Math.max(min_target_allowed, dest_needed_soc) * 100) / 100.0;
+              const tgtFinish = Math.ceil(Math.max(min_target_allowed, dest_needed_soc) * 100 - 1e-9) / 100.0;
               if (tgtFinish <= 0.90) targetSet.add(tgtFinish);
-              if (tgtFinish + 0.02 <= 0.90) targetSet.add(Math.round((tgtFinish + 0.02) * 100) / 100.0);
             }
 
             // 3. Exact reach-next anchors to downstream reachable stations along this corridor (Tier 1 Smart Anchors)
@@ -2938,13 +2941,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               if (nextLegMins >= min_mins && nextLegMins <= max_mins) {
                 const nextDetour = stationDetours[k];
                 const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
-                const exactTgtK = Math.round(((totalEnergyToK / 85.0) + min_buffer_soc) * 100) / 100.0;
-                if (exactTgtK >= min_target_allowed && exactTgtK <= 0.90) {
-                  targetSet.add(exactTgtK);
-                  if (exactTgtK + 0.02 <= 0.90) {
-                    targetSet.add(Math.round((exactTgtK + 0.02) * 100) / 100.0);
-                  }
-                }
+                // Round UP (ceil): arriving at k at >= buffer. Raise to the min-charge floor if needed.
+                const exactTgtK = Math.max(min_target_allowed, Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 100 - 1e-9) / 100.0);
+                if (exactTgtK <= 0.90) targetSet.add(exactTgtK);
               }
             }
 
@@ -3253,7 +3252,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       // Re-polish candidates using true OSRM multi-waypoint geometry
-      const polishedCandidates = combinedTop.map(cand => {
+      const polishOne = (cand, trimSlack) => {
         const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
         const osrmData = osrmResponses.get(seqKey);
 
@@ -3284,7 +3283,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const nextLeg = osrmData.legs[idx + 1];
           const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
           const needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
-          const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer + 0.01;
+          const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer; // exact need; callers round UP to whole % so the buffer is still guaranteed
 
           if (min_safe_departure > 0.95) {
             valid = false;
@@ -3294,15 +3293,12 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const cand_target = sp.tgt_soc / 100.0;
           // Tier 2: 1% Continuous Dial-In Refinement
           // Calculate exact minimal departure target satisfying min_charge_pct floor and safe arrival at next waypoint
-          const exact_dialed_target = Math.round(Math.max(current_soc + min_charge_pct, min_safe_departure) * 100) / 100.0;
-
-          let target_soc;
-          if (cand_target > exact_dialed_target + 0.04 && sp.rate < 0.40) {
-            // Preserve intentional deeper charges at discount stations (e.g. Tesla $0.29 or IONNA $0.32)
-            target_soc = Math.min(0.92, cand_target);
-          } else {
-            target_soc = Math.min(0.92, exact_dialed_target);
-          }
+          const exact_dialed_target = Math.ceil(Math.max(current_soc + min_charge_pct, min_safe_departure) * 100 - 1e-9) / 100.0;
+          // trimSlack=true -> leave with only what is needed; false -> keep the search's chosen target
+          // (raised if real OSRM geometry needs more). Both variants compete in the final selection.
+          const target_soc = trimSlack
+            ? Math.min(0.92, exact_dialed_target)
+            : Math.min(0.92, Math.max(cand_target, exact_dialed_target));
 
           const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate, sp.station);
           const stop_mins = Math.round(ch.mins + sp.setup_mins);
@@ -3358,7 +3354,16 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           stops: polishedStops,
           osrmDetailedCoords: osrmData.coordinates
         };
-      }).filter(Boolean);
+      };
+      const polishedCandidates = [];
+      combinedTop.forEach(cand => {
+        const asChosen = polishOne(cand, false);
+        const trimmed = polishOne(cand, true);
+        if (asChosen) polishedCandidates.push(asChosen);
+        if (trimmed && (!asChosen || trimmed.stops.some((s, i) => s.tgt_soc !== asChosen.stops[i].tgt_soc))) {
+          polishedCandidates.push(trimmed);
+        }
+      });
 
       const finalPool = (polishedCandidates.length > 0) ? polishedCandidates : stage1_candidates;
       window.lastEvaluatedPool = finalPool;
