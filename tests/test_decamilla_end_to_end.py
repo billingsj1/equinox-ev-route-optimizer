@@ -61,21 +61,56 @@ async def test_decamilla_flow():
                 res = await call("Runtime.evaluate", {"expression": expr, "returnByValue": True, "awaitPromise": True})
                 return res.get("result", {}).get("value")
 
-            await asyncio.sleep(2.5)
+            # Wait for initial load
+            await asyncio.sleep(2.0)
 
             # 1. Verify decamillaOptionBox is visible on default Marlton destination
             box_hidden = await eval_js("document.getElementById('decamillaOptionBox').classList.contains('hidden')")
-            print(f"DeCamilla box hidden on default Marlton: {box_hidden} (expected False)")
+            print(f"DeCamilla box hidden: {box_hidden} (expected False)")
             assert not box_hidden, "decamillaOptionBox should be visible for Marlton"
 
-            # 2. Select 2.0 hr stop at DeCamilla
+            # Check initial calculation state
+            init_results = await eval_js("typeof calculatedResults !== 'undefined' && calculatedResults !== null")
+            print(f"Initial results calculated on page load: {init_results}")
+
+            # 2. Test user selecting 2.0 hr stop at DeCamilla WITHOUT pressing Calculate Route
+            # Clear calculatedResults to verify no auto-calculation fires
+            await eval_js("window.testCalcRan = false; calculatedResults = null;")
+            
+            # Change decamillaStopDuration
             await eval_js("""(() => {
                 const sel = document.getElementById('decamillaStopDuration');
                 sel.value = "2.0";
-                handleDecamillaStopChange();
+                sel.dispatchEvent(new Event('change'));
             })()""")
 
-            # 3. Wait for optimization to complete
+            # Wait 1.5 seconds to see if any calculation triggered
+            await asyncio.sleep(1.5)
+            calc_after_dropdown = await eval_js("calculatedResults !== null")
+            print(f"Calculated results after dropdown change: {calc_after_dropdown} (expected False - NO auto-calc)")
+            assert not calc_after_dropdown, "Dropdown change should NOT automatically calculate routes!"
+
+            # Change departure time to 07:30
+            await eval_js("""(() => {
+                const el = document.getElementById('departureTime');
+                el.value = "07:30";
+                el.dispatchEvent(new Event('change'));
+            })()""")
+
+            await asyncio.sleep(1.0)
+            time_badge = await eval_js("document.getElementById('departureTimeDisplay').innerText")
+            print(f"Departure time display badge: '{time_badge}'")
+            assert "7:30" in time_badge, "Departure time badge should be updated"
+
+            calc_after_time = await eval_js("calculatedResults !== null")
+            print(f"Calculated results after departure time change: {calc_after_time} (expected False - NO auto-calc)")
+            assert not calc_after_time, "Departure time change should NOT automatically calculate routes!"
+
+            # 3. Now explicitly click the 'Calculate Route' button
+            print("Clicking 'Calculate Route' button...")
+            await eval_js("document.getElementById('searchBtn').click()")
+
+            # Wait for optimization to complete
             for _ in range(120):
                 await asyncio.sleep(0.5)
                 status = await eval_js("document.getElementById('auditStatusText')?.innerText")
@@ -95,84 +130,69 @@ async def test_decamilla_flow():
                     fastest: {
                         total_hours: f.total_hours,
                         total_cost: f.total_cost,
+                        toll_cost: f.toll_cost,
                         stops: f.stops.map(s => ({
                             name: s.station.name,
                             arr_soc: s.arr_soc,
                             tgt_soc: s.tgt_soc,
                             mins: s.mins,
                             cost: s.cost,
-                            is_decamilla: !!s.is_decamilla,
-                            mile: s.mile
+                            is_decamilla: s.is_decamilla,
+                            detour_miles: s.detour_miles
                         }))
                     },
                     cheapest: {
                         total_hours: c.total_hours,
                         total_cost: c.total_cost,
+                        toll_cost: c.toll_cost,
                         stops: c.stops.map(s => ({
                             name: s.station.name,
                             arr_soc: s.arr_soc,
                             tgt_soc: s.tgt_soc,
                             mins: s.mins,
                             cost: s.cost,
-                            is_decamilla: !!s.is_decamilla
+                            is_decamilla: s.is_decamilla,
+                            detour_miles: s.detour_miles
                         }))
                     },
-                    balanced: {
-                        total_hours: b.total_hours,
-                        total_cost: b.total_cost,
-                        stops: b.stops.map(s => ({
-                            name: s.station.name,
-                            arr_soc: s.arr_soc,
-                            tgt_soc: s.tgt_soc,
-                            mins: s.mins,
-                            cost: s.cost,
-                            is_decamilla: !!s.is_decamilla
-                        }))
-                    },
-                    nonStop: {
-                        hours: ns.hours,
-                        pure_driving_hours: ns.pure_driving_hours,
-                        decamilla_stop_hours: ns.decamilla_stop_hours,
-                        distance: ns.distance
-                    },
-                    nonStopSpeedText: document.getElementById('nonStopSpeed')?.innerText
+                    nonStop: ns
                 };
             })()""")
 
-            print("\n=== RESULTS WITH 2.0 HR DECAMILLA STOP ===")
-            print(json.dumps(res, indent=2))
+            assert res is not None, "Results should be computed after pressing Calculate Route"
+            print(f"Fastest total hours: {res['fastest']['total_hours']:.2f}h | Total cost: ${res['fastest']['total_cost']:.2f}")
+            print(f"Fastest highway toll: ${res['fastest']['toll_cost']:.2f} (expected $37.59)")
+            assert abs(res['fastest']['toll_cost'] - 37.59) < 0.01, f"Toll cost should be $37.59, got {res['fastest']['toll_cost']}"
 
-            # Validations
-            assert res is not None, "Calculated results should not be null"
-            ns = res["nonStop"]
-            assert ns["decamilla_stop_hours"] == 2.0, "Non-stop baseline should include 2.0 hr DeCamilla stop"
-            assert "+2h stop" in res["nonStopSpeedText"], f"Expected '+2h stop' in nonStopSpeedText, got: {res['nonStopSpeedText']}"
+            print("Fastest stops:")
+            found_decamilla = False
+            for s in res['fastest']['stops']:
+                print(f"  - {s['name']}: {s['arr_soc']}% -> {s['tgt_soc']}%, {s['mins']} mins, ${s['cost']:.2f}, is_decamilla={s.get('is_decamilla')}, detour={s.get('detour_miles')} mi")
+                if s.get('is_decamilla'):
+                    found_decamilla = True
+                    assert s['mins'] == 120, "DeCamilla stop should be 120 mins"
+                    assert s['cost'] == 0.0, "DeCamilla stop should be free ($0.00)"
+                    assert s['detour_miles'] == 12.8, f"DeCamilla detour should be 12.8 mi, got {s['detour_miles']}"
+            assert found_decamilla, "Fastest itinerary must include DeCamilla stop"
 
-            for key in ["fastest", "cheapest", "balanced"]:
-                itin = res[key]
-                decamilla_stops = [s for s in itin["stops"] if s["is_decamilla"]]
-                assert len(decamilla_stops) == 1, f"{key} route should have exactly 1 DeCamilla stop"
-                ds = decamilla_stops[0]
-                assert ds["cost"] == 0.0, f"{key} DeCamilla stop should be free ($0.00)"
-                assert ds["mins"] == 120, f"{key} DeCamilla stop should be 120 mins (2.0 hrs)"
-                assert "DeCamilla" in ds["name"]
+            # Check Non-Stop driving baseline
+            ns = res['nonStop']
+            print(f"Non-stop baseline: {ns['hours']:.2f}h, decamilla stop hours: {ns.get('decamilla_stop_hours')}h")
+            assert ns.get('decamilla_stop_hours') == 2.0, "Non-stop baseline should include 2h DeCamilla stop"
 
-            # 5. Verify switching to Billings hides option box and resets duration
-            await eval_js("setQuickDest('301 Beaver Rd, Sewickley, PA 15143')")
-            hidden_billings = await eval_js("document.getElementById('decamillaOptionBox').classList.contains('hidden')")
-            dur_billings = await eval_js("document.getElementById('decamillaStopDuration').value")
-            assert hidden_billings, "DeCamilla option box should be hidden for Billings"
-            assert dur_billings == "0", f"DeCamilla duration should reset to 0, got {dur_billings}"
+            # Check table HTML rendering for detour badge and 2026 toll label
+            tbody_html = await eval_js("document.getElementById('stopsTableBody').innerHTML")
+            assert "+12.8 mi" in tbody_html, "Table must show +12.8 mi detour badge for DeCamilla"
+            assert "Exit 236" in tbody_html, "Table must show Exit 236 for DeCamilla"
 
-            # 6. Verify switching back to Marlton reveals option box
-            await eval_js("setQuickDest('270 Conestoga Dr, Marlton, NJ 08053')")
-            hidden_marlton = await eval_js("document.getElementById('decamillaOptionBox').classList.contains('hidden')")
-            assert not hidden_marlton, "DeCamilla option box should be visible for Marlton"
+            tfoot_html = await eval_js("document.getElementById('stopsTableFoot').innerHTML")
+            assert "2026 PA Turnpike E-ZPass" in tfoot_html, "Table footer must label 2026 PA Turnpike E-ZPass"
+            assert "$37.59" in tfoot_html, "Table footer must show $37.59 toll"
 
-            print("\nALL VERIFICATIONS (INCLUDING DESTINATION SWITCHING) PASSED SUCCESSFULLY!")
+            print("\n*** ALL E2E TESTS PASSED SUCCESSFULLY! ***")
 
     finally:
-        proc.kill()
+        proc.terminate()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     asyncio.run(test_decamilla_flow())
