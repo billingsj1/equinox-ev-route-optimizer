@@ -3,10 +3,14 @@ import http.server
 import json
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import urllib.request
 import websockets
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 PORT, CDP = 8796, 9297
 USER_DATA_DIR = r"C:\temp\chrome_pull_test"
@@ -103,7 +107,7 @@ async def test_pull_and_refresh():
             for _ in range(40):
                 await asyncio.sleep(0.5)
                 box_text = await eval_js("document.getElementById('scraperStatusBox').innerText")
-                if "Price Refresh Complete!" in box_text:
+                if "Price Refresh Complete" in box_text:
                     print(f"Refresh Prices status: {box_text.strip()}")
                     break
             else:
@@ -125,6 +129,19 @@ async def test_pull_and_refresh():
             print(f"Cherry Hill verification: name='{cherry_hill.get('name')}', on={cherry_hill.get('on')}, off={cherry_hill.get('off')}, mem_on={cherry_hill.get('mem_on')}, mem_off={cherry_hill.get('mem_off')}, verified={cherry_hill.get('price_verified')}")
             assert cherry_hill.get('price_verified') is True
             assert cherry_hill.get('mem_off') == 0.34
+
+            # 3b. Test second refresh (should report 0 station prices changed)
+            print("\n--- Testing second handleRefreshPrices() (0 changes expected) ---")
+            await eval_js("handleRefreshPrices()")
+            for _ in range(40):
+                await asyncio.sleep(0.5)
+                box_text2 = await eval_js("document.getElementById('scraperStatusBox').innerText")
+                if "Price Refresh Complete:" in box_text2:
+                    print(f"Second Refresh status: {box_text2.strip()}")
+                    break
+            else:
+                raise TimeoutError("Second handleRefreshPrices did not finish in time")
+            assert "0 station prices changed" in box_text2, f"Expected '0 station prices changed', got: {box_text2}"
 
             # 4. Test purge of injected NY station
             print("\n--- Testing purgeBlockedStations() on legacy/injected NY stations ---")

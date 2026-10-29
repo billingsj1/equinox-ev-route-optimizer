@@ -5040,11 +5040,42 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         // 2. Force-reload fresh scraped database
         SCRAPED_DATABASE = null;
         const db = await loadScrapedDatabase();
-        let refreshedCount = 0;
+        let updatedCount = 0;
+        let unchangedCount = 0;
+        let verifiedCount = 0;
+        let changedStations = [];
 
         ALL_STATIONS.forEach(s => {
+          const prevVerified = s.price_verified === true;
+          const prevOn = s.on;
+          const prevOff = s.off;
+          const prevMemOn = s.mem_on;
+          const prevMemOff = s.mem_off;
+
           const res = matchStationToScrapedData(s, db);
           if (res.verified) {
+            verifiedCount++;
+            // Check if price was newly established or actually changed
+            const isPriceChanged = !prevVerified || 
+              prevOn == null || 
+              Math.abs(prevOn - res.on) > 0.001 || 
+              Math.abs((prevOff != null ? prevOff : prevOn) - (res.off != null ? res.off : res.on)) > 0.001 ||
+              (res.mem_on != null && Math.abs((prevMemOn || 0) - res.mem_on) > 0.001);
+
+            if (isPriceChanged) {
+              updatedCount++;
+              changedStations.push({
+                name: s.name,
+                oldPrice: prevOn,
+                newPrice: res.on,
+                oldMem: prevMemOn,
+                newMem: res.mem_on,
+                isNew: !prevVerified || prevOn == null
+              });
+            } else {
+              unchangedCount++;
+            }
+
             s.on = res.on;
             s.off = res.off;
             if (res.mem_on != null) s.mem_on = res.mem_on;
@@ -5052,23 +5083,63 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (res.tou_rates && res.tou_rates.length > 0) s.tou_rates = res.tou_rates;
             if (res.url) s.plug = res.url;
             s.price_verified = true;
-            refreshedCount++;
+          } else if (res.blocked) {
+            s.price_verified = false;
           }
         });
 
         saveStationsToStorage();
         updateStationManagerBadge();
 
+        const unverifiedCount = ALL_STATIONS.filter(s => !s.price_verified || s.on == null || s.on <= 0).length;
+
         if (statusBox) {
-          statusBox.innerHTML = `
-            <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
-              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-              <span>Price Refresh Complete! ${refreshedCount} stations verified from real scrapers (including Tesla Magic Dock, DCFC Tracker, IONNA, Mercedes).</span>
-            </div>
-            <div class="text-[11px] text-slate-300">
-              Individual station rates updated. Any unverified stations remain listed below.
-            </div>
-          `;
+          let changeDetailsHtml = '';
+          if (changedStations.length > 0) {
+            const previewList = changedStations.slice(0, 4).map(c => {
+              let diffText = '';
+              if (c.isNew) {
+                diffText = `<span class="text-emerald-300 font-medium">newly priced: $${c.newPrice.toFixed(2)}/kWh</span>`;
+              } else if (c.oldPrice != null && Math.abs(c.oldPrice - c.newPrice) > 0.001) {
+                diffText = `<span class="text-slate-400 line-through">$${c.oldPrice.toFixed(2)}</span> &rarr; <span class="text-emerald-300 font-medium">$${c.newPrice.toFixed(2)}/kWh</span>`;
+              } else if (c.oldMem != null && c.newMem != null && Math.abs(c.oldMem - c.newMem) > 0.001) {
+                diffText = `<span class="text-sky-300 font-medium">member rate: $${c.oldMem.toFixed(2)} &rarr; $${c.newMem.toFixed(2)}/kWh</span>`;
+              } else {
+                diffText = `<span class="text-emerald-300 font-medium">rate confirmed: $${c.newPrice.toFixed(2)}/kWh</span>`;
+              }
+              return `<li class="truncate"><span class="text-slate-200">${c.name}:</span> ${diffText}</li>`;
+            }).join('');
+            const moreCount = changedStations.length - 4;
+            changeDetailsHtml = `
+              <ul class="text-[11px] text-slate-300 bg-slate-950/60 rounded px-2 py-1.5 mt-1 border border-slate-800 space-y-0.5">
+                ${previewList}
+                ${moreCount > 0 ? `<li class="text-[10px] text-slate-400 italic">+${moreCount} more stations updated</li>` : ''}
+              </ul>
+            `;
+          }
+
+          if (updatedCount > 0) {
+            statusBox.innerHTML = `
+              <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
+                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                <span>Price Refresh Complete: <b>${updatedCount} station ${updatedCount === 1 ? 'price was' : 'prices were'} updated/changed</b>!</span>
+              </div>
+              <div class="text-[11px] text-slate-300">
+                Database: <b>${verifiedCount} stations verified</b> (${unchangedCount} already current). ${unverifiedCount > 0 ? `<span class="text-amber-400 font-medium">${unverifiedCount} unverified stations listed below.</span>` : 'All stations priced.'}
+              </div>
+              ${changeDetailsHtml}
+            `;
+          } else {
+            statusBox.innerHTML = `
+              <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
+                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                <span>Price Refresh Complete: <b>0 station prices changed</b> (all verified stations are already up to date)!</span>
+              </div>
+              <div class="text-[11px] text-slate-300">
+                Checked live tariffs across Tesla Find Us, DCFC Tracker, IONNA, and Mercedes. <b>${verifiedCount} stations verified</b> (${unchangedCount} unchanged). ${unverifiedCount > 0 ? `<span class="text-amber-400 font-medium">${unverifiedCount} unverified stations listed below.</span>` : 'All stations priced.'}
+              </div>
+            `;
+          }
           if (window.lucide) lucide.createIcons();
         }
 

@@ -515,6 +515,8 @@ class PricingScraperPipeline:
 
         existing = self.load_existing_stations()
         refreshed_count = 0
+        updated_count = 0
+        unchanged_count = 0
 
         for ex in existing.values():
             st_id = ex["id"]
@@ -525,15 +527,31 @@ class PricingScraperPipeline:
             lat = ex.get("latitude")
             lon = ex.get("longitude")
 
+            old_on = ex.get("rate_regular", {}).get("on_peak")
+            old_off = ex.get("rate_regular", {}).get("off_peak")
+            old_mem = ex.get("membership_rate", {}).get("on_peak") if isinstance(ex.get("membership_rate"), dict) else None
+            old_verified = ex.get("price_verified", False)
+
             if st_id in MANUALLY_VERIFIED_OVERRIDES:
                 ov = MANUALLY_VERIFIED_OVERRIDES[st_id]
-                ex["rate_regular"]["off_peak"] = ov.get("price_off_peak", ov["price"])
-                ex["rate_regular"]["on_peak"] = ov["price"]
-                if "mem_price" in ov:
+                new_off = ov.get("price_off_peak", ov["price"])
+                new_on = ov["price"]
+                new_mem_on = ov.get("mem_price")
+                new_mem_off = ov.get("mem_price_off_peak", new_mem_on)
+
+                is_changed = (not old_verified or old_on is None or abs((old_on or 0) - new_on) > 0.001 or abs((old_off or old_on or 0) - new_off) > 0.001 or (new_mem_on is not None and abs((old_mem or 0) - new_mem_on) > 0.001))
+                if is_changed:
+                    updated_count += 1
+                else:
+                    unchanged_count += 1
+
+                ex["rate_regular"]["off_peak"] = new_off
+                ex["rate_regular"]["on_peak"] = new_on
+                if new_mem_on is not None:
                     if "membership_rate" not in ex or not isinstance(ex["membership_rate"], dict):
                         ex["membership_rate"] = {}
-                    ex["membership_rate"]["off_peak"] = ov.get("mem_price_off_peak", ov["mem_price"])
-                    ex["membership_rate"]["on_peak"] = ov["mem_price"]
+                    ex["membership_rate"]["off_peak"] = new_mem_off
+                    ex["membership_rate"]["on_peak"] = new_mem_on
                 ex["price_verified"] = True
                 if ov.get("url"):
                     ex["plugshare_url"] = ov["url"]
@@ -548,12 +566,23 @@ class PricingScraperPipeline:
                         t_match = t
                         break
                 if t_match and t_match.get("rate_on") is not None:
-                    ex["rate_regular"]["on_peak"] = t_match["rate_on"]
-                    ex["rate_regular"]["off_peak"] = t_match.get("rate_off", t_match["rate_on"])
+                    new_on = t_match["rate_on"]
+                    new_off = t_match.get("rate_off", new_on)
+                    new_mem_on = t_match.get("mem_on", new_on)
+                    new_mem_off = t_match.get("mem_off", new_off)
+
+                    is_changed = (not old_verified or old_on is None or abs((old_on or 0) - new_on) > 0.001 or abs((old_off or old_on or 0) - new_off) > 0.001 or (new_mem_on is not None and abs((old_mem or 0) - new_mem_on) > 0.001))
+                    if is_changed:
+                        updated_count += 1
+                    else:
+                        unchanged_count += 1
+
+                    ex["rate_regular"]["on_peak"] = new_on
+                    ex["rate_regular"]["off_peak"] = new_off
                     if "membership_rate" not in ex or not isinstance(ex["membership_rate"], dict):
                         ex["membership_rate"] = {}
-                    ex["membership_rate"]["on_peak"] = t_match.get("mem_on", t_match["rate_on"])
-                    ex["membership_rate"]["off_peak"] = t_match.get("mem_off", t_match.get("rate_off", t_match["rate_on"]))
+                    ex["membership_rate"]["on_peak"] = new_mem_on
+                    ex["membership_rate"]["off_peak"] = new_mem_off
                     if t_match.get("tou_rates"):
                         ex["tou_rates"] = t_match["tou_rates"]
                     ex["price_verified"] = True
@@ -567,6 +596,16 @@ class PricingScraperPipeline:
                     st_id, net, st, city, name, "", lat, lon, None, scraped_db
                 )
                 if price is not None:
+                    new_on = price
+                    new_off = price
+                    new_mem_on = round(price * 0.75, 2) if ex.get("ea_pass_eligible") else (round(price * 0.90, 2) if matched_gm else price)
+
+                    is_changed = (not old_verified or old_on is None or abs((old_on or 0) - new_on) > 0.001 or abs((old_off or old_on or 0) - new_off) > 0.001)
+                    if is_changed:
+                        updated_count += 1
+                    else:
+                        unchanged_count += 1
+
                     ex["rate_regular"]["off_peak"] = price
                     ex["rate_regular"]["on_peak"] = price
                     ex["price_verified"] = True
@@ -583,6 +622,7 @@ class PricingScraperPipeline:
         with open(PRICES_JSON, "w", encoding="utf-8") as f:
             json.dump(final_list, f, indent=2)
         self._save_to_sqlite(final_list)
+        logger.info(f"Price refresh complete: {updated_count} station prices updated/changed, {unchanged_count} unchanged ({refreshed_count} total verified).")
         logger.info(f"Refreshed pricing for {refreshed_count} stations.")
         return final_list
 
