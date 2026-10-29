@@ -130,6 +130,36 @@
                 <span class="text-[10px] text-slate-400 truncate">Dillsburg, PA</span>
               </button>
             </div>
+
+            <!-- DeCamilla Stop & Charge Option (for St. Onge route) -->
+            <div id="decamillaOptionBox" class="mt-2.5 p-2.5 bg-slate-950/70 border border-slate-800 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-md bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 shrink-0">
+                  <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5 flex-wrap">
+                    <span>Intermediate Stop at DeCamilla (Dillsburg, PA)</span>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-normal font-mono">Free 7.7 kW L2</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400">ChargePoint Flex 32A @ brother-in-law's · +8.13% SoC/hr ($0.00)</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                <select id="decamillaStopDuration" onchange="handleDecamillaStopChange()" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-md px-2 py-1 focus:outline-none focus:border-emerald-500 font-mono">
+                  <option value="0" selected>Direct (No Stop)</option>
+                  <option value="0.5">0.5 hr (+4.1%)</option>
+                  <option value="1.0">1.0 hr (+8.1%)</option>
+                  <option value="1.5">1.5 hr (+12.2%)</option>
+                  <option value="2.0">2.0 hr (+16.3%)</option>
+                  <option value="2.5">2.5 hr (+20.3%)</option>
+                  <option value="3.0">3.0 hr (+24.4%)</option>
+                  <option value="4.0">4.0 hr (+32.5%)</option>
+                  <option value="5.0">5.0 hr (+40.7%)</option>
+                  <option value="6.0">6.0 hr (+48.8%)</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -870,6 +900,21 @@
 
     function setQuickDest(addr) {
       document.getElementById('destAddress').value = addr;
+      const decamillaBox = document.getElementById('decamillaOptionBox');
+      const isMarlton = addr.toLowerCase().includes('marlton') || addr.toLowerCase().includes('conestoga');
+      if (decamillaBox) {
+        if (isMarlton) {
+          decamillaBox.classList.remove('hidden');
+        } else {
+          decamillaBox.classList.add('hidden');
+          const durSel = document.getElementById('decamillaStopDuration');
+          if (durSel) durSel.value = "0";
+        }
+      }
+      handleSearchRoute();
+    }
+
+    function handleDecamillaStopChange() {
       handleSearchRoute();
     }
 
@@ -2127,10 +2172,21 @@
         const has_ezpass = document.getElementById('hasEzPass').checked;
         let baseToll = has_ezpass ? (destGeo.toll_ez || 0) : (destGeo.toll_cash || 0);
 
+        // Check if DeCamilla intermediate stop is active (for St. Onge / Marlton route)
+        const decamillaHours = parseFloat(document.getElementById('decamillaStopDuration')?.value || 0);
+        const isStOnge = destText.toLowerCase().includes('marlton') || destText.toLowerCase().includes('conestoga') || destText.toLowerCase().includes('st. onge') || destText.toLowerCase().includes('st onge');
+        const useDecamillaStop = (decamillaHours > 0) && isStOnge;
+
         // Fetch Live Road Route via OSRM with full steps & speed metadata
         let routesFound = false;
         try {
-          const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&alternatives=true&steps=true&annotations=speed,distance`;
+          let osrmUrl;
+          if (useDecamillaStop) {
+            // Route through DeCamilla (1185 Gettysburg Pike, Dillsburg, PA: -77.0156, 40.1413)
+            osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};-77.0156,40.1413;${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
+          } else {
+            osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&alternatives=true&steps=true&annotations=speed,distance`;
+          }
           const osrmResp = await fetch(osrmUrl);
           if (osrmResp.ok) {
             const osrmData = await osrmResp.json();
@@ -2141,8 +2197,15 @@
                 let toll = baseToll;
                 if (idx > 0 && toll > 0) toll = 0.0; // Alternative is often non-turnpike
 
-                // Parse specific step-by-step posted speed limits
-                const rawSteps = (r.legs && r.legs[0] && r.legs[0].steps) ? r.legs[0].steps : [];
+                // Parse specific step-by-step posted speed limits across all legs
+                const rawSteps = [];
+                let leg1_miles = 0;
+                if (r.legs && r.legs.length > 0) {
+                  leg1_miles = r.legs[0].distance * 0.000621371;
+                  r.legs.forEach(leg => {
+                    (leg.steps || []).forEach(s => rawSteps.push(s));
+                  });
+                }
                 const parsedSteps = parseStepsWithHighResSpeedLimits(rawSteps);
 
                 // Calculate weighted speed limit & speed distribution profile
@@ -2165,25 +2228,34 @@
                   .filter(spd => (speedDist[spd] / totalStepDist) >= 0.03)
                   .map(spd => `${spd} mph (${Math.round((speedDist[spd] / totalStepDist) * 100)}%)`);
 
-                return {
+                const routeObj = {
                   id: `osrm_${idx+1}`,
-                  name: idx === 0 ? "Fastest Highway Corridor" : `Alternative Route ${idx+1}`,
+                  name: useDecamillaStop ? `Fastest Highway Corridor (Via DeCamilla ${decamillaHours}h L2)` : (idx === 0 ? "Fastest Highway Corridor" : `Alternative Route ${idx+1}`),
                   distance: Math.round(miles * 10) / 10,
                   base_speed_limit: Math.round(weightedLimit * 10) / 10,
                   speed_mph: Math.round(weightedLimit * 10) / 10,
                   steps: parsedSteps,
-                  speed_profile_text: speedSummaryParts.join(' · '),
+                  speed_profile_text: useDecamillaStop ? `I-70/I-76 to Dillsburg (US-15) + ${decamillaHours}h L2 Stop + PA Turnpike / PA-283 to Marlton` : speedSummaryParts.join(' · '),
                   toll: toll,
                   coordinates: r.geometry.coordinates,
                   origin: originGeo,
                   destination: destGeo
                 };
+                if (useDecamillaStop) {
+                  routeObj.decamilla_stop = {
+                    hours: decamillaHours,
+                    lat: 40.1413,
+                    lon: -77.0156,
+                    mile: Math.round(leg1_miles * 10) / 10
+                  };
+                }
+                return routeObj;
               });
               routesFound = true;
 
               // Check if East Coast destination from Midwest has a toll-free Maryland I-68 corridor
-                            // Check if East Coast / NJ destination can also evaluate the NJ Turnpike Bypass corridor
-              if (destGeo.lon > -75.5 && destGeo.lat > 39.5) {
+                            // Check if East Coast / NJ destination can also evaluate the NJ Turnpike Bypass corridor (skip if routing via DeCamilla)
+              if (!useDecamillaStop && destGeo.lon > -75.5 && destGeo.lat > 39.5) {
                 try {
                   const njCoords = `${originGeo.lon},${originGeo.lat};-75.388,40.090;-74.7431,40.1195;${destGeo.lon},${destGeo.lat}`;
                   const njUrl = `https://router.project-osrm.org/route/v1/driving/${njCoords}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
@@ -2221,7 +2293,7 @@
                   console.warn("Failed to fetch NJ Turnpike bypass corridor:", njErr);
                 }
               }
-if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
+if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 try {
                   const mdCoords = `${originGeo.lon},${originGeo.lat};-78.9284,39.6582;${destGeo.lon},${destGeo.lat}`;
                   const mdUrl = `https://router.project-osrm.org/route/v1/driving/${mdCoords}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
@@ -2750,10 +2822,18 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           payload_lbs, temp_f, wind_speed, wind_dir, road_cond,
           speed_offset, max_cap, route.speed_mph
         );
-        if (!fastestNonStop || sim.hours < fastestNonStop.hours) {
+        let totalNonStopHrs = sim.hours;
+        let decamillaHrs = 0;
+        if (route.decamilla_stop && route.decamilla_stop.hours > 0) {
+          decamillaHrs = route.decamilla_stop.hours;
+          totalNonStopHrs += decamillaHrs;
+        }
+        if (!fastestNonStop || totalNonStopHrs < fastestNonStop.hours) {
           fastestNonStop = {
             distance: route.distance,
-            hours: sim.hours,
+            hours: totalNonStopHrs,
+            pure_driving_hours: sim.hours,
+            decamilla_stop_hours: decamillaHrs,
             avg_speed: sim.target_mph,
             route_name: route.name
           };
@@ -2766,7 +2846,13 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const spdEl = document.getElementById('nonStopSpeed');
         if (durEl) durEl.innerText = formatHours(fastestNonStop.hours);
         if (distEl) distEl.innerText = `${Math.round(fastestNonStop.distance)} mi`;
-        if (spdEl) spdEl.innerText = `${Math.round(fastestNonStop.avg_speed)} mph avg`;
+        if (spdEl) {
+          if (fastestNonStop.decamilla_stop_hours > 0) {
+            spdEl.innerText = `${Math.round(fastestNonStop.avg_speed)} mph avg (+${fastestNonStop.decamilla_stop_hours}h stop)`;
+          } else {
+            spdEl.innerText = `${Math.round(fastestNonStop.avg_speed)} mph avg`;
+          }
+        }
       }
 
       // =========================================================================
@@ -2778,14 +2864,44 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
           const route = activeRoutesData[rIdx];
         const projection = matchStationsToPolyline(route.coordinates);
-        const routeStations = projection.matched;
+        let routeStations = projection.matched.slice();
         const total_miles = projection.total_dist || route.distance;
 
-        // 1. Direct 0-Stop Candidate Check (Permitted whenever battery is safe to destination)
+        let decamillaStationObj = null;
+        let decamillaIdx = -1;
+        if (route.decamilla_stop && route.decamilla_stop.hours > 0) {
+          decamillaStationObj = {
+            id: "decamilla-private-l2",
+            name: "DeCamilla (ChargePoint Flex 7.7 kW L2)",
+            network: "Private",
+            city: "Dillsburg",
+            state: "PA",
+            lat: 40.1413,
+            lon: -77.0156,
+            kw: 7.7,
+            off: 0.0,
+            on: 0.0,
+            gm: false,
+            ea_pass: false,
+            mem_off: 0.0,
+            mem_on: 0.0,
+            price_verified: true,
+            plug: "https://maps.google.com/?q=40.1413,-77.0156",
+            is_decamilla: true,
+            decamilla_hours: route.decamilla_stop.hours,
+            mile: route.decamilla_stop.mile,
+            detour_mi: 0.0
+          };
+          routeStations.push(decamillaStationObj);
+          routeStations.sort((a, b) => a.mile - b.mile);
+          decamillaIdx = routeStations.indexOf(decamillaStationObj);
+        }
+
+        // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
         const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
         const rem_soc0 = start_soc - (leg0.kwh / 85.0);
         const dur_mins0 = leg0.hours * 60.0;
-        if (rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
+        if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
           candidates.push({
             route: route,
             base_miles: total_miles,
@@ -2821,26 +2937,37 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
           startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
 
-          const isPlaza = isServicePlaza(st);
-          let detour_miles, detour_mins;
-          if (isPlaza) {
-            detour_miles = 0.5;
-            detour_mins = 2.5;
+          if (st.is_decamilla) {
+            stationDetours[j] = {
+              isPlaza: true,
+              detour_miles: 0.0,
+              detour_mins: 0.0,
+              kwh: 0.0,
+              last_exit_detour: 0.0,
+              last_exit_kwh: 0.0
+            };
           } else {
-            detour_miles = Math.round((0.6 + (2.0 * Math.max(0.15, st.detour_mi || 0.2))) * 10) / 10;
-            detour_mins = Math.round((2.5 + (detour_miles / 30.0 * 60.0)) * 10) / 10;
-          }
-          const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
-          const lastExitSim = simulateDetourPhysics(detour_miles / 2.0, isPlaza, payload_lbs, temp_f, road_cond);
+            const isPlaza = isServicePlaza(st);
+            let detour_miles, detour_mins;
+            if (isPlaza) {
+              detour_miles = 0.5;
+              detour_mins = 2.5;
+            } else {
+              detour_miles = Math.round((0.6 + (2.0 * Math.max(0.15, st.detour_mi || 0.2))) * 10) / 10;
+              detour_mins = Math.round((2.5 + (detour_miles / 30.0 * 60.0)) * 10) / 10;
+            }
+            const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
+            const lastExitSim = simulateDetourPhysics(detour_miles / 2.0, isPlaza, payload_lbs, temp_f, road_cond);
 
-          stationDetours[j] = {
-            isPlaza: isPlaza,
-            detour_miles: detour_miles,
-            detour_mins: detour_mins,
-            kwh: detourSim.kwh,
-            last_exit_detour: detour_miles / 2.0,
-            last_exit_kwh: lastExitSim.kwh
-          };
+            stationDetours[j] = {
+              isPlaza: isPlaza,
+              detour_miles: detour_miles,
+              detour_mins: detour_mins,
+              kwh: detourSim.kwh,
+              last_exit_detour: detour_miles / 2.0,
+              last_exit_kwh: lastExitSim.kwh
+            };
+          }
         }
 
         for (let i = 0; i < routeStations.length; i++) {
@@ -2860,7 +2987,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           drive_hrs: 0.0,
           ch_hrs: 0.0,
           ch_cost: 0.0,
-          stops: []
+          stops: [],
+          has_decamilla: false
         }];
         let queueHead = 0;
         let queueIterCount = 0;
@@ -2870,6 +2998,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const curr = queue[queueHead++];
 
           // A. Destination reachability check
+          // If DeCamilla stop is required, state cannot terminate at destination unless DeCamilla was visited!
+          const canReachDest = (!decamillaStationObj || curr.has_decamilla);
           const destLeg = (curr.stationIdx === -1) ? startToDestLeg : destLegPerStation[curr.stationIdx];
           let last_exit_detour = 0;
           let last_exit_kwh = 0;
@@ -2884,7 +3014,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const leg_to_dest_mins = leg_to_dest_hrs * 60.0;
           const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
-          if (final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
+          if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
             if (curr.stops.length === 0 || leg_to_dest_mins >= 30.0) {
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
@@ -3019,15 +3149,23 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const st = routeStations[j];
             if (st.mile <= curr.mile + 5.0) continue;
 
+            // If DeCamilla is mandatory and not yet visited, cannot skip past DeCamilla!
+            if (decamillaStationObj && !curr.has_decamilla && j > decamillaIdx) {
+              continue;
+            }
+
             const legToDestFromSt = destLegPerStation[j];
-            if ((legToDestFromSt.hours * 60.0) < 30.0) continue;
+            if ((legToDestFromSt.hours * 60.0) < 30.0 && !st.is_decamilla) continue;
 
             const legSim = (curr.stationIdx === -1) ? startToStationLegs[j] : stationToStationLegs[curr.stationIdx][j];
             if (!legSim) continue;
             const leg_mins = legSim.hours * 60.0;
 
             if (leg_mins > max_mins) continue;
-            if (leg_mins < min_mins) continue;
+            // For stops to/from DeCamilla, allow min leg down to 15 min; for regular stops enforce min_mins
+            const isToOrFromDecamilla = st.is_decamilla || (curr.stationIdx >= 0 && routeStations[curr.stationIdx].is_decamilla);
+            if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
+            if (isToOrFromDecamilla && leg_mins < 15.0) continue;
 
             const stDetour = stationDetours[j];
             const isPlaza = stDetour.isPlaza;
@@ -3039,6 +3177,59 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const arr_soc = curr.soc - (total_leg_energy / 85.0);
 
             if (arr_soc < min_buffer_soc) continue;
+
+            // Handle confirmed DeCamilla L2 charging stop
+            if (st.is_decamilla) {
+              const decamillaHrs = st.decamilla_hours || 2.0;
+              // Net 6.912 kW delivered into 85 kWh pack -> 8.13% SoC added per hour (0.0813)
+              const added_soc = Math.min(1.0 - arr_soc, decamillaHrs * 0.0813);
+              const target_soc = Math.round((arr_soc + added_soc) * 100) / 100.0;
+              const added_kwh = Math.round(added_soc * 85.0 * 10) / 10;
+              const stop_mins = Math.round(decamillaHrs * 60.0);
+
+              const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
+              const leg_ch_hrs = curr.ch_hrs + decamillaHrs;
+              const leg_total_cost = curr.ch_cost || 0.0;
+
+              const arrival_clock_decimal = departure_hours + leg_drive_hrs + curr.ch_hrs;
+
+              const stopPlan = {
+                station: st,
+                mile: st.mile,
+                arr_clock_dec: arrival_clock_decimal,
+                leg_drive_hrs: total_leg_hrs,
+                leg_drive_mins: Math.round(total_leg_hrs * 60.0),
+                leg_miles: (curr.stationIdx === -1) ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[curr.stationIdx].mile) * 10) / 10,
+                from_label: curr.stops.length === 0 ? "from Start" : `from Stop ${curr.stops.length}`,
+                is_plaza: true,
+                detour_mi: 0,
+                detour_miles: 0,
+                detour_mins: 0,
+                arr_soc: Math.round(arr_soc * 100),
+                tgt_soc: Math.round(target_soc * 100),
+                added_kwh: added_kwh,
+                charge_mins: stop_mins,
+                setup_mins: 0,
+                has_plug_and_go: false,
+                mins: stop_mins,
+                cost: 0.0,
+                rate: 0.0,
+                badge: "Free (Private L2)",
+                is_decamilla: true
+              };
+
+              queue.push({
+                stationIdx: j,
+                mile: st.mile,
+                soc: target_soc,
+                drive_hrs: leg_drive_hrs,
+                ch_hrs: leg_ch_hrs,
+                ch_cost: leg_total_cost,
+                stops: [...curr.stops, stopPlan],
+                has_decamilla: true
+              });
+              continue;
+            }
 
             const dest_mins_from_st = legToDestFromSt.hours * 60.0;
             const dest_needed_soc = (legToDestFromSt.kwh / 85.0) + target_arrival_soc;
@@ -3096,7 +3287,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
 
               // Pareto State Dominance Pruning (scoped to exact station and 5% target SoC)
-              const stateKey = `${st.id || st.name}_${curr.stops.length + 1}_${Math.round(target_soc * 100)}`;
+              const stateKey = `${st.id || st.name}_${curr.stops.length + 1}_${Math.round(target_soc * 100)}_${curr.has_decamilla ? 1 : 0}`;
               if (!paretoFrontier.has(stateKey)) {
                 paretoFrontier.set(stateKey, []);
               }
@@ -3145,7 +3336,8 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 drive_hrs: leg_drive_hrs,
                 ch_hrs: leg_ch_hrs,
                 ch_cost: leg_total_cost,
-                stops: [...curr.stops, stopPlan]
+                stops: [...curr.stops, stopPlan],
+                has_decamilla: curr.has_decamilla
               });
             }
           }
@@ -3418,36 +3610,57 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             break;
           }
 
-          const cand_target = sp.tgt_soc / 100.0;
-          // Tier 2: 1% Continuous Dial-In Refinement
-          // Calculate exact minimal departure target satisfying min_charge_pct floor and safe arrival at next waypoint
-          const exact_dialed_target = Math.ceil(Math.max(current_soc + min_charge_pct, min_safe_departure) * 100 - 1e-9) / 100.0;
-          // trimSlack=true -> leave with only what is needed; false -> keep the search's chosen target
-          // (raised if real OSRM geometry needs more). Both variants compete in the final selection.
-          const target_soc = trimSlack
-            ? Math.min(0.92, exact_dialed_target)
-            : Math.min(0.92, Math.max(cand_target, exact_dialed_target));
-
+          let target_soc, stop_mins, added_kwh, stop_cost, effective_rate, badge, charge_mins, setup_mins;
           const arr_clock_dec = departure_hours + total_drive_hrs + total_ch_hrs;
-          let effective_rate = sp.rate;
-          let badge = sp.badge;
-          if (sp.station.network === "Tesla") {
-            const is_mem_active = cand.memberships && cand.memberships.tesla && cand.memberships.tesla.active;
-            const tariff = resolveStationTariff(sp.station, arr_clock_dec, is_mem_active);
-            effective_rate = tariff.rate;
-            badge = is_mem_active 
-              ? (cand.memberships.tesla.pre_owned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
-              : (tariff.label || "");
+
+          if (sp.is_decamilla) {
+            const decamillaHrs = sp.station.decamilla_hours || 2.0;
+            const added_soc = Math.min(1.0 - current_soc, decamillaHrs * 0.0813);
+            target_soc = Math.round((current_soc + added_soc) * 100) / 100.0;
+            if (target_soc < (min_safe_departure - 0.01)) {
+              valid = false;
+              break;
+            }
+            added_kwh = Math.round(added_soc * 85.0 * 10) / 10;
+            stop_mins = Math.round(decamillaHrs * 60.0);
+            charge_mins = stop_mins;
+            setup_mins = 0;
+            stop_cost = 0.0;
+            effective_rate = 0.0;
+            badge = "Free (Private L2)";
+          } else {
+            const cand_target = sp.tgt_soc / 100.0;
+            // Tier 2: 1% Continuous Dial-In Refinement
+            const exact_dialed_target = Math.ceil(Math.max(current_soc + min_charge_pct, min_safe_departure) * 100 - 1e-9) / 100.0;
+            target_soc = trimSlack
+              ? Math.min(0.92, exact_dialed_target)
+              : Math.min(0.92, Math.max(cand_target, exact_dialed_target));
+
+            effective_rate = sp.rate;
+            badge = sp.badge;
+            if (sp.station.network === "Tesla") {
+              const is_mem_active = cand.memberships && cand.memberships.tesla && cand.memberships.tesla.active;
+              const tariff = resolveStationTariff(sp.station, arr_clock_dec, is_mem_active);
+              effective_rate = tariff.rate;
+              badge = is_mem_active 
+                ? (cand.memberships.tesla.pre_owned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
+                : (tariff.label || "");
+            }
+
+            const ch = calculateCharging(current_soc, target_soc, sp.station.kw, effective_rate, sp.station);
+            stop_mins = Math.round(ch.mins + sp.setup_mins);
+            charge_mins = Math.round(ch.mins);
+            setup_mins = sp.setup_mins;
+            added_kwh = Math.round(ch.added_kwh * 10) / 10;
+            stop_cost = Math.round(ch.cost * 100) / 100;
           }
 
-          const ch = calculateCharging(current_soc, target_soc, sp.station.kw, effective_rate, sp.station);
-          const stop_mins = Math.round(ch.mins + sp.setup_mins);
           const arr_clock = formatClockTime(arr_clock_dec);
           const dep_clock = formatClockTime(arr_clock_dec + (stop_mins / 60.0));
           total_ch_hrs += (stop_mins / 60.0);
-          total_ch_cost += ch.cost;
+          total_ch_cost += stop_cost;
 
-          const actual_detour_miles = Math.max(0.0, Math.round((leg.distance_miles - (sp.mile - (idx === 0 ? 0 : cand.stops[idx-1].mile))) * 10) / 10);
+          const actual_detour_miles = sp.is_decamilla ? 0.0 : Math.max(0.0, Math.round((leg.distance_miles - (sp.mile - (idx === 0 ? 0 : cand.stops[idx-1].mile))) * 10) / 10);
 
           polishedStops.push({
             ...sp,
@@ -3458,14 +3671,15 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             detour_miles: actual_detour_miles > 0 ? actual_detour_miles : sp.detour_miles,
             arr_soc: Math.round(current_soc * 100),
             tgt_soc: Math.round(target_soc * 100),
-            added_kwh: Math.round(ch.added_kwh * 10) / 10,
-            charge_mins: Math.round(ch.mins),
+            added_kwh: added_kwh,
+            charge_mins: charge_mins,
+            setup_mins: setup_mins,
             mins: stop_mins,
             arr_clock: arr_clock,
             dep_clock: dep_clock,
             rate: effective_rate,
             badge: badge,
-            cost: Math.round(ch.cost * 100) / 100
+            cost: stop_cost
           });
 
           current_soc = target_soc;
@@ -3591,7 +3805,13 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const spdEl = document.getElementById('nonStopSpeed');
         if (durEl) durEl.innerText = formatHours(ns.hours);
         if (distEl) distEl.innerText = `${Math.round(ns.distance)} mi`;
-        if (spdEl) spdEl.innerText = `${Math.round(ns.avg_speed)} mph avg`;
+        if (spdEl) {
+          if (ns.decamilla_stop_hours > 0) {
+            spdEl.innerText = `${Math.round(ns.avg_speed)} mph avg (+${ns.decamilla_stop_hours}h stop)`;
+          } else {
+            spdEl.innerText = `${Math.round(ns.avg_speed)} mph avg`;
+          }
+        }
       }
 
       // Update Max Duration Tolerance Badge
@@ -3727,14 +3947,15 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           iconSize: [26, 26]
         });
 
-        const detourLabel = s.is_plaza ? 'Turnpike Service Plaza (~2.8m loop)' : `+${s.detour_miles} mi exit detour (~${s.detour_mins}m)`;
+        const detourLabel = s.is_decamilla ? 'Direct Intermediate Stop' : (s.is_plaza ? 'Turnpike Service Plaza (~2.8m loop)' : `+${s.detour_miles} mi exit detour (~${s.detour_mins}m)`);
+        const dwellBreakdown = s.is_decamilla ? 'Free L2 Charging' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}`;
         const stopMarker = L.marker([s.station.lat, s.station.lon], { icon: stopIcon })
           .bindPopup(`
             <div style="font-family:sans-serif; font-size:12px; line-height:1.4;">
               <b>Stop #${idx+1}: ${s.station.name}</b><br>
               <span style="color:#64748b;">Mile:</span> <b>Mile ${Math.round(s.mile)}</b> (${detourLabel})<br>
               <span style="color:#64748b;">Charge:</span> <b>${s.arr_soc}% &rarr; ${s.tgt_soc}%</b> (+${s.added_kwh} kWh)<br>
-              <span style="color:#64748b;">Total Dwell:</span> <b>${s.mins} mins</b> (${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}) | Cost: <b>$${s.cost.toFixed(2)}</b><br>
+              <span style="color:#64748b;">Total Dwell:</span> <b>${s.mins} mins</b> (${dwellBreakdown}) | Cost: <b>$${s.cost.toFixed(2)}</b><br>
               ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Open Details</a>` : ''}
             </div>
           `).addTo(map);
@@ -3832,9 +4053,14 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         row.onclick = () => {
           map.setView([s.station.lat, s.station.lon], 13);
         };
-        const detourBadge = s.is_plaza
-          ? '<span class="text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[10px] inline-flex items-center gap-1"><i data-lucide="coffee" class="w-3 h-3 text-emerald-400"></i>Plaza (~3m loop)</span>'
-          : `<span class="text-amber-400 font-mono font-medium">+${s.detour_miles} mi</span> <span class="text-slate-500 text-[10px]">(~${s.detour_mins}m exit)</span>`;
+        let detourBadge;
+        if (s.is_decamilla) {
+          detourBadge = '<span class="text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[10px] inline-flex items-center gap-1"><i data-lucide="home" class="w-3 h-3 text-emerald-400"></i>Direct Stop</span>';
+        } else if (s.is_plaza) {
+          detourBadge = '<span class="text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 text-[10px] inline-flex items-center gap-1"><i data-lucide="coffee" class="w-3 h-3 text-emerald-400"></i>Plaza (~3m loop)</span>';
+        } else {
+          detourBadge = `<span class="text-amber-400 font-mono font-medium">+${s.detour_miles} mi</span> <span class="text-slate-500 text-[10px]">(~${s.detour_mins}m exit)</span>`;
+        }
 
         const prevMile = (idx === 0) ? 0 : itin.stops[idx - 1].mile;
         const fallbackLegMiles = Math.max(1, Math.round((s.mile - prevMile) * 10) / 10);
@@ -3858,7 +4084,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           </td>
           <td class="py-2.5 px-3 text-slate-300 font-mono">Mile ${Math.round(s.mile)}</td>
           <td class="py-2.5 px-3 text-xs">${detourBadge}</td>
-          <td class="py-2.5 px-3 text-slate-300">${s.station.kw} kW</td>
+          <td class="py-2.5 px-3 text-slate-300">${s.is_decamilla ? '7.7 kW L2' : `${s.station.kw} kW`}</td>
           <td class="py-2.5 px-3 text-amber-400 font-semibold">${s.arr_soc}%</td>
           <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.tgt_soc}%</td>
           <td class="py-2.5 px-3 text-slate-300">${s.added_kwh} kWh</td>
@@ -3866,11 +4092,11 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             <div class="text-white text-[11px] font-bold">${s.arr_clock ? `${s.arr_clock} &ndash; ${s.dep_clock}` : ''}</div>
             <div class="text-[11px] text-slate-300 font-medium">${s.mins} min total</div>
             <div class="text-[10px] text-slate-400 font-normal font-mono">
-              ${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? '<span class="text-cyan-400 font-sans font-semibold">Plug &amp; Go</span>' : 'setup'}
+              ${s.is_decamilla ? '<span class="text-emerald-400 font-semibold font-sans">Free L2 Charging</span>' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_go ? '<span class="text-cyan-400 font-sans font-semibold">Plug &amp; Go</span>' : 'setup'}`}
             </div>
           </td>
           <td class="py-2.5 px-3 font-mono">
-            <div>$${s.rate.toFixed(2)}/kWh</div>
+            <div>${s.is_decamilla ? 'Free ($0.00)' : `$${s.rate.toFixed(2)}/kWh`}</div>
             ${s.badge ? `<div class="text-[10px] font-sans font-bold text-emerald-400">${s.badge}</div>` : ''}
           </td>
           <td class="py-2.5 px-3 text-emerald-400 font-semibold font-mono">$${s.cost.toFixed(2)}</td>
