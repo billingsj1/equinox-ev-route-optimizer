@@ -26,9 +26,13 @@ KNOWN_MAGIC_DOCK_CORRIDOR_PROFILES = {
         "power_kw": 325,
         "rate_off": 0.72,
         "rate_on": 0.72,
-        "mem_off": 0.48,
+        "mem_off": 0.34,
         "mem_on": 0.48,
-        "tou_rates": []
+        "tou_rates": [
+            {"start": "00:00", "end": "08:00", "on": 0.72, "off": 0.72, "mem_on": 0.34, "mem_off": 0.34, "label": "Low Congestion (<20%)"},
+            {"start": "08:00", "end": "23:00", "on": 0.72, "off": 0.72, "mem_on": 0.48, "mem_off": 0.48, "label": "Normal Congestion (20-60%)"},
+            {"start": "23:00", "end": "24:00", "on": 0.72, "off": 0.72, "mem_on": 0.34, "mem_off": 0.34, "label": "Low Congestion (<20%)"}
+        ]
     },
     "19516": {
         "slug": "19516",
@@ -40,9 +44,13 @@ KNOWN_MAGIC_DOCK_CORRIDOR_PROFILES = {
         "power_kw": 250,
         "rate_off": 0.72,
         "rate_on": 0.72,
-        "mem_off": 0.48,
+        "mem_off": 0.34,
         "mem_on": 0.48,
-        "tou_rates": []
+        "tou_rates": [
+            {"start": "00:00", "end": "17:00", "on": 0.72, "off": 0.72, "mem_on": 0.34, "mem_off": 0.34, "label": "Low Congestion (<20%)"},
+            {"start": "17:00", "end": "19:00", "on": 0.72, "off": 0.72, "mem_on": 0.48, "mem_off": 0.48, "label": "Normal Congestion (20-60%)"},
+            {"start": "19:00", "end": "24:00", "on": 0.72, "off": 0.72, "mem_on": 0.34, "mem_off": 0.34, "label": "Low Congestion (<20%)"}
+        ]
     },
     "401410": {
         "slug": "401410",

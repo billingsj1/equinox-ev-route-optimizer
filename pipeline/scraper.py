@@ -41,9 +41,18 @@ MANUALLY_VERIFIED_OVERRIDES = {
     "tesla-fort-littleton-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://www.tesla.com/findus/location/supercharger/26674"},
     "tesla-mt-laurel-nj": {"price": 0.51, "price_off_peak": 0.35, "mem_price": 0.38, "mem_price_off_peak": 0.26, "url": "https://www.tesla.com/findus/location/supercharger/406608"},
     "tesla-woodlyn-pa": {"price": 0.62, "price_off_peak": 0.32, "mem_price": 0.44, "mem_price_off_peak": 0.23, "url": "https://www.tesla.com/findus/location/supercharger/59209"},
-    "tesla-cherry-hill-nj": {"price": 0.72, "mem_price": 0.48, "url": "https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger"},
-    "tesla-maple-shade-nj": {"price": 0.72, "mem_price": 0.48, "url": "https://www.tesla.com/findus/location/supercharger/26769"},
+    "tesla-cherry-hill-nj": {"price": 0.72, "mem_price": 0.48, "mem_price_off_peak": 0.34, "url": "https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger"},
+    "tesla-maple-shade-nj": {"price": 0.72, "mem_price": 0.48, "mem_price_off_peak": 0.34, "url": "https://www.tesla.com/findus/location/supercharger/26769"},
     "tesla-blackwood-nj": {"price": 0.73, "price_off_peak": 0.38, "mem_price": 0.52, "mem_price_off_peak": 0.27, "url": "https://www.tesla.com/findus/location/supercharger/59126"},
+    "tesla-pittsburgh-freeport-pa": {"price": 0.59, "price_off_peak": 0.30, "mem_price": 0.44, "mem_price_off_peak": 0.22, "url": "https://www.tesla.com/findus/location/supercharger/20506"},
+    "tesla-summerdale-pa": {"price": 0.55, "price_off_peak": 0.28, "mem_price": 0.40, "mem_price_off_peak": 0.21, "url": "https://www.tesla.com/findus/location/supercharger/33951"},
+    "tesla-lawnside-nj": {"price": 0.49, "price_off_peak": 0.34, "mem_price": 0.36, "mem_price_off_peak": 0.25, "url": "https://www.tesla.com/findus/location/supercharger/402407"},
+    "tesla-aston-pa": {"price": 0.56, "price_off_peak": 0.28, "mem_price": 0.40, "mem_price_off_peak": 0.20, "url": "https://www.tesla.com/findus/location/supercharger/35027"},
+    "tesla-shrewsbury-pa": {"price": 0.68, "price_off_peak": 0.30, "mem_price": 0.49, "mem_price_off_peak": 0.22, "url": "https://www.tesla.com/findus/location/supercharger/36287"},
+    "tesla-timonium-md": {"price": 0.60, "price_off_peak": 0.38, "mem_price": 0.43, "mem_price_off_peak": 0.27, "url": "https://www.tesla.com/findus/location/supercharger/33688"},
+    "tesla-waynesburg-pa": {"price": 0.57, "mem_price": 0.41, "url": "https://www.tesla.com/findus/location/supercharger/401410"},
+    "tesla-medford-nj": {"price": 0.72, "mem_price": 0.48, "mem_price_off_peak": 0.34, "url": "https://www.tesla.com/findus/location/supercharger/19516"},
+    "tesla-hamilton-nj": {"price": 0.72, "mem_price": 0.48, "mem_price_off_peak": 0.34, "url": "https://www.tesla.com/findus/location/supercharger/424861"},
     "evgo-pilot-marengo-oh": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
     "ocm-306512": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
     "ocm-351529": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
@@ -440,19 +449,35 @@ class PricingScraperPipeline:
             lat = ex.get("latitude")
             lon = ex.get("longitude")
 
-            price, url = self.match_station_price(
-                st_id, net, st, city, name, "", lat, lon, None, scraped_db
-            )
-            if price is not None:
-                ex["rate_regular"]["off_peak"] = price
-                ex["rate_regular"]["on_peak"] = price
+            if st_id in MANUALLY_VERIFIED_OVERRIDES:
+                ov = MANUALLY_VERIFIED_OVERRIDES[st_id]
+                ex["rate_regular"]["off_peak"] = ov.get("price_off_peak", ov["price"])
+                ex["rate_regular"]["on_peak"] = ov["price"]
+                if "mem_price" in ov:
+                    if "membership_rate" not in ex or not isinstance(ex["membership_rate"], dict):
+                        ex["membership_rate"] = {}
+                    ex["membership_rate"]["off_peak"] = ov.get("mem_price_off_peak", ov["mem_price"])
+                    ex["membership_rate"]["on_peak"] = ov["mem_price"]
                 ex["price_verified"] = True
-                if url:
-                    ex["plugshare_url"] = url
-                if ex.get("ea_pass_eligible"):
-                    ex["membership_rate"]["off_peak"] = round(price * 0.75, 2)
-                    ex["membership_rate"]["on_peak"] = round(price * 0.75, 2)
+                if ov.get("url"):
+                    ex["plugshare_url"] = ov["url"]
                 refreshed_count += 1
+            else:
+                price, url, matched_gm = self.match_station_price(
+                    st_id, net, st, city, name, "", lat, lon, None, scraped_db
+                )
+                if price is not None:
+                    ex["rate_regular"]["off_peak"] = price
+                    ex["rate_regular"]["on_peak"] = price
+                    ex["price_verified"] = True
+                    if url:
+                        ex["plugshare_url"] = url
+                    if ex.get("ea_pass_eligible"):
+                        ex["membership_rate"]["off_peak"] = round(price * 0.75, 2)
+                        ex["membership_rate"]["on_peak"] = round(price * 0.75, 2)
+                    elif matched_gm is not None:
+                        ex["gm_discount_eligible"] = matched_gm
+                    refreshed_count += 1
 
         final_list = list(existing.values())
         with open(PRICES_JSON, "w", encoding="utf-8") as f:

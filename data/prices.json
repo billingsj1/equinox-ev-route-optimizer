@@ -1043,12 +1043,12 @@
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
     "membership_rate": {
-      "off_peak": 0.48,
+      "off_peak": 0.34,
       "on_peak": 0.48
     },
     "tou_hours": {
-      "off_peak": "22:00-08:00",
-      "on_peak": "08:00-22:00"
+      "off_peak": "19:00-17:00",
+      "on_peak": "17:00-19:00"
     },
     "session_fee": 0.0,
     "plugshare_url": "https://www.tesla.com/findus/location/supercharger/19516",
@@ -1074,12 +1074,12 @@
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
     "membership_rate": {
-      "off_peak": 0.48,
+      "off_peak": 0.34,
       "on_peak": 0.48
     },
     "tou_hours": {
-      "off_peak": "22:00-08:00",
-      "on_peak": "08:00-22:00"
+      "off_peak": "23:00-08:00",
+      "on_peak": "08:00-23:00"
     },
     "session_fee": 0.0,
     "plugshare_url": "https://www.tesla.com/findus/location/supercharger/424861",
