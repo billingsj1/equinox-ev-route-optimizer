@@ -2920,17 +2920,35 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (min_target_allowed > 0.90) continue;
 
             const targetSet = new Set();
-            // 1. Strict floor target
+            // 1. Strict floor target (1% precision)
             targetSet.add(min_target_allowed);
 
             // 2. Exact finish target to destination (ensuring it satisfies the minimum charge floor)
             if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
               const tgtFinish = Math.round(Math.max(min_target_allowed, dest_needed_soc) * 100) / 100.0;
               if (tgtFinish <= 0.90) targetSet.add(tgtFinish);
-              if (tgtFinish + 0.05 <= 0.90) targetSet.add(Math.round((tgtFinish + 0.05) * 100) / 100.0);
+              if (tgtFinish + 0.02 <= 0.90) targetSet.add(Math.round((tgtFinish + 0.02) * 100) / 100.0);
             }
 
-            // 3. Strategic standard SoC milestones above the floor (up to 90%)
+            // 3. Exact reach-next anchors to downstream reachable stations along this corridor (Tier 1 Smart Anchors)
+            for (let k = j + 1; k < routeStations.length; k++) {
+              const nextLegSim = stationToStationLegs[j][k];
+              if (!nextLegSim) continue;
+              const nextLegMins = nextLegSim.hours * 60.0;
+              if (nextLegMins >= min_mins && nextLegMins <= max_mins) {
+                const nextDetour = stationDetours[k];
+                const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
+                const exactTgtK = Math.round(((totalEnergyToK / 85.0) + min_buffer_soc) * 100) / 100.0;
+                if (exactTgtK >= min_target_allowed && exactTgtK <= 0.90) {
+                  targetSet.add(exactTgtK);
+                  if (exactTgtK + 0.02 <= 0.90) {
+                    targetSet.add(Math.round((exactTgtK + 0.02) * 100) / 100.0);
+                  }
+                }
+              }
+            }
+
+            // 4. Strategic standard SoC milestones above the floor (up to 90%)
             const startStep = Math.ceil(min_target_allowed * 20.0) / 20.0;
             for (let t = startStep; t <= 0.901; t += 0.05) {
               targetSet.add(Math.round(t * 100) / 100.0);
@@ -3274,8 +3292,17 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
 
           const cand_target = sp.tgt_soc / 100.0;
-          let target_soc = Math.max(cand_target, min_safe_departure);
-          target_soc = Math.min(0.92, Math.max(current_soc + min_charge_pct, target_soc));
+          // Tier 2: 1% Continuous Dial-In Refinement
+          // Calculate exact minimal departure target satisfying min_charge_pct floor and safe arrival at next waypoint
+          const exact_dialed_target = Math.round(Math.max(current_soc + min_charge_pct, min_safe_departure) * 100) / 100.0;
+
+          let target_soc;
+          if (cand_target > exact_dialed_target + 0.04 && sp.rate < 0.40) {
+            // Preserve intentional deeper charges at discount stations (e.g. Tesla $0.29 or IONNA $0.32)
+            target_soc = Math.min(0.92, cand_target);
+          } else {
+            target_soc = Math.min(0.92, exact_dialed_target);
+          }
 
           const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate, sp.station);
           const stop_mins = Math.round(ch.mins + sp.setup_mins);
