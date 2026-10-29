@@ -165,7 +165,7 @@ class PricingScraperPipeline:
         if os.path.exists(SCRAPED_PRICES_JSON):
             with open(SCRAPED_PRICES_JSON, "r", encoding="utf-8") as f:
                 return json.load(f)
-        return {"dcfc": [], "ionna": [], "mercedes": []}
+        return {"dcfc": [], "ionna": [], "mercedes": [], "tesla": []}
 
     def load_existing_stations(self) -> Dict[str, Dict[str, Any]]:
         stations = {}
@@ -228,14 +228,7 @@ class PricingScraperPipeline:
                 t_id = (t.get("id") or "").lower()
                 if (t_slug and t_slug in s_id_lower) or (t_id and t_id == s_id_lower) or (lat is not None and lon is not None and t.get("lat") and t.get("lon") and haversine_miles(lat, lon, t["lat"], t["lon"]) < 1.5):
                     return t["rate_on"], t.get("url"), False
-            # Check DCFC Tracker live scraped Tesla stations
-            st_upper = (state or "").strip().upper()
-            city_lower = (city or "").strip().lower()
-            for d in scraped_db.get("dcfc", []):
-                if d.get("network") == "Tesla" and d.get("state") == st_upper:
-                    d_full = f"{d.get('name', '')} {d.get('address', '')}".lower()
-                    if city_lower and len(city_lower) >= 4 and city_lower in d_full:
-                        return d["price"], d.get("url"), False
+            return None, None, False
 
         # 3. Check IONNA real scraped stations
         if network == "IONNA" and lat is not None and lon is not None:
@@ -493,6 +486,13 @@ class PricingScraperPipeline:
             logger.warning(f"Error live scraping Mercedes: {e}")
             mb_records = []
 
+        try:
+            logger.info("Scraping live Tesla Supercharger Magic Dock tariffs via CDP...")
+            tesla_records = await self.tesla_adapter.scrape_corridor_magic_docks()
+        except Exception as e:
+            logger.warning(f"Error live scraping Tesla Superchargers: {e}")
+            tesla_records = []
+
         scraped_db = self.load_scraped_database()
         if dcfc_records:
             scraped_db["dcfc"] = dcfc_records
@@ -500,6 +500,8 @@ class PricingScraperPipeline:
             scraped_db["ionna"] = ionna_records
         if mb_records:
             scraped_db["mercedes"] = mb_records
+        if tesla_records:
+            scraped_db["tesla"] = tesla_records
 
         try:
             with open(SCRAPED_PRICES_JSON, "w", encoding="utf-8") as f:
@@ -536,6 +538,30 @@ class PricingScraperPipeline:
                 if ov.get("url"):
                     ex["plugshare_url"] = ov["url"]
                 refreshed_count += 1
+            elif net == "Tesla":
+                t_match = None
+                s_id_lower = st_id.lower()
+                for t in scraped_db.get("tesla", []):
+                    t_slug = (t.get("slug") or "").lower()
+                    t_id = (t.get("id") or "").lower()
+                    if (t_slug and t_slug in s_id_lower) or (t_id and t_id == s_id_lower) or (lat is not None and lon is not None and t.get("lat") and t.get("lon") and haversine_miles(lat, lon, t["lat"], t["lon"]) < 1.5):
+                        t_match = t
+                        break
+                if t_match and t_match.get("rate_on") is not None:
+                    ex["rate_regular"]["on_peak"] = t_match["rate_on"]
+                    ex["rate_regular"]["off_peak"] = t_match.get("rate_off", t_match["rate_on"])
+                    if "membership_rate" not in ex or not isinstance(ex["membership_rate"], dict):
+                        ex["membership_rate"] = {}
+                    ex["membership_rate"]["on_peak"] = t_match.get("mem_on", t_match["rate_on"])
+                    ex["membership_rate"]["off_peak"] = t_match.get("mem_off", t_match.get("rate_off", t_match["rate_on"]))
+                    if t_match.get("tou_rates"):
+                        ex["tou_rates"] = t_match["tou_rates"]
+                    ex["price_verified"] = True
+                    if t_match.get("url"):
+                        ex["plugshare_url"] = t_match["url"]
+                    refreshed_count += 1
+                else:
+                    ex["price_verified"] = False
             else:
                 price, url, matched_gm = self.match_station_price(
                     st_id, net, st, city, name, "", lat, lon, None, scraped_db

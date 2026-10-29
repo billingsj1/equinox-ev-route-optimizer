@@ -24,6 +24,10 @@ static_dir = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+if os.path.exists(data_dir):
+    app.mount("/data", StaticFiles(directory=data_dir), name="data")
+
 vehicle = EquinoxEVFWD()
 station_manager = StationManager()
 toll_calculator = TollCalculator()

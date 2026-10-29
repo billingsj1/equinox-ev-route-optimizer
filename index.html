@@ -4535,80 +4535,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
 
-        // 2b. DYNAMIC FALLBACK: Match in live db.dcfc (covers 400+ live scraped Tesla stations with real prices)
-        if (db && db.dcfc && Array.isArray(db.dcfc)) {
-          for (const d of db.dcfc) {
-            if (d.network === 'Tesla' && stUpper && d.state === stUpper) {
-              const dName = (d.name || '').toLowerCase();
-              const dAddr = (d.address || '').toLowerCase();
-              const matchesCity = cityLower && cityLower.length >= 4 && (dName.includes(cityLower) || dAddr.includes(cityLower));
-              if (matchesCity) {
-                const nonMemberRate = d.price;
-                const memberRate = d.mem_price || Math.round(nonMemberRate * 0.65 * 100) / 100;
-                const offPeakMem = Math.round(memberRate * 0.70 * 100) / 100;
-                const offPeakNonMem = Math.round(nonMemberRate * 0.75 * 100) / 100;
-                const tou = [
-                  { start: "00:00", end: "08:00", on: offPeakNonMem, off: offPeakNonMem, mem_on: offPeakMem, mem_off: offPeakMem, label: "Off-Peak (12am-8am)" },
-                  { start: "08:00", end: "24:00", on: nonMemberRate, off: nonMemberRate, mem_on: memberRate, mem_off: memberRate, label: "Peak (8am-12am)" }
-                ];
-                return {
-                  on: nonMemberRate,
-                  off: offPeakNonMem,
-                  mem_on: memberRate,
-                  mem_off: offPeakMem,
-                  tou_rates: tou,
-                  url: d.url || station.plug || `https://dcfctracker.com/stations/${d.dcfc_id}`,
-                  verified: true
-                };
-              }
-            }
-          }
-        }
-
-        // 2c. DYNAMIC REGIONAL TARIFF: For newly discovered Magic Dock Superchargers
-        let dynOn = 0.56, dynOff = 0.56, dynMemOn = 0.41, dynMemOff = 0.41;
-        let dynTou = [];
-        if (stUpper === 'NJ') {
-          dynOn = 0.72; dynOff = 0.50; dynMemOn = 0.48; dynMemOff = 0.34;
-          dynTou = [
-            { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak (12am-8am)" },
-            { start: "08:00", end: "24:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Peak (8am-12am)" }
-          ];
-        } else if (stUpper === 'PA') {
-          if (cityLower.includes('pittsburgh') || cityLower.includes('aston') || cityLower.includes('woodlyn') || cityLower.includes('summerdale') || cityLower.includes('shrewsbury')) {
-            dynOn = 0.58; dynOff = 0.30; dynMemOn = 0.42; dynMemOff = 0.22;
-            dynTou = [
-              { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" },
-              { start: "08:00", end: "23:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Peak" },
-              { start: "23:00", end: "24:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" }
-            ];
-          } else {
-            dynOn = 0.56; dynOff = 0.56; dynMemOn = 0.41; dynMemOff = 0.41;
-          }
-        } else if (stUpper === 'MD') {
-          dynOn = 0.60; dynOff = 0.38; dynMemOn = 0.43; dynMemOff = 0.27;
-          dynTou = [
-            { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" },
-            { start: "08:00", end: "19:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Day Peak" },
-            { start: "19:00", end: "23:00", on: 0.53, off: 0.53, mem_on: 0.38, mem_off: 0.38, label: "Mid-Peak" },
-            { start: "23:00", end: "24:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" }
-          ];
-        } else if (stUpper === 'OH') {
-          dynOn = 0.52; dynOff = 0.36; dynMemOn = 0.37; dynMemOff = 0.25;
-          dynTou = [
-            { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" },
-            { start: "08:00", end: "23:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Peak" },
-            { start: "23:00", end: "24:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" }
-          ];
-        }
+        // 2b. If not matched in db.tesla or overrides, flag as unverified (never guess synthetic flat rates or scrape Tesla from DCFC)
         return {
-          on: dynOn,
-          off: dynOff,
-          mem_on: dynMemOn,
-          mem_off: dynMemOff,
-          tou_rates: dynTou,
-          url: station.plug || `https://www.tesla.com/findus/location/supercharger/${station.tesla_slug || ''}`,
-          verified: true
+          on: null,
+          off: null,
+          mem_on: null,
+          mem_off: null,
+          tou_rates: [],
+          url: station.plug || (sSlug ? `https://www.tesla.com/findus/location/supercharger/${sSlug}` : null),
+          verified: false
         };
       }
 
@@ -5005,7 +4940,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   ALL_STATIONS.push(newSt);
                   newlyAdded++;
                   teslaAdded++;
-                  if (isVerified) {
+                  if (res.verified) {
                     newlyVerified++;
                     teslaVerified++;
                   }
@@ -5084,19 +5019,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         statusBox.innerHTML = `
           <div class="flex items-center gap-2 text-emerald-400 font-medium text-xs">
             <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
-            <span>Matching stations against 1,140+ live scraped station tariffs (Tesla Magic Dock, DCFC Tracker, IONNA, Mercedes)...</span>
+            <span>Live scraping stations directly (Tesla Find Us, DCFC Tracker, IONNA, Mercedes)...</span>
           </div>
         `;
         if (window.lucide) lucide.createIcons();
       }
 
       try {
-        // 1. If backend API is reachable, trigger live scraper pipeline across DCFC Tracker, IONNA, Mercedes
+        // 1. If backend API is reachable, trigger live scraper pipeline
         try {
           await fetch('/api/stations/refresh-prices', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(5000)
+            signal: AbortSignal.timeout(60000)
           });
         } catch (_) {
           // Backend not running (e.g. static viewer); load fresh database directly
