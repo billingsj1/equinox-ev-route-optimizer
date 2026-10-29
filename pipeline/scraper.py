@@ -19,6 +19,7 @@ from pipeline.networks.mercedes_benz import MercedesBenzAdapter
 from pipeline.networks.ionna import IONNAAdapter
 from pipeline.networks.dcfc_tracker import DCFCTrackerAdapter
 from pipeline.networks.open_charge_map import OpenChargeMapClient
+from pipeline.networks.tesla import TeslaSuperchargerAdapter
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("pricing_pipeline")
@@ -36,8 +37,13 @@ MANUALLY_VERIFIED_OVERRIDES = {
     "ea-belle-vernon-pa": {"price": 0.60, "url": "https://dcfctracker.com/stations/237974"},
     "ionna-cambridge-oh": {"price": 0.39, "url": "https://dcfctracker.com/stations/454141"},
     "mb-washington-pa": {"price": 0.44, "url": "https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/"},
-    "tesla-somerset-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://dcfctracker.com/stations/194073"},
-    "tesla-fort-littleton-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://dcfctracker.com/stations/397535"},
+    "tesla-somerset-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://www.tesla.com/findus/location/supercharger/somersetsupercharger"},
+    "tesla-fort-littleton-pa": {"price": 0.56, "mem_price": 0.41, "url": "https://www.tesla.com/findus/location/supercharger/26674"},
+    "tesla-mt-laurel-nj": {"price": 0.51, "price_off_peak": 0.35, "mem_price": 0.38, "mem_price_off_peak": 0.26, "url": "https://www.tesla.com/findus/location/supercharger/406608"},
+    "tesla-woodlyn-pa": {"price": 0.62, "price_off_peak": 0.32, "mem_price": 0.44, "mem_price_off_peak": 0.23, "url": "https://www.tesla.com/findus/location/supercharger/59209"},
+    "tesla-cherry-hill-nj": {"price": 0.72, "mem_price": 0.48, "url": "https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger"},
+    "tesla-maple-shade-nj": {"price": 0.72, "mem_price": 0.48, "url": "https://www.tesla.com/findus/location/supercharger/26769"},
+    "tesla-blackwood-nj": {"price": 0.73, "price_off_peak": 0.38, "mem_price": 0.52, "mem_price_off_peak": 0.27, "url": "https://www.tesla.com/findus/location/supercharger/59126"},
     "evgo-pilot-marengo-oh": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
     "ocm-306512": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
     "ocm-351529": {"price": 0.69, "url": "https://dcfctracker.com/stations/347668", "gm_discount_eligible": False},
@@ -79,6 +85,7 @@ class PricingScraperPipeline:
         self.mercedes_adapter = MercedesBenzAdapter()
         self.ionna_adapter = IONNAAdapter()
         self.dcfc_adapter = DCFCTrackerAdapter()
+        self.tesla_adapter = TeslaSuperchargerAdapter()
 
     def _init_sqlite_db(self):
         conn = sqlite3.connect(PRICES_DB)

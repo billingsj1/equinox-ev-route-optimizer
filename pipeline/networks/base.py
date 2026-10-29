@@ -28,6 +28,7 @@ class StationTariff:
     membership_rate_off_peak: float = 0.45
     membership_rate_on_peak: float = 0.45
     plugshare_url: str = ""
+    tou_rates: Optional[List[Dict[str, Any]]] = None
 
 class BaseNetworkAdapter:
     network_name: str = "Base"

@@ -179,6 +179,13 @@
         <div class="space-y-3 text-xs">
           <div>
             <div class="flex justify-between text-slate-400 mb-1">
+              <span>Departure Time</span>
+              <span id="departureTimeDisplay" class="font-mono text-emerald-400">08:00 AM</span>
+            </div>
+            <input type="time" id="departureTime" value="08:00" onchange="updateDepartureTimeDisplay(); recomputeCurrentRoute();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200 font-mono text-sm focus:border-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
               <span>Starting Charge (Home departure)</span>
               <span id="startSocDisplay" class="font-mono text-emerald-400">100% (85.0 kWh)</span>
             </div>
@@ -727,13 +734,18 @@
       {"id":"ea-belle-vernon-pa","name":"Electrify America - Belle Vernon, PA","network":"Electrify America","lat":40.1265,"lon":-79.8695,"kw":150,"off":0.40,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/237974"},
       {"id":"ea-new-stanton-pa","name":"Sheetz / EA - New Stanton, PA","network":"Electrify America","lat":40.2187,"lon":-79.6103,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/451444"},
       {"id":"ag-somerset-pa","name":"Applegreen - Somerset, PA (PA Turnpike)","network":"Applegreen","lat":40.0150,"lon":-79.0700,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/421314"},
-      {"id":"tesla-somerset-pa","name":"Tesla Supercharger (+CCS1) - Somerset, PA","network":"Tesla","lat":40.0084,"lon":-79.0781,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://dcfctracker.com/stations/194073"},
+      {"id":"tesla-somerset-pa","name":"Tesla Supercharger (+CCS1) - Somerset, PA","network":"Tesla","lat":40.0084,"lon":-79.0781,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/somersetsupercharger"},
+      {"id":"tesla-mt-laurel-nj","name":"Tesla Supercharger (+CCS1) - Mt Laurel, NJ","network":"Tesla","lat":39.9337,"lon":-74.9635,"city":"Mt Laurel","state":"NJ","kw":250,"off":0.35,"on":0.51,"gm":false,"ea_pass":false,"mem_off":0.26,"mem_on":0.38,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/406608","tou_rates":[{"start":"00:00","end":"10:00","on":0.35,"off":0.35,"mem_on":0.26,"mem_off":0.26,"label":"Off-Peak"},{"start":"10:00","end":"22:00","on":0.51,"off":0.51,"mem_on":0.38,"mem_off":0.38,"label":"Peak"},{"start":"22:00","end":"24:00","on":0.35,"off":0.35,"mem_on":0.26,"mem_off":0.26,"label":"Off-Peak"}]},
+      {"id":"tesla-woodlyn-pa","name":"Tesla Supercharger (+CCS1) - Woodlyn, PA","network":"Tesla","lat":39.8699,"lon":-75.3530,"city":"Woodlyn","state":"PA","kw":250,"off":0.32,"on":0.62,"gm":false,"ea_pass":false,"mem_off":0.23,"mem_on":0.44,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/59209","tou_rates":[{"start":"00:00","end":"08:00","on":0.32,"off":0.32,"mem_on":0.23,"mem_off":0.23,"label":"Off-Peak"},{"start":"08:00","end":"20:00","on":0.62,"off":0.62,"mem_on":0.44,"mem_off":0.44,"label":"Peak"},{"start":"20:00","end":"24:00","on":0.43,"off":0.43,"mem_on":0.31,"mem_off":0.31,"label":"Mid-Peak"}]},
+      {"id":"tesla-cherry-hill-nj","name":"Tesla Supercharger (+CCS1) - Cherry Hill, NJ","network":"Tesla","lat":39.9259,"lon":-75.0324,"city":"Cherry Hill","state":"NJ","kw":250,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.48,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger"},
+      {"id":"tesla-maple-shade-nj","name":"Tesla Supercharger (+CCS1) - Maple Shade, NJ","network":"Tesla","lat":39.9434,"lon":-74.9694,"city":"Maple Shade","state":"NJ","kw":250,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.48,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/26769"},
+      {"id":"tesla-blackwood-nj","name":"Tesla Supercharger (+CCS1) - Blackwood, NJ","network":"Tesla","lat":39.7866,"lon":-75.0546,"city":"Blackwood","state":"NJ","kw":250,"off":0.38,"on":0.73,"gm":false,"ea_pass":false,"mem_off":0.27,"mem_on":0.52,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/59126","tou_rates":[{"start":"00:00","end":"08:00","on":0.38,"off":0.38,"mem_on":0.27,"mem_off":0.27,"label":"Off-Peak"},{"start":"08:00","end":"23:00","on":0.73,"off":0.73,"mem_on":0.52,"mem_off":0.52,"label":"Peak"},{"start":"23:00","end":"24:00","on":0.38,"off":0.38,"mem_on":0.27,"mem_off":0.27,"label":"Off-Peak"}]},
       {"id":"cp-frostburg-md","name":"ChargePoint - Frostburg, MD (I-68)","network":"ChargePoint","lat":39.6582,"lon":-78.9284,"kw":125,"off":0.34,"on":0.34,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/338694"},
       {"id":"ea-bedford-pa","name":"Electrify America - Sheetz 352 - Bedford, PA","network":"Electrify America","lat":40.0535,"lon":-78.5105,"kw":150,"off":0.60,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"ocm_id":142118,"plug":"https://dcfctracker.com/stations/167187"},
       {"id":"ag-bedford-pa","name":"Applegreen - Bedford, PA (PA Turnpike)","network":"Applegreen","lat":40.0210,"lon":-78.4980,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/1820129"},
       {"id":"cp-hancock-md","name":"ChargePoint - Hancock, MD (I-68)","network":"ChargePoint","lat":39.6998,"lon":-78.1797,"kw":125,"off":0.40,"on":0.40,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://driver.chargepoint.com/stations/13210691"},
       {"id":"ag-waterfall-pa","name":"Applegreen - Blue Mountain / Waterfall, PA (PA Turnpike)","network":"Applegreen","lat":40.1550,"lon":-78.1400,"kw":150,"off":0.55,"on":0.55,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/451875"},
-      {"id":"tesla-fort-littleton-pa","name":"Tesla Supercharger (+CCS1) - Fort Littleton, PA","network":"Tesla","lat":40.0495,"lon":-77.9620,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://dcfctracker.com/stations/397535"},
+      {"id":"tesla-fort-littleton-pa","name":"Tesla Supercharger (+CCS1) - Fort Littleton, PA","network":"Tesla","lat":40.0495,"lon":-77.9620,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/26674"},
       {"id":"ea-hagerstown-md","name":"Electrify America - Hagerstown, MD (I-68/I-70)","network":"Electrify America","lat":39.6418,"lon":-77.7200,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/170350"},
       {"id":"fe-newburg-pa","name":"Francis Energy - Newburg, PA","network":"Francis Energy","lat":40.1340,"lon":-77.5560,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/446568"},
       {"id":"ag-newburg-pa","name":"Applegreen - Newburg, PA (PA Turnpike)","network":"Applegreen","lat":40.1350,"lon":-77.5500,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/743932"},
@@ -1959,6 +1971,87 @@
       return table;
     }
 
+        // --- TIME-OF-USE (TOU) & DEPARTURE TIME CLOCK HELPERS ---
+    function formatClockTime(hoursDecimal) {
+      if (hoursDecimal == null || isNaN(hoursDecimal)) return "";
+      const totalMins = Math.round(hoursDecimal * 60);
+      const dayOffset = Math.floor(totalMins / 1440);
+      const normalizedMins = ((totalMins % 1440) + 1440) % 1440;
+      const h24 = Math.floor(normalizedMins / 60);
+      const m = normalizedMins % 60;
+      const ampm = h24 >= 12 ? 'PM' : 'AM';
+      const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+      const mm = m < 10 ? '0' + m : m;
+      const suffix = dayOffset > 0 ? ` (+${dayOffset}d)` : '';
+      return `${h12}:${mm} ${ampm}${suffix}`;
+    }
+
+    function updateDepartureTimeDisplay() {
+      const el = document.getElementById('departureTime');
+      const disp = document.getElementById('departureTimeDisplay');
+      if (!el || !disp) return;
+      const val = el.value || "08:00";
+      const parts = val.split(':');
+      if (parts.length < 2) return;
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return;
+      disp.innerText = formatClockTime(h + (m / 60.0));
+    }
+
+    function getDepartureHoursDecimal() {
+      const el = document.getElementById('departureTime');
+      if (!el || !el.value) return 8.0;
+      const parts = el.value.split(':');
+      if (parts.length < 2) return 8.0;
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return 8.0;
+      return h + (m / 60.0);
+    }
+
+    function parseTimeToDecimal(timeStr) {
+      if (!timeStr) return 0.0;
+      const parts = timeStr.split(':');
+      if (parts.length < 2) return 0.0;
+      return parseInt(parts[0], 10) + (parseInt(parts[1], 10) / 60.0);
+    }
+
+    function resolveStationTariff(st, arrival_hours_decimal, is_member) {
+      if (!st) return { rate: 0.50, label: "", is_tou: false };
+
+      if (st.tou_rates && Array.isArray(st.tou_rates) && st.tou_rates.length > 0) {
+        const hr = ((arrival_hours_decimal % 24) + 24) % 24;
+        for (const tier of st.tou_rates) {
+          const sHr = parseTimeToDecimal(tier.start || "00:00");
+          const eHr = parseTimeToDecimal(tier.end || "24:00");
+          let inWindow = false;
+          if (sHr < eHr) {
+            inWindow = (hr >= sHr && hr < eHr);
+          } else {
+            inWindow = (hr >= sHr || hr < eHr);
+          }
+          if (inWindow) {
+            const rate = is_member && (tier.mem_on != null) ? tier.mem_on : tier.on;
+            const baseLabel = tier.label || (tier.on < (st.on || 0.60) ? "Off-Peak" : "Peak");
+            const badge = is_member ? `Member ${baseLabel}` : baseLabel;
+            return { rate: rate, label: badge, is_tou: true };
+          }
+        }
+      }
+
+      let rate = st.on;
+      let badge = "";
+      if (st.gm) {
+        rate *= (1.0 - (st.gm_pct || 0.10));
+        badge = "10% GM";
+      } else if (is_member && st.mem_on) {
+        rate = st.mem_on;
+        badge = "Member";
+      }
+      return { rate: rate, label: badge, is_tou: false };
+    }
+
     function calculateCharging(start_soc, target_soc, station_kw, rate_per_kwh, station) {
       if (target_soc <= start_soc) return { added_kwh: 0, mins: 0, cost: 0 };
       const usable = 85.0;
@@ -2604,6 +2697,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 45);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 120);
       const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 15) / 100.0;
+      const departure_hours = getDepartureHoursDecimal();
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
       const wind_dir = parseFloat(document.getElementById('windDir').value);
@@ -2789,15 +2883,23 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               let ea_kwh = 0, ea_gross_savings = 0;
               let tesla_kwh = 0, tesla_gross_savings = 0;
 
+              let cum_time_s1 = 0.0;
               curr.stops.forEach(sp => {
+                cum_time_s1 += sp.leg_drive_hrs;
+                const arr_clock_dec = departure_hours + cum_time_s1;
                 if (sp.station.ea_pass) {
                   ea_kwh += sp.added_kwh;
                   ea_gross_savings += (sp.added_kwh * (sp.station.on * 0.25));
                 }
-                if (sp.station.network === "Tesla" && sp.station.mem_on) {
-                  tesla_kwh += sp.added_kwh;
-                  tesla_gross_savings += (sp.added_kwh * (sp.station.on - sp.station.mem_on));
+                if (sp.station.network === "Tesla") {
+                  const non_mem = resolveStationTariff(sp.station, arr_clock_dec, false);
+                  const mem = resolveStationTariff(sp.station, arr_clock_dec, true);
+                  if (non_mem.rate > mem.rate) {
+                    tesla_kwh += sp.added_kwh;
+                    tesla_gross_savings += (sp.added_kwh * (non_mem.rate - mem.rate));
+                  }
                 }
+                cum_time_s1 += (sp.mins / 60.0);
               });
 
               const ea_active = has_ea_preowned || (ea_gross_savings >= 3.50);
@@ -2809,7 +2911,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const tesla_net = tesla_gross_savings - tesla_fee;
 
               let discounted_ch_cost = 0;
+              let cum_time_stops = 0.0;
               const finalStops = curr.stops.map(sp => {
+                cum_time_stops += sp.leg_drive_hrs;
+                const arr_clock_dec = departure_hours + cum_time_stops;
                 let effective_rate = sp.station.on;
                 let badge = "";
 
@@ -2819,15 +2924,24 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 } else if (sp.station.ea_pass && ea_active) {
                   effective_rate *= 0.75;
                   badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
-                } else if (sp.station.network === "Tesla" && tesla_active && sp.station.mem_on) {
-                  effective_rate = sp.station.mem_on;
-                  badge = has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)";
+                } else if (sp.station.network === "Tesla") {
+                  const tariff = resolveStationTariff(sp.station, arr_clock_dec, tesla_active);
+                  effective_rate = tariff.rate;
+                  badge = tesla_active 
+                    ? (has_tesla_preowned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
+                    : (tariff.label || "");
                 }
 
                 const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
                 discounted_ch_cost += stopCost;
+                const arr_clock = formatClockTime(arr_clock_dec);
+                cum_time_stops += (sp.mins / 60.0);
+                const dep_clock = formatClockTime(arr_clock_dec + (sp.mins / 60.0));
+
                 return {
                   ...sp,
+                  arr_clock: arr_clock,
+                  dep_clock: dep_clock,
                   rate: effective_rate,
                   cost: stopCost,
                   badge: badge
@@ -2842,6 +2956,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const total_cost = Math.round((discounted_ch_cost + membership_fees + route.toll) * 100) / 100;
 
               const final_leg_miles = curr.stops.length === 0 ? total_miles : Math.round((total_miles - curr.stops[curr.stops.length - 1].mile) * 10) / 10;
+              const dest_arr_clock_s1 = formatClockTime(departure_hours + total_drive_hrs + curr.ch_hrs);
               candidates.push({
                 route: route,
                 base_miles: total_miles,
@@ -2850,6 +2965,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 drive_hours: total_drive_hrs,
                 ch_hours: curr.ch_hrs,
                 total_hours: total_time,
+                dest_arr_clock: dest_arr_clock_s1,
                 final_leg_hrs: leg_to_dest_hrs,
                 final_leg_mins: Math.round(leg_to_dest_mins),
                 final_leg_miles: final_leg_miles,
@@ -2955,7 +3071,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
             const setup_mins = has_plug_and_go ? 1.0 : 3.0;
-            const rate = st.on;
+            const arrival_clock_decimal = departure_hours + curr.drive_hrs + curr.ch_hrs + total_leg_hrs;
+            const stage1Tariff = resolveStationTariff(st, arrival_clock_decimal, false);
+            const rate = stage1Tariff.rate;
 
             const targetList = Array.from(targetSet).sort((a, b) => a - b);
             for (let tIdx = 0; tIdx < targetList.length; tIdx++) {
@@ -2991,6 +3109,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const stopPlan = {
                 station: st,
                 mile: st.mile,
+                arr_clock_dec: arrival_clock_decimal,
                 leg_drive_hrs: total_leg_hrs,
                 leg_drive_mins: Math.round(total_leg_hrs * 60.0),
                 leg_miles: (curr.stationIdx === -1) ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[curr.stationIdx].mile) * 10) / 10,
@@ -3300,8 +3419,22 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             ? Math.min(0.92, exact_dialed_target)
             : Math.min(0.92, Math.max(cand_target, exact_dialed_target));
 
-          const ch = calculateCharging(current_soc, target_soc, sp.station.kw, sp.rate, sp.station);
+          const arr_clock_dec = departure_hours + total_drive_hrs + total_ch_hrs;
+          let effective_rate = sp.rate;
+          let badge = sp.badge;
+          if (sp.station.network === "Tesla") {
+            const is_mem_active = cand.memberships && cand.memberships.tesla && cand.memberships.tesla.active;
+            const tariff = resolveStationTariff(sp.station, arr_clock_dec, is_mem_active);
+            effective_rate = tariff.rate;
+            badge = is_mem_active 
+              ? (cand.memberships.tesla.pre_owned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
+              : (tariff.label || "");
+          }
+
+          const ch = calculateCharging(current_soc, target_soc, sp.station.kw, effective_rate, sp.station);
           const stop_mins = Math.round(ch.mins + sp.setup_mins);
+          const arr_clock = formatClockTime(arr_clock_dec);
+          const dep_clock = formatClockTime(arr_clock_dec + (stop_mins / 60.0));
           total_ch_hrs += (stop_mins / 60.0);
           total_ch_cost += ch.cost;
 
@@ -3319,6 +3452,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             added_kwh: Math.round(ch.added_kwh * 10) / 10,
             charge_mins: Math.round(ch.mins),
             mins: stop_mins,
+            arr_clock: arr_clock,
+            dep_clock: dep_clock,
+            rate: effective_rate,
+            badge: badge,
             cost: Math.round(ch.cost * 100) / 100
           });
 
@@ -3338,6 +3475,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         const total_time = total_drive_hrs + total_ch_hrs;
         const total_cost = Math.round((total_ch_cost + cand.membership_fees + cand.route.toll) * 100) / 100;
+        const dest_arr_clock = formatClockTime(departure_hours + total_drive_hrs + total_ch_hrs);
 
         return {
           ...cand,
@@ -3345,6 +3483,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           drive_hours: total_drive_hrs,
           ch_hours: total_ch_hrs,
           total_hours: total_time,
+          dest_arr_clock: dest_arr_clock,
           final_leg_hrs: finalLegSim.hours,
           final_leg_mins: Math.round(finalLegSim.hours * 60.0),
           final_leg_miles: Math.round(finalLeg.distance_miles * 10) / 10,
@@ -3461,21 +3600,21 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       document.getElementById('fastestCost').innerText = '$' + f.total_cost.toFixed(2);
       document.getElementById('fastestMiles').innerText = Math.round(f.total_actual_miles || f.route.distance) + ' mi' + (f.total_detour_miles > 0.4 ? ' (+' + f.total_detour_miles + ' mi)' : '');
       document.getElementById('fastestStopsBadge').innerText = f.stops.length + (f.stops.length === 1 ? ' stop' : ' stops');
-      document.getElementById('fastestArrivalBadge').innerText = 'Arr: ' + f.final_soc + '%';
+      document.getElementById('fastestArrivalBadge').innerText = (f.dest_arr_clock ? f.dest_arr_clock + ' • ' : '') + f.final_soc + '%';
 
       // Card 2: Cheapest
       document.getElementById('cheapestTime').innerText = formatHours(c.total_hours);
       document.getElementById('cheapestCost').innerText = '$' + c.total_cost.toFixed(2);
       document.getElementById('cheapestMiles').innerText = Math.round(c.total_actual_miles || c.route.distance) + ' mi' + (c.total_detour_miles > 0.4 ? ' (+' + c.total_detour_miles + ' mi)' : '');
       document.getElementById('cheapestStopsBadge').innerText = c.stops.length + (c.stops.length === 1 ? ' stop' : ' stops');
-      document.getElementById('cheapestArrivalBadge').innerText = 'Arr: ' + c.final_soc + '%';
+      document.getElementById('cheapestArrivalBadge').innerText = (c.dest_arr_clock ? c.dest_arr_clock + ' • ' : '') + c.final_soc + '%';
 
       // Card 3: Balanced
       document.getElementById('balancedTime').innerText = formatHours(b.total_hours);
       document.getElementById('balancedCost').innerText = '$' + b.total_cost.toFixed(2);
       document.getElementById('balancedMiles').innerText = Math.round(b.total_actual_miles || b.route.distance) + ' mi' + (b.total_detour_miles > 0.4 ? ' (+' + b.total_detour_miles + ' mi)' : '');
       document.getElementById('balancedStopsBadge').innerText = b.stops.length + (b.stops.length === 1 ? ' stop' : ' stops');
-      document.getElementById('balancedArrivalBadge').innerText = 'Arr: ' + b.final_soc + '%';
+      document.getElementById('balancedArrivalBadge').innerText = (b.dest_arr_clock ? b.dest_arr_clock + ' • ' : '') + b.final_soc + '%';
 
       selectItinerary(currentItineraryKey);
     }
@@ -3714,8 +3853,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           <td class="py-2.5 px-3 text-amber-400 font-semibold">${s.arr_soc}%</td>
           <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.tgt_soc}%</td>
           <td class="py-2.5 px-3 text-slate-300">${s.added_kwh} kWh</td>
-          <td class="py-2.5 px-3 text-slate-200 font-semibold">
-            <div>${s.mins} min total</div>
+          <td class="py-2.5 px-3 text-slate-200 font-semibold font-mono">
+            <div class="text-white text-[11px] font-bold">${s.arr_clock ? `${s.arr_clock} &ndash; ${s.dep_clock}` : ''}</div>
+            <div class="text-[11px] text-slate-300 font-medium">${s.mins} min total</div>
             <div class="text-[10px] text-slate-400 font-normal font-mono">
               ${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? '<span class="text-cyan-400 font-sans font-semibold">Plug &amp; Go</span>' : 'setup'}
             </div>
@@ -3761,7 +3901,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           <td class="py-2.5 px-3 text-emerald-400 font-semibold">${itin.final_soc}%</td>
           <td class="py-2.5 px-3 text-slate-500">—</td>
           <td class="py-2.5 px-3 text-slate-500">—</td>
-          <td class="py-2.5 px-3 text-slate-400 font-mono text-[11px]">Arrival</td>
+          <td class="py-2.5 px-3 text-cyan-300 font-mono text-xs font-semibold">
+            <div>Arrive ${itin.dest_arr_clock || '--'}</div>
+            <div class="text-[10px] text-slate-400 font-normal">Destination</div>
+          </td>
           <td class="py-2.5 px-3 text-slate-500">—</td>
           <td class="py-2.5 px-3 text-slate-500">—</td>
           <td class="py-2.5 px-3 text-slate-500">—</td>
@@ -4028,8 +4171,13 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       'evgo-pilot-belmont-oh': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
       'ocm-306630': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
       'mb-washington-pa': { on: 0.44, off: 0.44, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
-      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://dcfctracker.com/stations/194073', verified: true },
-      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://dcfctracker.com/stations/397535', verified: true },
+      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus/location/supercharger/somersetsupercharger', verified: true },
+      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus/location/supercharger/26674', verified: true },
+      'tesla-mt-laurel-nj': { on: 0.51, off: 0.35, mem_on: 0.38, mem_off: 0.26, url: 'https://www.tesla.com/findus/location/supercharger/406608', verified: true },
+      'tesla-woodlyn-pa': { on: 0.62, off: 0.32, mem_on: 0.44, mem_off: 0.23, url: 'https://www.tesla.com/findus/location/supercharger/59209', verified: true },
+      'tesla-cherry-hill-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.48, url: 'https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger', verified: true },
+      'tesla-maple-shade-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.48, url: 'https://www.tesla.com/findus/location/supercharger/26769', verified: true },
+      'tesla-blackwood-nj': { on: 0.73, off: 0.38, mem_on: 0.52, mem_off: 0.27, url: 'https://www.tesla.com/findus/location/supercharger/59126', verified: true },
       'evgo-pilot-marengo-oh': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-306512': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-351529': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },

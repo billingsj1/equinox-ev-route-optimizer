@@ -650,5 +650,160 @@
     "plugshare_url": "https://dcfctracker.com/stations/306630",
     "price_verified": true,
     "ocm_id": 306630
+  },
+  {
+    "id": "tesla-mt-laurel-nj",
+    "name": "Tesla Supercharger (+CCS1) - Mt Laurel, NJ",
+    "network": "Tesla",
+    "city": "Mt Laurel",
+    "state": "NJ",
+    "latitude": 39.9337,
+    "longitude": -74.9635,
+    "power_kw": 250,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.35,
+      "on_peak": 0.51
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.26,
+      "on_peak": 0.38
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.tesla.com/findus/location/supercharger/406608",
+    "price_verified": true
+  },
+  {
+    "id": "tesla-woodlyn-pa",
+    "name": "Tesla Supercharger (+CCS1) - Woodlyn, PA",
+    "network": "Tesla",
+    "city": "Woodlyn",
+    "state": "PA",
+    "latitude": 39.8699,
+    "longitude": -75.353,
+    "power_kw": 250,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.32,
+      "on_peak": 0.62
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.23,
+      "on_peak": 0.44
+    },
+    "tou_hours": {
+      "off_peak": "00:00-08:00",
+      "on_peak": "08:00-20:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.tesla.com/findus/location/supercharger/59209",
+    "price_verified": true
+  },
+  {
+    "id": "tesla-cherry-hill-nj",
+    "name": "Tesla Supercharger (+CCS1) - Cherry Hill, NJ",
+    "network": "Tesla",
+    "city": "Cherry Hill",
+    "state": "NJ",
+    "latitude": 39.9259,
+    "longitude": -75.0324,
+    "power_kw": 250,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.72,
+      "on_peak": 0.72
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.48,
+      "on_peak": 0.48
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger",
+    "price_verified": true
+  },
+  {
+    "id": "tesla-maple-shade-nj",
+    "name": "Tesla Supercharger (+CCS1) - Maple Shade, NJ",
+    "network": "Tesla",
+    "city": "Maple Shade",
+    "state": "NJ",
+    "latitude": 39.9434,
+    "longitude": -74.9694,
+    "power_kw": 250,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.72,
+      "on_peak": 0.72
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.48,
+      "on_peak": 0.48
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.tesla.com/findus/location/supercharger/26769",
+    "price_verified": true
+  },
+  {
+    "id": "tesla-blackwood-nj",
+    "name": "Tesla Supercharger (+CCS1) - Blackwood, NJ",
+    "network": "Tesla",
+    "city": "Blackwood",
+    "state": "NJ",
+    "latitude": 39.7866,
+    "longitude": -75.0546,
+    "power_kw": 250,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.38,
+      "on_peak": 0.73
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.27,
+      "on_peak": 0.52
+    },
+    "tou_hours": {
+      "off_peak": "23:00-08:00",
+      "on_peak": "08:00-23:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://www.tesla.com/findus/location/supercharger/59126",
+    "price_verified": true
   }
 ]
