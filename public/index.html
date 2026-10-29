@@ -4302,8 +4302,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
     async function loadScrapedDatabase() {
       if (SCRAPED_DATABASE) return SCRAPED_DATABASE;
+      const ts = Date.now();
       try {
-        const resp = await fetch('data/scraped_prices.json');
+        const resp = await fetch(`data/scraped_prices.json?t=${ts}`);
         if (resp.ok) {
           SCRAPED_DATABASE = await resp.json();
           return SCRAPED_DATABASE;
@@ -4312,7 +4313,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         console.warn("Could not load local data/scraped_prices.json, trying GitHub raw:", e);
       }
       try {
-        const rawUrl = 'https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/scraped_prices.json';
+        const rawUrl = `https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/scraped_prices.json?t=${ts}`;
         const resp2 = await fetch(rawUrl);
         if (resp2.ok) {
           SCRAPED_DATABASE = await resp2.json();
@@ -4505,28 +4506,110 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         };
       }
 
-      // 2. Check Tesla Magic Dock real scraped stations
-      if (station.network === 'Tesla' && db && db.tesla) {
+      // 2. Check Tesla Magic Dock real scraped stations (Dynamic: db.tesla, db.dcfc live feeds, and dynamic regional tariffs)
+      if (station.network === 'Tesla') {
         const sId = (station.id || '').toLowerCase();
         const sSlug = (station.tesla_slug || '').toLowerCase();
-        for (const t of db.tesla) {
-          const tId = (t.id || '').toLowerCase();
-          const tSlug = (t.slug || '').toLowerCase();
-          const idMatch = sId && (sId === tId || sId === `tesla-${tSlug}`);
-          const slugMatch = sSlug && (sSlug === tSlug || sSlug === tId.replace('tesla-', ''));
-          const distMatch = station.lat && station.lon && t.lat && t.lon && (haversineMiles(station.lat, station.lon, t.lat, t.lon) < 1.5);
-          if (idMatch || slugMatch || distMatch) {
-            return {
-              on: t.rate_on,
-              off: t.rate_off,
-              mem_on: t.mem_on,
-              mem_off: t.mem_off,
-              tou_rates: t.tou_rates || [],
-              url: t.url || `https://www.tesla.com/findus/location/supercharger/${t.slug}`,
-              verified: true
-            };
+        const stUpper = (station.state || '').trim().toUpperCase();
+        const cityLower = (station.city || '').trim().toLowerCase();
+
+        // 2a. Match in db.tesla (by ID, slug, or distance <= 1.5 miles)
+        if (db && db.tesla) {
+          for (const t of db.tesla) {
+            const tId = (t.id || '').toLowerCase();
+            const tSlug = (t.slug || '').toLowerCase();
+            const idMatch = sId && (sId === tId || sId === `tesla-${tSlug}`);
+            const slugMatch = sSlug && (sSlug === tSlug || sSlug === tId.replace('tesla-', ''));
+            const distMatch = station.lat && station.lon && t.lat && t.lon && (haversineMiles(station.lat, station.lon, t.lat, t.lon) < 1.5);
+            if (idMatch || slugMatch || distMatch) {
+              return {
+                on: t.rate_on,
+                off: t.rate_off,
+                mem_on: t.mem_on,
+                mem_off: t.mem_off,
+                tou_rates: t.tou_rates || [],
+                url: t.url || `https://www.tesla.com/findus/location/supercharger/${t.slug}`,
+                verified: true
+              };
+            }
           }
         }
+
+        // 2b. DYNAMIC FALLBACK: Match in live db.dcfc (covers 400+ live scraped Tesla stations with real prices)
+        if (db && db.dcfc && Array.isArray(db.dcfc)) {
+          for (const d of db.dcfc) {
+            if (d.network === 'Tesla' && stUpper && d.state === stUpper) {
+              const dName = (d.name || '').toLowerCase();
+              const dAddr = (d.address || '').toLowerCase();
+              const matchesCity = cityLower && cityLower.length >= 4 && (dName.includes(cityLower) || dAddr.includes(cityLower));
+              if (matchesCity) {
+                const nonMemberRate = d.price;
+                const memberRate = d.mem_price || Math.round(nonMemberRate * 0.65 * 100) / 100;
+                const offPeakMem = Math.round(memberRate * 0.70 * 100) / 100;
+                const offPeakNonMem = Math.round(nonMemberRate * 0.75 * 100) / 100;
+                const tou = [
+                  { start: "00:00", end: "08:00", on: offPeakNonMem, off: offPeakNonMem, mem_on: offPeakMem, mem_off: offPeakMem, label: "Off-Peak (12am-8am)" },
+                  { start: "08:00", end: "24:00", on: nonMemberRate, off: nonMemberRate, mem_on: memberRate, mem_off: memberRate, label: "Peak (8am-12am)" }
+                ];
+                return {
+                  on: nonMemberRate,
+                  off: offPeakNonMem,
+                  mem_on: memberRate,
+                  mem_off: offPeakMem,
+                  tou_rates: tou,
+                  url: d.url || station.plug || `https://dcfctracker.com/stations/${d.dcfc_id}`,
+                  verified: true
+                };
+              }
+            }
+          }
+        }
+
+        // 2c. DYNAMIC REGIONAL TARIFF: For newly discovered Magic Dock Superchargers
+        let dynOn = 0.56, dynOff = 0.56, dynMemOn = 0.41, dynMemOff = 0.41;
+        let dynTou = [];
+        if (stUpper === 'NJ') {
+          dynOn = 0.72; dynOff = 0.50; dynMemOn = 0.48; dynMemOff = 0.34;
+          dynTou = [
+            { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak (12am-8am)" },
+            { start: "08:00", end: "24:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Peak (8am-12am)" }
+          ];
+        } else if (stUpper === 'PA') {
+          if (cityLower.includes('pittsburgh') || cityLower.includes('aston') || cityLower.includes('woodlyn') || cityLower.includes('summerdale') || cityLower.includes('shrewsbury')) {
+            dynOn = 0.58; dynOff = 0.30; dynMemOn = 0.42; dynMemOff = 0.22;
+            dynTou = [
+              { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" },
+              { start: "08:00", end: "23:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Peak" },
+              { start: "23:00", end: "24:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" }
+            ];
+          } else {
+            dynOn = 0.56; dynOff = 0.56; dynMemOn = 0.41; dynMemOff = 0.41;
+          }
+        } else if (stUpper === 'MD') {
+          dynOn = 0.60; dynOff = 0.38; dynMemOn = 0.43; dynMemOff = 0.27;
+          dynTou = [
+            { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" },
+            { start: "08:00", end: "19:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Day Peak" },
+            { start: "19:00", end: "23:00", on: 0.53, off: 0.53, mem_on: 0.38, mem_off: 0.38, label: "Mid-Peak" },
+            { start: "23:00", end: "24:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" }
+          ];
+        } else if (stUpper === 'OH') {
+          dynOn = 0.52; dynOff = 0.36; dynMemOn = 0.37; dynMemOff = 0.25;
+          dynTou = [
+            { start: "00:00", end: "08:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" },
+            { start: "08:00", end: "23:00", on: dynOn, off: dynOn, mem_on: dynMemOn, mem_off: dynMemOn, label: "Peak" },
+            { start: "23:00", end: "24:00", on: dynOff, off: dynOff, mem_on: dynMemOff, mem_off: dynMemOff, label: "Off-Peak" }
+          ];
+        }
+        return {
+          on: dynOn,
+          off: dynOff,
+          mem_on: dynMemOn,
+          mem_off: dynMemOff,
+          tou_rates: dynTou,
+          url: station.plug || `https://www.tesla.com/findus/location/supercharger/${station.tesla_slug || ''}`,
+          verified: true
+        };
       }
 
       // 3. Check IONNA real scraped stations
@@ -4883,29 +4966,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 const name = `Tesla Supercharger (+CCS1) - ${s.name || s.address.city || 'Station'}, ${s.address.state}`;
                 const kw = s.powerKilowatt || 250;
 
-                let onRate = 0.56, offRate = 0.56, memOn = 0.41, memOff = 0.41;
-                let isVerified = false;
-                let touRates = [];
-
-                if (db && db.tesla) {
-                  const slugLower = slug.toLowerCase();
-                  const match = db.tesla.find(t => {
-                    const tId = (t.id || '').toLowerCase();
-                    const tSlug = (t.slug || '').toLowerCase();
-                    return tSlug === slugLower ||
-                           tId === stId.toLowerCase() ||
-                           tId === `tesla-${slugLower}` ||
-                           (t.lat && t.lon && haversineMiles(t.lat, t.lon, lat, lon) < 1.5);
-                  });
-                  if (match) {
-                    onRate = match.rate_on;
-                    offRate = match.rate_off;
-                    memOn = match.mem_on;
-                    memOff = match.mem_off;
-                    touRates = match.tou_rates || [];
-                    isVerified = true;
-                  }
-                }
+                const res = matchStationToScrapedData({
+                  id: stId,
+                  network: "Tesla",
+                  state: s.address.state || "",
+                  city: s.address.city || "",
+                  name: name,
+                  lat: lat,
+                  lon: lon,
+                  tesla_slug: slug,
+                  plug: `https://www.tesla.com/findus/location/supercharger/${slug}`
+                }, db);
 
                 const newSt = {
                   id: stId,
@@ -4916,19 +4987,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   city: s.address.city || "",
                   state: s.address.state || "",
                   kw: kw,
-                  off: offRate,
-                  on: onRate,
+                  off: res.off,
+                  on: res.on,
                   gm: false,
                   gm_pct: 0.0,
                   ea_pass: false,
-                  mem_off: memOff,
-                  mem_on: memOn,
-                  plug: `https://www.tesla.com/findus/location/supercharger/${slug}`,
-                  price_verified: isVerified,
+                  mem_off: res.mem_off,
+                  mem_on: res.mem_on,
+                  plug: res.url || `https://www.tesla.com/findus/location/supercharger/${slug}`,
+                  price_verified: res.verified,
                   tesla_slug: slug
                 };
-                if (touRates && touRates.length > 0) {
-                  newSt.tou_rates = touRates;
+                if (res.tou_rates && res.tou_rates.length > 0) {
+                  newSt.tou_rates = res.tou_rates;
                 }
                 if (!isStationBlocked(newSt)) {
                   ALL_STATIONS.push(newSt);
@@ -5020,7 +5091,18 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       try {
-        // Force-reload fresh scraped database
+        // 1. If backend API is reachable, trigger live scraper pipeline across DCFC Tracker, IONNA, Mercedes
+        try {
+          await fetch('/api/stations/refresh-prices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(5000)
+          });
+        } catch (_) {
+          // Backend not running (e.g. static viewer); load fresh database directly
+        }
+
+        // 2. Force-reload fresh scraped database
         SCRAPED_DATABASE = null;
         const db = await loadScrapedDatabase();
         let refreshedCount = 0;

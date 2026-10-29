@@ -220,7 +220,24 @@ class PricingScraperPipeline:
             ov = MANUALLY_VERIFIED_OVERRIDES[st_id]
             return ov["price"], ov["url"], ov.get("gm_discount_eligible")
 
-        # 2. Check IONNA real scraped stations
+        # 2. Check Tesla Magic Dock real scraped stations
+        if network == "Tesla":
+            s_id_lower = (st_id or "").lower()
+            for t in scraped_db.get("tesla", []):
+                t_slug = (t.get("slug") or "").lower()
+                t_id = (t.get("id") or "").lower()
+                if (t_slug and t_slug in s_id_lower) or (t_id and t_id == s_id_lower) or (lat is not None and lon is not None and t.get("lat") and t.get("lon") and haversine_miles(lat, lon, t["lat"], t["lon"]) < 1.5):
+                    return t["rate_on"], t.get("url"), False
+            # Check DCFC Tracker live scraped Tesla stations
+            st_upper = (state or "").strip().upper()
+            city_lower = (city or "").strip().lower()
+            for d in scraped_db.get("dcfc", []):
+                if d.get("network") == "Tesla" and d.get("state") == st_upper:
+                    d_full = f"{d.get('name', '')} {d.get('address', '')}".lower()
+                    if city_lower and len(city_lower) >= 4 and city_lower in d_full:
+                        return d["price"], d.get("url"), False
+
+        # 3. Check IONNA real scraped stations
         if network == "IONNA" and lat is not None and lon is not None:
             for ion in scraped_db.get("ionna", []):
                 if haversine_miles(lat, lon, ion["lat"], ion["lon"]) < 1.0:
@@ -436,8 +453,65 @@ class PricingScraperPipeline:
         return final_list
 
     async def refresh_prices(self) -> List[Dict[str, Any]]:
-        existing = self.load_existing_stations()
+        # 1. Run live scrapers to get fresh prices from DCFC Tracker, IONNA, Mercedes
+        try:
+            logger.info("Live scraping DCFC Tracker for latest prices across OH, PA, MD, NJ, WV, DE...")
+            dcfc_records = await self.dcfc_adapter.fetch_prices_for_states(["pa", "oh", "md", "nj", "wv", "de"])
+        except Exception as e:
+            logger.warning(f"Error live scraping DCFC Tracker: {e}")
+            dcfc_records = []
+
+        try:
+            ionna_tariffs = await self.ionna_adapter.fetch_prices_for_bounding_box(38.0, -83.5, 41.5, -73.5)
+            ionna_records = [
+                {
+                    "name": it.name,
+                    "price": it.rate_on_peak,
+                    "lat": it.latitude,
+                    "lon": it.longitude,
+                    "url": it.plugshare_url
+                }
+                for it in ionna_tariffs
+            ]
+        except Exception as e:
+            logger.warning(f"Error live scraping IONNA: {e}")
+            ionna_records = []
+
+        try:
+            mb_tariffs = await self.mercedes_adapter.fetch_prices_for_bounding_box(38.0, -83.5, 41.5, -73.5)
+            mb_records = [
+                {
+                    "name": mb.name,
+                    "price": mb.rate_on_peak,
+                    "lat": mb.latitude,
+                    "lon": mb.longitude,
+                    "url": mb.plugshare_url
+                }
+                for mb in mb_tariffs
+            ]
+        except Exception as e:
+            logger.warning(f"Error live scraping Mercedes: {e}")
+            mb_records = []
+
         scraped_db = self.load_scraped_database()
+        if dcfc_records:
+            scraped_db["dcfc"] = dcfc_records
+        if ionna_records:
+            scraped_db["ionna"] = ionna_records
+        if mb_records:
+            scraped_db["mercedes"] = mb_records
+
+        try:
+            with open(SCRAPED_PRICES_JSON, "w", encoding="utf-8") as f:
+                json.dump(scraped_db, f, indent=2)
+            pub_scraped = os.path.join(os.path.dirname(DATA_DIR), "public", "data", "scraped_prices.json")
+            if os.path.exists(os.path.dirname(pub_scraped)):
+                with open(pub_scraped, "w", encoding="utf-8") as f:
+                    json.dump(scraped_db, f, indent=2)
+        except Exception as se:
+            logger.warning(f"Error saving updated scraped_prices.json: {se}")
+
+        existing = self.load_existing_stations()
         refreshed_count = 0
 
         for ex in existing.values():
@@ -506,3 +580,8 @@ class PricingScraperPipeline:
             self._save_to_sqlite(final_list)
             return st
         return None
+
+
+if __name__ == "__main__":
+    pipeline = PricingScraperPipeline()
+    asyncio.run(pipeline.refresh_prices())
