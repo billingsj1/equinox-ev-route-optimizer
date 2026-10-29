@@ -422,9 +422,9 @@
 
         <!-- Dedicated Scraper & Station Management Buttons -->
         <div class="grid grid-cols-2 gap-2">
-          <button type="button" id="btnPullOcm" onclick="handlePullOcmStations()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 rounded-lg px-2 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+          <button type="button" id="btnPullOcm" onclick="handlePullOcmStations()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 rounded-lg px-2 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition" title="Discover CCS1 chargers from Open Charge Map and Magic Dock Superchargers from Tesla">
             <i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i>
-            <span>Pull OCM</span>
+            <span>Pull Stations</span>
           </button>
           <button type="button" id="btnRefreshPrices" onclick="handleRefreshPrices()" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-2 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
@@ -4227,7 +4227,27 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         };
       }
 
-      // 2. Check IONNA real scraped stations
+      // 2. Check Tesla Magic Dock real scraped stations
+      if (station.network === 'Tesla' && db && db.tesla) {
+        for (const t of db.tesla) {
+          const idMatch = station.id === t.id || station.id === `tesla-${t.slug}`;
+          const slugMatch = station.tesla_slug && station.tesla_slug === t.slug;
+          const distMatch = station.lat && station.lon && t.lat && t.lon && (haversineMiles(station.lat, station.lon, t.lat, t.lon) < 0.5);
+          if (idMatch || slugMatch || distMatch) {
+            return {
+              on: t.rate_on,
+              off: t.rate_off,
+              mem_on: t.mem_on,
+              mem_off: t.mem_off,
+              tou_rates: t.tou_rates || [],
+              url: t.url,
+              verified: true
+            };
+          }
+        }
+      }
+
+      // 3. Check IONNA real scraped stations
       if (station.network === 'IONNA' && db && db.ionna && station.lat && station.lon) {
         for (const ion of db.ionna) {
           if (haversineMiles(station.lat, station.lon, ion.lat, ion.lon) < 1.0) {
@@ -4538,6 +4558,106 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
 
+        // 2. Discover Tesla Magic Dock (open to all EVs) stations from Supercharge.info registry
+        let teslaAdded = 0;
+        let teslaVerified = 0;
+        try {
+          if (statusBox) {
+            statusBox.innerHTML = `
+              <div class="flex items-center gap-2 text-cyan-400 font-medium text-xs">
+                <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
+                <span>Querying Tesla Magic Dock (CCS1) stations from Supercharge registry...</span>
+              </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+          }
+
+          const teslaResp = await fetch("https://supercharge.info/service/supercharge/allSites");
+          if (teslaResp.ok) {
+            const allSites = await teslaResp.json();
+            const targetStates = new Set(["OH", "PA", "NJ", "WV", "MD", "DE", "NY"]);
+            const magicSites = (Array.isArray(allSites) ? allSites : []).filter(s =>
+              s.status === "OPEN" &&
+              s.address && s.address.country === "USA" &&
+              targetStates.has(s.address.state) &&
+              s.plugs && s.plugs.ccs1 > 0
+            );
+
+            magicSites.forEach(s => {
+              const lat = s.gps ? s.gps.latitude : null;
+              const lon = s.gps ? s.gps.longitude : null;
+              if (!lat || !lon) return;
+
+              const slug = String(s.locationId || s.id);
+              const exists = ALL_STATIONS.some(ex =>
+                (ex.network === "Tesla" && (ex.tesla_slug === slug || (ex.id && ex.id.toLowerCase().includes(slug.toLowerCase())))) ||
+                haversineMiles(ex.lat, ex.lon, lat, lon) < 0.35
+              );
+
+              if (!exists) {
+                const stId = `tesla-${slug.toLowerCase()}`;
+                const name = `Tesla Supercharger (+CCS1) - ${s.name || s.address.city || 'Station'}, ${s.address.state}`;
+                const kw = s.powerKilowatt || 250;
+
+                let onRate = 0.56, offRate = 0.56, memOn = 0.41, memOff = 0.41;
+                let isVerified = false;
+                let touRates = [];
+
+                if (db && db.tesla) {
+                  const match = db.tesla.find(t =>
+                    t.slug === slug ||
+                    t.id === stId ||
+                    (t.lat && t.lon && haversineMiles(t.lat, t.lon, lat, lon) < 0.5)
+                  );
+                  if (match) {
+                    onRate = match.rate_on;
+                    offRate = match.rate_off;
+                    memOn = match.mem_on;
+                    memOff = match.mem_off;
+                    touRates = match.tou_rates || [];
+                    isVerified = true;
+                  }
+                }
+
+                const newSt = {
+                  id: stId,
+                  name: name,
+                  network: "Tesla",
+                  lat: Math.round(lat * 10000) / 10000,
+                  lon: Math.round(lon * 10000) / 10000,
+                  city: s.address.city || "",
+                  state: s.address.state || "",
+                  kw: kw,
+                  off: offRate,
+                  on: onRate,
+                  gm: false,
+                  gm_pct: 0.0,
+                  ea_pass: false,
+                  mem_off: memOff,
+                  mem_on: memOn,
+                  plug: `https://www.tesla.com/findus/location/supercharger/${slug}`,
+                  price_verified: isVerified,
+                  tesla_slug: slug
+                };
+                if (touRates && touRates.length > 0) {
+                  newSt.tou_rates = touRates;
+                }
+                if (!isStationBlocked(newSt)) {
+                  ALL_STATIONS.push(newSt);
+                  newlyAdded++;
+                  teslaAdded++;
+                  if (isVerified) {
+                    newlyVerified++;
+                    teslaVerified++;
+                  }
+                }
+              }
+            });
+          }
+        } catch (tErr) {
+          console.warn("Error querying supercharge.info for Tesla Magic Dock stations:", tErr);
+        }
+
         saveStationsToStorage();
         renderNetworkFilters();
         updateStationManagerBadge();
@@ -4546,10 +4666,10 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           statusBox.innerHTML = `
             <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
               <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-              <span>OCM Discovery Complete: Added ${newlyAdded} stations (${newlyVerified} verified from scrapers)!</span>
+              <span>Station Discovery Complete: Added ${newlyAdded} stations (${newlyAdded - teslaAdded} OCM, ${teslaAdded} Tesla Magic Dock)!</span>
             </div>
             <div class="text-[11px] text-slate-300">
-              Database: <b>${ALL_STATIONS.length} total stations</b>. Unverified stations are listed below for manual pricing.
+              Database: <b>${ALL_STATIONS.length} total stations</b> (${newlyVerified} verified from scrapers). Unverified stations are listed below.
             </div>
           `;
           if (window.lucide) lucide.createIcons();
@@ -4583,7 +4703,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       } finally {
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i><span>Pull OCM</span>`;
+          btn.innerHTML = `<i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i><span>Pull Stations</span>`;
           if (window.lucide) lucide.createIcons();
         }
       }
@@ -4605,7 +4725,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         statusBox.innerHTML = `
           <div class="flex items-center gap-2 text-emerald-400 font-medium text-xs">
             <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i>
-            <span>Matching stations against 1,125+ live scraped station tariffs (DCFC Tracker, IONNA, Mercedes)...</span>
+            <span>Matching stations against 1,140+ live scraped station tariffs (Tesla Magic Dock, DCFC Tracker, IONNA, Mercedes)...</span>
           </div>
         `;
         if (window.lucide) lucide.createIcons();
@@ -4622,8 +4742,9 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (res.verified) {
             s.on = res.on;
             s.off = res.off;
-            if (res.mem_on) s.mem_on = res.mem_on;
-            if (res.mem_off) s.mem_off = res.mem_off;
+            if (res.mem_on != null) s.mem_on = res.mem_on;
+            if (res.mem_off != null) s.mem_off = res.mem_off;
+            if (res.tou_rates && res.tou_rates.length > 0) s.tou_rates = res.tou_rates;
             if (res.url) s.plug = res.url;
             s.price_verified = true;
             refreshedCount++;
@@ -4637,7 +4758,7 @@ if (destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           statusBox.innerHTML = `
             <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
               <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-              <span>Price Refresh Complete! ${refreshedCount} stations verified from real scrapers.</span>
+              <span>Price Refresh Complete! ${refreshedCount} stations verified from real scrapers (including Tesla Magic Dock, DCFC Tracker, IONNA, Mercedes).</span>
             </div>
             <div class="text-[11px] text-slate-300">
               Individual station rates updated. Any unverified stations remain listed below.
