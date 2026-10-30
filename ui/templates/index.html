@@ -266,9 +266,9 @@
             <div>
               <div class="flex justify-between text-slate-400 mb-1">
                 <span>Min Time Between Stops</span>
-                <span id="minTimeDisplay" class="font-mono text-emerald-400">45 mins (~47 mi)</span>
+                <span id="minTimeDisplay" class="font-mono text-emerald-400">75 mins (~94 mi)</span>
               </div>
-              <input type="range" id="minTimeSlider" min="30" max="120" value="45" step="5" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="minTimeSlider" min="30" max="120" value="75" step="5" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Lowering allows shorter legs to take advantage of cheaper charging stations.</span>
             </div>
 
@@ -936,7 +936,7 @@
     }
 
     function updateSpeedAndGaps() {
-      const minVal = parseInt(document.getElementById('minTimeSlider').value) || 45;
+      const minVal = parseInt(document.getElementById('minTimeSlider').value) || 75;
       const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 120;
       updateTimeGapDisplays(minVal, maxVal);
     }
@@ -973,6 +973,11 @@
     }
 
     function updateTimeGapDisplays(minVal, maxVal) {
+      const minSlider = document.getElementById('minTimeSlider');
+      const maxSlider = document.getElementById('maxTimeSlider');
+      if (minSlider && parseInt(minSlider.value) !== minVal) minSlider.value = minVal;
+      if (maxSlider && parseInt(maxSlider.value) !== maxVal) maxSlider.value = maxVal;
+
       const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const maxCap = parseFloat(document.getElementById('maxSpeedCap').value) || 75;
       const avgMph = Math.min(70 + speedOffset, maxCap);
@@ -2792,7 +2797,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const target_arrival_soc = parseFloat(document.getElementById('targetArrivalSlider').value) / 100.0;
       const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
-      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 45);
+      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 75);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 120);
       const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 15) / 100.0;
       const departure_hours = getDepartureHoursDecimal();
