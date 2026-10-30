@@ -2321,13 +2321,10 @@
       updateDepartureTimeDisplay();
     }
 
-    async function onDepartureDateTimeChanged() {
+    function onDepartureDateTimeChanged() {
       updateDepartureTimeDisplay();
-      const destText = document.getElementById('destAddress')?.value.trim();
-      if (destText && activeRoutesData && activeRoutesData.length > 0) {
-        await fetchRouteWeatherData(destText, activeRoutesData[0]);
-        await recomputeCurrentRoute();
-      }
+      // Pure UI update only! No weather API network requests and NO route recomputation.
+      // Calculations and weather fetching are strictly deferred until the user clicks 'Calculate Route'.
     }
 
     function initManualWeatherOverride() {
@@ -2353,13 +2350,10 @@
       }
     }
 
-    async function toggleManualWeatherOverride() {
+    function toggleManualWeatherOverride() {
       initManualWeatherOverride();
-      const destText = document.getElementById('destAddress')?.value.trim();
-      if (destText && activeRoutesData && activeRoutesData.length > 0) {
-        await fetchRouteWeatherData(destText, activeRoutesData[0]);
-        await recomputeCurrentRoute();
-      }
+      // Pure UI toggle only. Locks/unlocks manual sliders and updates the badge.
+      // Absolutely no weather network calls and no route recomputations.
     }
 
     function getRouteWeatherAtMile(mile) {
