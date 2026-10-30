@@ -375,7 +375,7 @@
               <span>GM Ultium Perks Active:</span>
             </div>
             <div>• 10% discount at IONNA stations (e.g. Cambridge, OH; Chester Springs, PA)</div>
-            <div>• 10% discount at EVgo ($0 session fees)</div>
+            <div>• 10% discount at EVgo ($0 session fees; excludes Pilot / Flying J travel centers)</div>
           </div>
           <div class="border-t border-slate-800/80 pt-2.5 mt-2 space-y-1.5">
             <span class="text-slate-300 font-medium block text-[11px]">Charging Memberships (Pre-Owned):</span>
@@ -897,7 +897,7 @@
             <b>${s.name}</b><br>
             <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
             <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
-            ${s.gm && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+            ${s.gm && !isPilotStation(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
             ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
             ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
           </div>
@@ -2118,7 +2118,7 @@
 
       let rate = st.on;
       let badge = "";
-      if (st.gm) {
+      if (st.gm && !isPilotStation(st)) {
         rate *= (1.0 - (st.gm_pct || 0.10));
         badge = "10% GM";
       } else if (is_member && st.mem_on) {
@@ -3098,8 +3098,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 let effective_rate = sp.station.on;
                 let badge = "";
 
-                if (sp.station.gm) {
-                  effective_rate *= (1.0 - sp.station.gm_pct);
+                if (sp.station.gm && !isPilotStation(sp.station)) {
+                  effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
                   badge = "10% GM";
                 } else if (sp.station.ea_pass && ea_active) {
                   effective_rate *= 0.75;
@@ -4030,7 +4030,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               <b>${s.name}</b><br>
               <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
               <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
-              ${s.gm && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+              ${s.gm && !isPilotStation(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
               ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
               ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
             </div>
@@ -4401,6 +4401,25 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       return false;
     }
 
+    function isPilotStation(st) {
+      if (!st) return false;
+      let title = st.name || st.title || '';
+      let addr = st.address || '';
+      let net = st.network || '';
+      let city = st.city || st.town || '';
+      let plug = st.plug || '';
+      if (st.AddressInfo) {
+        title = title || st.AddressInfo.Title || '';
+        addr = addr || st.AddressInfo.AddressLine1 || '';
+        city = city || st.AddressInfo.Town || '';
+      }
+      if (st.OperatorInfo) {
+        net = net || st.OperatorInfo.Title || '';
+      }
+      const text = `${title} ${net} ${addr} ${city} ${plug}`.toLowerCase();
+      return text.includes('pilot') || text.includes('flying j') || text.includes('flying-j') || text.includes('flyingj') || text.includes('pfj');
+    }
+
     function purgeBlockedStations() {
       // 1. Remove explicitly blocked stations
       for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
@@ -4446,12 +4465,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       }
 
+      // 4. Sanitize all stations so Pilot / Flying J locations never carry GM discount
+      ALL_STATIONS.forEach(s => {
+        if (isPilotStation(s)) {
+          s.gm = false;
+          s.gm_pct = 0.0;
+        }
+      });
+
       try {
         const saved = localStorage.getItem('equinox_custom_stations');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
             const cleaned = parsed.filter(s => !isStationBlocked(s) && s.name !== 'Electrify America - Bedford, PA');
+            cleaned.forEach(s => {
+              if (isPilotStation(s)) {
+                s.gm = false;
+                s.gm_pct = 0.0;
+              }
+            });
             localStorage.setItem('equinox_custom_stations', JSON.stringify(cleaned));
           }
         }
@@ -4500,6 +4533,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       'evgo-pilot-marengo-oh': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-306512': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-351529': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
+      'ocm-306563': { on: 0.58, off: 0.58, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/349766', verified: true },
       'evgo-farley-nj': { on: 0.66, off: 0.66, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
       'ocm-225139': { on: 0.66, off: 0.66, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
       'evgo-hollinswood-md': { on: 0.61, off: 0.61, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/322293', verified: true },
@@ -4516,13 +4550,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // 1. Manually verified overrides
       if (MANUALLY_VERIFIED_OVERRIDES[station.id]) {
         const ov = MANUALLY_VERIFIED_OVERRIDES[station.id];
+        const isPilot = isPilotStation(station) || (ov.gm === false);
         return {
           on: ov.on,
           off: ov.off,
           mem_on: ov.mem_on,
           mem_off: ov.mem_off,
-          gm: ov.gm,
-          gm_pct: ov.gm_pct,
+          gm: isPilot ? false : (ov.gm !== undefined ? ov.gm : true),
+          gm_pct: isPilot ? 0.0 : (ov.gm_pct !== undefined ? ov.gm_pct : 0.10),
           url: ov.url,
           verified: true
         };
@@ -4597,7 +4632,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const fullStText = `${stTitle} ${stAddr} ${stCity}`.toLowerCase();
 
         // Pilot / Flying J check
-        const isPilot = fullStText.includes('pilot') || fullStText.includes('flying j');
+        const isPilot = isPilotStation(station) || fullStText.includes('pilot') || fullStText.includes('flying j');
 
         const GENERIC = ['station', 'stations', 'plaza', 'center', 'centre', 'travel', 'charger', 'chargers', 'fast', 'charging', 'north', 'south', 'east', 'west', 'road', 'street', 'avenue', 'drive', 'route', 'highway', 'exit', 'lane', 'court', 'parkway', 'evgo', 'chargepoint', 'electrify', 'america', 'applegreen', 'tesla', 'francis', 'energy'];
         const wordMatches = fullStText.match(/[a-zA-Z]{4,}/g) || [];
@@ -4645,7 +4680,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         if (bestMatch) {
           const ea = netLower.includes('electrify') || (bestMatch.network || '').toLowerCase().includes('electrify');
-          const isPilotSite = isPilot || (bestMatch.name || '').toLowerCase().includes('pilot') || (bestMatch.network || '').toLowerCase().includes('pilot') || (bestMatch.name || '').toLowerCase().includes('flying j');
+          const isPilotSite = isPilot || isPilotStation(bestMatch);
           const gmEligible = (netLower.includes('evgo') || netLower.includes('ionna')) && !isPilotSite;
 
           return {
@@ -4668,8 +4703,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const val = parseFloat(m[1]);
         if (val >= 0.10 && val <= 1.50) {
           const ea = (station.network || '').toLowerCase().includes('electrify');
-          const isPilot = (station.name || '').toLowerCase().includes('pilot') || (station.name || '').toLowerCase().includes('flying j');
-          const gmEligible = ((station.network || '').toLowerCase().includes('evgo') || (station.network || '').toLowerCase().includes('ionna')) && !isPilot;
+          const isPilotSite = isPilotStation(station);
+          const gmEligible = ((station.network || '').toLowerCase().includes('evgo') || (station.network || '').toLowerCase().includes('ionna')) && !isPilotSite;
           return {
             on: val,
             off: val,
@@ -4701,6 +4736,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             parsed.forEach(savedSt => {
               if (isStationBlocked(savedSt)) return;
+              if (isPilotStation(savedSt)) {
+                savedSt.gm = false;
+                savedSt.gm_pct = 0.0;
+              }
               const existingIdx = ALL_STATIONS.findIndex(s => s.id === savedSt.id);
               if (existingIdx >= 0) {
                 ALL_STATIONS[existingIdx] = { ...ALL_STATIONS[existingIdx], ...savedSt };
@@ -4727,9 +4766,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               s.off = res.off;
               if (res.mem_on) s.mem_on = res.mem_on;
               if (res.mem_off) s.mem_off = res.mem_off;
+              if (res.gm !== undefined) s.gm = res.gm;
+              if (res.gm_pct !== undefined) s.gm_pct = res.gm_pct;
               if (res.url) s.plug = res.url;
               s.price_verified = true;
             }
+          }
+          if (isPilotStation(s)) {
+            s.gm = false;
+            s.gm_pct = 0.0;
           }
         });
         saveStationsToStorage();
@@ -4822,7 +4867,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                     const opId = poi.OperatorID;
                     const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
                     const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
-                    const isPilot = (addr.Title || "").toLowerCase().includes("pilot") || (addr.Title || "").toLowerCase().includes("flying j");
+                    const isPilot = isPilotStation({ name: addr.Title, network: network, address: addr.AddressLine1, city: addr.Town });
                     const gm = (network === "IONNA" || network === "EVgo") && !isPilot;
                     const ea_pass = network === "Electrify America";
 
@@ -4848,6 +4893,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                       plug: sourceUrl
                     }, db);
 
+                    let stGm = isPilot ? false : (res.gm !== undefined ? res.gm : gm);
+                    let stGmPct = isPilot ? 0.0 : (res.gm_pct !== undefined ? res.gm_pct : (gm ? 0.10 : 0.0));
+
                     const newSt = {
                       id: `ocm-${poi.ID || Math.round(Math.random()*100000)}`,
                       name: `${network} - ${addr.Title || 'Fast Charger'}`,
@@ -4859,13 +4907,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                       kw: maxKw,
                       off: res.off,
                       on: res.on,
-                      gm: res.gm !== undefined ? res.gm : gm,
-                      gm_pct: res.gm_pct !== undefined ? res.gm_pct : (gm ? 0.10 : 0.0),
+                      gm: isPilotStation({ name: addr.Title, network: network }) ? false : stGm,
+                      gm_pct: isPilotStation({ name: addr.Title, network: network }) ? 0.0 : stGmPct,
                       ea_pass: ea_pass,
                       plug: res.url || sourceUrl,
                       price_verified: res.verified,
                       ocm_id: poi.ID
                     };
+                    if (isPilotStation(newSt)) {
+                      newSt.gm = false;
+                      newSt.gm_pct = 0.0;
+                    }
                     if (!isStationBlocked(newSt)) {
                       ALL_STATIONS.push(newSt);
                       newlyAdded++;
@@ -5102,6 +5154,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             s.off = res.off;
             if (res.mem_on != null) s.mem_on = res.mem_on;
             if (res.mem_off != null) s.mem_off = res.mem_off;
+            if (res.gm !== undefined) s.gm = res.gm;
+            if (res.gm_pct !== undefined) s.gm_pct = res.gm_pct;
+            if (isPilotStation(s)) {
+              s.gm = false;
+              s.gm_pct = 0.0;
+            }
             if (res.tou_rates && res.tou_rates.length > 0) s.tou_rates = res.tou_rates;
             if (res.url) s.plug = res.url;
             s.price_verified = true;
