@@ -11,11 +11,14 @@ import os
 
 from engine.vehicle import EquinoxEVFWD, PayloadConfig
 from engine.weather import WeatherConditions, WeatherService
+from engine.weather_engine import WeatherEngine
 from engine.energy import EnergySimulator, DrivingProfile
 from engine.router import ORSRouter, RoutePath
 from engine.station_manager import StationManager
 from engine.tolls import TollCalculator, TollPassConfig
 from engine.optimizer import MultiObjectiveOptimizer, Itinerary
+from datetime import datetime, timedelta
+from dataclasses import asdict
 
 app = FastAPI(title="2025 Equinox EV Route Optimizer")
 
@@ -33,6 +36,7 @@ station_manager = StationManager()
 toll_calculator = TollCalculator()
 router = ORSRouter()
 weather_service = WeatherService()
+weather_engine = WeatherEngine(vehicle)
 optimizer = MultiObjectiveOptimizer(vehicle, station_manager, toll_calculator)
 
 class OptimizationRequest(BaseModel):
@@ -291,3 +295,75 @@ async def update_single_price(req: UpdatePriceRequest):
         station_manager.load_stations()
         return {"status": "ok", "station": st}
     return JSONResponse(status_code=404, content={"status": "error", "message": "Station not found"})
+
+# =========================================================================
+# WEATHER ENGINE PREVIEW ENDPOINTS (PHASE 2)
+# =========================================================================
+
+class WeatherPreviewRequest(BaseModel):
+    destination: str = "st_onge" # "st_onge", "billings", "decamilla", or custom name
+    departure_date: str = ""     # "YYYY-MM-DD"
+    departure_time: str = ""     # "HH:MM" e.g. "08:30"
+    custom_coordinates: Optional[List[List[float]]] = None
+    origin_name: str = "West High School (Columbus, OH)"
+    destination_name: Optional[str] = None
+
+def _round_to_next_30m(dt: datetime) -> datetime:
+    minutes = dt.minute
+    if minutes == 0 and dt.second == 0 and dt.microsecond == 0:
+        return dt
+    if minutes < 30:
+        return dt.replace(minute=30, second=0, microsecond=0)
+    else:
+        return (dt + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+
+@app.get("/weather-preview", response_class=HTMLResponse)
+@app.get("/weather", response_class=HTMLResponse)
+async def serve_weather_preview():
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public", "weather_preview.html"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "weather_preview.html"),
+        os.path.join(os.getcwd(), "public", "weather_preview.html"),
+        os.path.join(os.getcwd(), "weather_preview.html"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return HTMLResponse(content=f.read())
+            except Exception:
+                pass
+    return HTMLResponse(content="<h2>Weather Engine Preview Dashboard loading...</h2>")
+
+@app.post("/api/weather/preview")
+async def get_weather_preview(req: WeatherPreviewRequest):
+    now = datetime.now()
+    
+    # Parse date
+    dep_date = now.date()
+    if req.departure_date and req.departure_date.strip():
+        try:
+            dep_date = datetime.strptime(req.departure_date.strip(), "%Y-%m-%d").date()
+        except Exception:
+            pass
+
+    # Parse time
+    if req.departure_time and req.departure_time.strip():
+        try:
+            parsed_time = datetime.strptime(req.departure_time.strip(), "%H:%M").time()
+            dep_dt = datetime.combine(dep_date, parsed_time)
+        except Exception:
+            dep_dt = _round_to_next_30m(datetime.combine(dep_date, now.time()))
+    else:
+        dep_dt = _round_to_next_30m(datetime.combine(dep_date, now.time()))
+
+    report = await weather_engine.get_route_weather_report(
+        destination_key_or_name=req.destination,
+        departure_dt=dep_dt,
+        custom_coordinates=req.custom_coordinates,
+        origin_name=req.origin_name,
+        destination_name=req.destination_name
+    )
+
+    return asdict(report)
+
