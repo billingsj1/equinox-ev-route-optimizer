@@ -268,7 +268,7 @@
                 <span>Min Time Between Stops</span>
                 <span id="minTimeDisplay" class="font-mono text-emerald-400">75 mins (~94 mi)</span>
               </div>
-              <input type="range" id="minTimeSlider" min="30" max="120" value="75" step="5" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="minTimeSlider" min="30" max="120" value="75" step="5" autocomplete="off" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Lowering allows shorter legs to take advantage of cheaper charging stations.</span>
             </div>
 
@@ -277,9 +277,17 @@
                 <span>Max Time Between Stops</span>
                 <span id="maxTimeDisplay" class="font-mono text-cyan-400">120 mins (~150 mi)</span>
               </div>
-              <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" autocomplete="off" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
               <span class="text-[10px] text-slate-500 block mt-0.5">Maximum continuous driving stretch before requiring a rest/charge break.</span>
             </div>
+            <script>
+              try {
+                const _ms = document.getElementById('minTimeSlider');
+                if (_ms) { _ms.value = "75"; _ms.defaultValue = "75"; }
+                const _xs = document.getElementById('maxTimeSlider');
+                if (_xs) { _xs.value = "120"; _xs.defaultValue = "120"; }
+              } catch(e) {}
+            </script>
 
             <div>
               <div class="flex justify-between text-slate-400 mb-1">
@@ -975,8 +983,14 @@
     function updateTimeGapDisplays(minVal, maxVal) {
       const minSlider = document.getElementById('minTimeSlider');
       const maxSlider = document.getElementById('maxTimeSlider');
-      if (minSlider && parseInt(minSlider.value) !== minVal) minSlider.value = minVal;
-      if (maxSlider && parseInt(maxSlider.value) !== maxVal) maxSlider.value = maxVal;
+      if (minSlider) {
+        minSlider.value = minVal;
+        minSlider.defaultValue = minVal;
+      }
+      if (maxSlider) {
+        maxSlider.value = maxVal;
+        maxSlider.defaultValue = maxVal;
+      }
 
       const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const maxCap = parseFloat(document.getElementById('maxSpeedCap').value) || 75;
@@ -985,9 +999,12 @@
       const minMiles = Math.round((minVal / 60.0) * avgMph);
       const maxMiles = Math.round((maxVal / 60.0) * avgMph);
 
-      document.getElementById('minTimeDisplay').innerText = `${minVal} mins (~${minMiles} mi)`;
-      document.getElementById('maxTimeDisplay').innerText = `${maxVal} mins (~${maxMiles} mi)`;
-      document.getElementById('idealWindowBadge').innerText = `${minVal} – ${maxVal} mins`;
+      const minDisp = document.getElementById('minTimeDisplay');
+      if (minDisp) minDisp.innerText = `${minVal} mins (~${minMiles} mi)`;
+      const maxDisp = document.getElementById('maxTimeDisplay');
+      if (maxDisp) maxDisp.innerText = `${maxVal} mins (~${maxMiles} mi)`;
+      const badge = document.getElementById('idealWindowBadge');
+      if (badge) badge.innerText = `${minVal} – ${maxVal} mins`;
     }
 
     // Fast Real-Time Physics HUD Monitor (<0.1ms computation)
@@ -5360,14 +5377,37 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       lucide.createIcons();
     }
 
-window.onload = () => {
+    function initStopGapsDefault() {
+      const minSlider = document.getElementById('minTimeSlider');
+      const maxSlider = document.getElementById('maxTimeSlider');
+      // If uninitialized or lingering at legacy 45 from browser session cache, reset to default 75
+      if (minSlider && (!minSlider.value || parseInt(minSlider.value) === 45 || minSlider.value === "45")) {
+        minSlider.value = "75";
+        minSlider.defaultValue = "75";
+      }
+      if (maxSlider && (!maxSlider.value || parseInt(maxSlider.value) < 90)) {
+        maxSlider.value = "120";
+        maxSlider.defaultValue = "120";
+      }
+      const minVal = parseInt(minSlider?.value) || 75;
+      const maxVal = parseInt(maxSlider?.value) || 120;
+      updateTimeGapDisplays(minVal, maxVal);
+    }
+
+    document.addEventListener('DOMContentLoaded', initStopGapsDefault);
+
+    window.onload = () => {
       initStationData();
       initDurationTolerance();
       initMap();
-      updateTimeGapDisplays(75, 120);
+      initStopGapsDefault();
       updatePhysicsHUD();
       // Route calculation is not run automatically on load, allowing settings adjustment first
       lucide.createIcons();
+
+      // Guard against delayed browser session form restore
+      setTimeout(initStopGapsDefault, 100);
+      setTimeout(initStopGapsDefault, 400);
     };
   </script>
 </body>
