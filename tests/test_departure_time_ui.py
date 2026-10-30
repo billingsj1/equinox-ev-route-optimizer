@@ -85,7 +85,7 @@ async def test_departure_and_tou():
             print("Default Departure Time Info:", dep_info)
             parsed_dep = json.loads(dep_info)
             assert parsed_dep["val"] == "08:00"
-            assert "08:00 AM" in parsed_dep["disp"]
+            assert ("08:00 AM" in parsed_dep["disp"] or "8:00 AM" in parsed_dep["disp"])
 
             # 2. Check table stop rows and destination row for clock times
             table_info = await eval_js("""

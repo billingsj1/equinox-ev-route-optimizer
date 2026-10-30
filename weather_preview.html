@@ -62,6 +62,11 @@
     .leaflet-popup-tip {
       background: #0f172a;
     }
+    #routeMap {
+      height: 480px;
+      width: 100%;
+      border-radius: 0.75rem;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
@@ -258,7 +263,7 @@
           <span id="routeDurationDisplay" class="text-slate-300">-- driving</span>
         </div>
       </div>
-      <div id="routeMap" style="height: 380px; width: 100%;" class="z-0 bg-slate-950"></div>
+      <div id="routeMap" class="z-0 border border-slate-800 shadow-inner"></div>
     </div>
 
     <!-- ALONG-ROUTE WEATHER TIMELINE CARDS -->
@@ -273,8 +278,11 @@
 
       <!-- Waypoint Cards Grid -->
       <div id="timelineContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        <div class="col-span-full py-12 text-center text-slate-500 text-xs">
-          Loading route weather simulation...
+        <div class="col-span-full py-12 text-center text-slate-400 text-xs">
+          <div class="inline-flex flex-col sm:flex-row items-center gap-2 bg-slate-950/80 border border-slate-800 px-5 py-3.5 rounded-xl text-center">
+            <span class="text-emerald-400 text-base">🌤️</span>
+            <span>Select your corridor, departure date &amp; time above, then click <b class="text-white">Calculate Route Weather</b> to run simulation.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -387,8 +395,14 @@
     document.addEventListener("DOMContentLoaded", () => {
       initDepartureControls();
       initMap();
-      handleCalculateWeather();
+      renderCorridorPreview(currentDestination, customCoords);
+      // Route weather is NOT calculated automatically on page load.
+      // Calculation only executes when the user clicks 'Calculate Route Weather'.
       lucide.createIcons();
+    });
+
+    window.addEventListener('resize', () => {
+      if (mapInstance) mapInstance.invalidateSize();
     });
 
     function initDepartureControls() {
@@ -437,7 +451,7 @@
 
     function onDateTimeChanged() {
       updateModeBanner();
-      handleCalculateWeather();
+      // Only updates mode horizon; does NOT auto-recalculate
     }
 
     function updateModeBanner() {
@@ -477,7 +491,8 @@
         }
       });
 
-      handleCalculateWeather();
+      renderCorridorPreview(currentDestination, customCoords);
+      // Does NOT auto-recalculate; waits for Calculate button
     }
 
     function selectCustomRoute(routeKey) {
@@ -494,18 +509,124 @@
         }
       });
 
-      handleCalculateWeather();
+      renderCorridorPreview(currentDestination, customCoords);
+      // Does NOT auto-recalculate; waits for Calculate button
     }
 
     function initMap() {
       mapInstance = L.map('routeMap', {
         zoomControl: true,
         attributionControl: false
-      }).setView([40.1, -78.5], 7);
+      });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19
+      // OpenStreetMap Tiles (Reliable, free, highway roadmap view)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18
       }).addTo(mapInstance);
+
+      mapInstance.whenReady(() => {
+        setTimeout(() => {
+          if (mapInstance) mapInstance.invalidateSize();
+        }, 50);
+      });
+    }
+
+    function renderCorridorPreview(destKey, customPoints) {
+      if (!mapInstance) return;
+
+      routeLayers.forEach(l => mapInstance.removeLayer(l));
+      markerLayers.forEach(m => mapInstance.removeLayer(m));
+      routeLayers = [];
+      markerLayers = [];
+
+      let latlngs = [];
+      let pointsMeta = [];
+      let distStr = "-- miles";
+      let durStr = "-- driving";
+
+      if (customPoints && customPoints.length > 0) {
+        latlngs = customPoints.map(p => [p[1], p[0]]);
+        pointsMeta = customPoints.map((p, idx) => ({
+          name: idx === 0 ? "Route Origin (West High School)" : (idx === customPoints.length - 1 ? currentDestination : `Checkpoint ${idx+1}`),
+          lat: p[1],
+          lon: p[0],
+          elev: p[2] || 200
+        }));
+        if (currentDestination.includes("Washington")) {
+          distStr = "424 miles";
+          durStr = "~7.1 hrs";
+        } else if (currentDestination.includes("Cleveland")) {
+          distStr = "143 miles";
+          durStr = "~2.2 hrs";
+        }
+      } else {
+        const cfg = PREDEFINED_CORRIDORS[destKey] || PREDEFINED_CORRIDORS['st_onge'];
+        latlngs = cfg.waypoints.map(w => [w[1], w[2]]);
+        pointsMeta = cfg.waypoints.map(w => ({
+          name: w[0],
+          lat: w[1],
+          lon: w[2],
+          elev: w[3]
+        }));
+        if (destKey === 'st_onge') {
+          distStr = "441 miles";
+          durStr = "~7.4 hrs";
+        } else if (destKey === 'billings') {
+          distStr = "162 miles";
+          durStr = "~2.9 hrs";
+        } else if (destKey === 'decamilla') {
+          distStr = "328 miles";
+          durStr = "~5.3 hrs";
+        }
+      }
+
+      document.getElementById('routeDistanceDisplay').innerText = distStr;
+      document.getElementById('routeDurationDisplay').innerText = durStr;
+      document.getElementById('waypointCountBadge').innerText = `${pointsMeta.length} checkpoints`;
+
+      // Render crisp highway route corridor line
+      const poly = L.polyline(latlngs, {
+        color: '#2563eb',
+        weight: 5.5,
+        opacity: 0.95
+      }).addTo(mapInstance);
+      routeLayers.push(poly);
+
+      // Render checkpoint milestone markers
+      pointsMeta.forEach((pt, idx) => {
+        const isStart = idx === 0;
+        const isEnd = idx === pointsMeta.length - 1;
+        const isSummit = pt.elev > 500;
+        const pinColor = isStart ? '#10b981' : (isEnd ? '#06b6d4' : (isSummit ? '#f59e0b' : '#64748b'));
+        const radius = isStart || isEnd || isSummit ? 7 : 5;
+
+        const marker = L.circleMarker([pt.lat, pt.lon], {
+          radius: radius,
+          fillColor: pinColor,
+          color: '#0f172a',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.95
+        }).addTo(mapInstance);
+
+        marker.bindPopup(`
+          <div class="space-y-1">
+            <div class="font-bold text-xs text-white border-b border-slate-700 pb-1">${pt.name}</div>
+            <div class="text-[11px] text-slate-300">Elevation: <span class="text-amber-400 font-mono">${Math.round(pt.elev * 3.28084)} ft</span></div>
+            <div class="text-[10px] text-slate-400 mt-1">Click "Calculate Route Weather" to simulate along-route conditions.</div>
+          </div>
+        `);
+        markerLayers.push(marker);
+      });
+
+      if (latlngs.length > 0) {
+        mapInstance.fitBounds(L.latLngBounds(latlngs), { padding: [35, 35] });
+      }
+
+      setTimeout(() => {
+        if (mapInstance) mapInstance.invalidateSize();
+      }, 100);
     }
 
     async function handleCalculateWeather() {
@@ -513,7 +634,7 @@
       const btnText = document.getElementById('btnCalcText');
       const btnIcon = document.getElementById('btnCalcIcon');
       
-      btnText.innerText = "Fetching Weather...";
+      btnText.innerText = "Analyzing Weather & Physics...";
       btnIcon.classList.add("animate-spin");
       btn.disabled = true;
 
@@ -553,9 +674,16 @@
         }
       } finally {
         btnText.innerText = "Calculate Route Weather";
-        btnIcon.classList.remove("animate-spin");
         btn.disabled = false;
-        lucide.createIcons();
+        const activeIcon = document.getElementById('btnCalcIcon');
+        if (activeIcon) {
+          activeIcon.classList.remove("animate-spin");
+        }
+        setTimeout(() => {
+          const currentIcon = document.getElementById('btnCalcIcon');
+          if (currentIcon) currentIcon.classList.remove("animate-spin");
+          if (mapInstance) mapInstance.invalidateSize();
+        }, 100);
       }
     }
 
@@ -890,6 +1018,9 @@
       });
 
       mapInstance.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30] });
+      setTimeout(() => {
+        if (mapInstance) mapInstance.invalidateSize();
+      }, 100);
     }
 
     function renderTimelineCards(wps) {

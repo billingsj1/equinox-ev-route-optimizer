@@ -65,7 +65,8 @@ class MultiObjectiveOptimizer:
         weather: WeatherConditions,
         payload: PayloadConfig,
         profile: DrivingProfile,
-        start_soc: float
+        start_soc: float,
+        weather_report: Optional[Any] = None
     ) -> Tuple[float, float, float]:
         """
         Returns (end_soc, duration_hours, energy_used_kwh).
@@ -117,7 +118,8 @@ class MultiObjectiveOptimizer:
         toll_config: TollPassConfig,
         initial_soc: float = 1.00,
         has_ea_pass: bool = False,
-        has_tesla_membership: bool = False
+        has_tesla_membership: bool = False,
+        weather_report: Optional[Any] = None
     ) -> Optional[Itinerary]:
         """
         Simulates driving legs, applies time between stops bounding constraints,
@@ -129,7 +131,7 @@ class MultiObjectiveOptimizer:
         # Precalculate energy required for each leg
         leg_energy_reqs = []
         for leg in legs:
-            _, _, leg_kwh = self._simulate_leg(leg, weather, payload, profile, 1.0)
+            _, _, leg_kwh = self._simulate_leg(leg, weather, payload, profile, 1.0, weather_report)
             leg_energy_reqs.append(leg_kwh / self.vehicle.usable_battery_kwh)
 
         current_soc = initial_soc
@@ -144,7 +146,7 @@ class MultiObjectiveOptimizer:
 
         for i, leg in enumerate(legs):
             end_soc, leg_dur_hours, leg_kwh = self._simulate_leg(
-                leg, weather, payload, profile, current_soc
+                leg, weather, payload, profile, current_soc, weather_report
             )
             elapsed_trip_hours += leg_dur_hours
             time_since_last_stop_min += (leg_dur_hours * 60.0)
@@ -158,6 +160,17 @@ class MultiObjectiveOptimizer:
             if i < len(candidate_stations):
                 station = candidate_stations[i]
                 
+                # Check for Ultium battery preconditioning in cold weather (< 55°F) for DC Fast Chargers
+                if station.power_kw >= 50.0:
+                    amb_temp = getattr(weather, 'temperature_f', 70.0)
+                    if weather_report and getattr(weather_report, 'summary', None) and "avg_temp_f" in weather_report.summary:
+                        amb_temp = weather_report.summary["avg_temp_f"]
+                    if amb_temp < 55.0:
+                        precond_kwh = min(2.5, max(0.5, 0.05 * (55.0 - amb_temp)))
+                        current_soc -= (precond_kwh / self.vehicle.usable_battery_kwh)
+                        if current_soc < profile.min_safety_buffer_soc:
+                            return None
+
                 # Check "Ideal Time Between Stops" constraint (90 - 150 mins)
                 # If stopping earlier than 90 mins, prune UNLESS current_soc is near buffer
                 if time_since_last_stop_min < profile.ideal_time_min_bound and current_soc > (profile.min_safety_buffer_soc + 0.15):
@@ -322,7 +335,8 @@ class MultiObjectiveOptimizer:
         profile: DrivingProfile,
         toll_config: TollPassConfig,
         initial_soc: float = 1.00,
-        max_duration_tolerance_pct: float = 0.10
+        max_duration_tolerance_pct: float = 0.10,
+        weather_report: Optional[Any] = None
     ) -> Dict[str, Any]:
         """
         Runs combinatorial search across valid charger stops, builds the Pareto frontier,
@@ -338,7 +352,7 @@ class MultiObjectiveOptimizer:
 
             # 0-stop check (if battery can make it all the way to destination with >= target_arrival_soc)
             itin_0 = self.evaluate_candidate_plan(
-                route, [], weather, payload, profile, toll_config, initial_soc
+                route, [], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report
             )
             if itin_0:
                 candidates.append(itin_0)
@@ -346,7 +360,7 @@ class MultiObjectiveOptimizer:
             # 1-stop combinations
             for ch in chargers:
                 itin_1 = self.evaluate_candidate_plan(
-                    route, [ch], weather, payload, profile, toll_config, initial_soc
+                    route, [ch], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report
                 )
                 if itin_1:
                     candidates.append(itin_1)
@@ -356,7 +370,7 @@ class MultiObjectiveOptimizer:
                 for i in range(len(chargers)):
                     for j in range(i + 1, min(len(chargers), i + 4)):
                         itin_2 = self.evaluate_candidate_plan(
-                            route, [chargers[i], chargers[j]], weather, payload, profile, toll_config, initial_soc
+                            route, [chargers[i], chargers[j]], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report
                         )
                         if itin_2:
                             candidates.append(itin_2)
@@ -441,7 +455,17 @@ class MultiObjectiveOptimizer:
         balanced.pareto_score = round(float(utopia_distances[balanced_rel_idx]), 3)
 
         # Quickest non-stop baseline across corridors
-        fastest_non_stop_hours = min(r.total_distance_miles / max(1.0, r.speed_limit_mph + profile.speed_offset_mph) for r in routes) if routes else 0.0
+        def _route_non_stop_hours(r: RoutePath) -> float:
+            spd = getattr(r, 'speed_limit_mph', 0.0)
+            if spd <= 0.0 and r.segments:
+                tot_m = sum(s.distance_meters for s in r.segments)
+                spd = (sum(s.speed_limit_mph * s.distance_meters for s in r.segments) / max(1.0, tot_m)) if tot_m > 0 else 65.0
+            if spd <= 0.0:
+                spd = 65.0
+            actual_spd = min(spd + profile.speed_offset_mph, profile.max_speed_cap_mph)
+            return r.total_distance_miles / max(1.0, actual_spd)
+
+        fastest_non_stop_hours = min(_route_non_stop_hours(r) for r in routes) if routes else 0.0
 
         return {
             "fastest": fastest,

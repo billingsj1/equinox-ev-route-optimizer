@@ -207,12 +207,23 @@
           Battery & Driving Policy
         </h2>
         <div class="space-y-3 text-xs">
-          <div>
-            <div class="flex justify-between text-slate-400 mb-1">
-              <span>Departure Time</span>
-              <span id="departureTimeDisplay" class="font-mono text-emerald-400">08:00 AM</span>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>Departure Date</span>
+              </div>
+              <input type="date" id="departureDate" onchange="onDepartureDateTimeChanged()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200 font-mono text-xs focus:border-emerald-500 focus:outline-none">
             </div>
-            <input type="time" id="departureTime" value="08:00" onchange="updateDepartureTimeDisplay()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200 font-mono text-sm focus:border-emerald-500 focus:outline-none">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>Departure Time</span>
+                <span id="departureTimeDisplay" class="font-mono text-emerald-400 text-[11px]">08:00 AM</span>
+              </div>
+              <select id="departureTime" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200 font-mono text-xs focus:border-emerald-500 focus:outline-none">
+                <!-- Populated dynamically with 48 half-hour slots -->
+                <option value="08:00" selected>08:00 AM</option>
+              </select>
+            </div>
           </div>
           <div>
             <div class="flex justify-between text-slate-400 mb-1">
@@ -393,13 +404,29 @@
       </div>
 
           <!-- 3. Weather & Environmental Modifiers -->
-          <!-- Weather & Environmental Modifiers -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-          <i data-lucide="cloud-sun" class="w-4 h-4 text-emerald-400"></i>
-          Weather & Environment (Live Modifiers)
-        </h2>
-        <div class="space-y-3 text-xs">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+            <i data-lucide="cloud-sun" class="w-4 h-4 text-emerald-400"></i>
+            Weather & Environment
+          </h2>
+          <span id="weatherEngineModeBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+            Smart Weather Active
+          </span>
+        </div>
+
+        <!-- Manual Weather Override Checkbox -->
+        <div class="mb-3 p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1.5">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="manualWeatherOverride" onchange="toggleManualWeatherOverride()" class="accent-emerald-500 rounded">
+            <span class="text-xs font-semibold text-slate-200">Use Manual Weather Overrides</span>
+          </label>
+          <div id="weatherOverrideHint" class="text-[10px] text-slate-400 leading-snug">
+            Default unchecked: optimizer automatically pulls smart along-route weather (hourly forecast or historical reanalysis) matching departure date/time. Check to force manual sliders below.
+          </div>
+        </div>
+
+        <div id="manualWeatherControls" class="space-y-3 text-xs opacity-60 pointer-events-none transition-all duration-200">
           <div class="grid grid-cols-2 gap-2">
             <div>
               <div class="flex justify-between text-slate-400 mb-1">
@@ -620,6 +647,86 @@
             Configure vehicle payload and settings, then click <b class="text-emerald-400">Calculate Route</b> to begin.
           </div>
           <span id="auditTimestamp" class="text-[11px] text-slate-500 font-mono shrink-0"></span>
+        </div>
+      </div>
+
+      <!-- Route Weather & Environmental Conditions Card -->
+      <div id="routeWeatherCard" class="p-4 bg-slate-900 border border-slate-800 rounded-xl mb-4 shadow-sm transition-all">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <i data-lucide="cloud-sun" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-white uppercase tracking-wider">Route Weather & Atmospheric Conditions</span>
+                <span id="routeWeatherModeBadge" class="text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-semibold">
+                  Smart Weather Active
+                </span>
+              </div>
+              <div id="routeWeatherSubtext" class="text-[11px] text-slate-400 font-mono">
+                Click Calculate Route to pull along-route forecasts &amp; atmospheric density
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <a href="/weather-preview" target="_blank" class="px-2.5 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 hover:border-slate-600 rounded-lg flex items-center gap-1.5 transition font-medium shadow-sm" title="Open full-screen interactive weather preview with Mol* and Leaflet map">
+              <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-400"></i>
+              <span>Launch Weather Preview</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+          <!-- Metric 1: Temp Range -->
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
+            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
+              <i data-lucide="thermometer" class="w-3 h-3 text-emerald-400"></i>
+              <span>Ambient Temp</span>
+            </div>
+            <div id="rwTempDisplay" class="font-mono text-emerald-400 font-bold text-sm mt-0.5">--°F</div>
+            <div id="rwTempSub" class="text-[10px] text-slate-500 font-mono">Range: --</div>
+          </div>
+
+          <!-- Metric 2: Road Surface -->
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
+            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
+              <i data-lucide="droplets" class="w-3 h-3 text-blue-400"></i>
+              <span>Road Surface</span>
+            </div>
+            <div id="rwRoadDisplay" class="font-mono text-blue-400 font-bold text-sm mt-0.5">Dry Asphalt</div>
+            <div id="rwRoadSub" class="text-[10px] text-slate-500 font-mono">Crr 0.0095</div>
+          </div>
+
+          <!-- Metric 3: Vector Wind -->
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
+            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
+              <i data-lucide="wind" class="w-3 h-3 text-cyan-400"></i>
+              <span>Vector Wind</span>
+            </div>
+            <div id="rwWindDisplay" class="font-mono text-cyan-400 font-bold text-sm mt-0.5">-- mph</div>
+            <div id="rwWindSub" class="text-[10px] text-slate-500 font-mono">Tailwind Assist: --</div>
+          </div>
+
+          <!-- Metric 4: Air Density & Elevation -->
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
+            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
+              <i data-lucide="mountain" class="w-3 h-3 text-indigo-400"></i>
+              <span>Moist Air Density</span>
+            </div>
+            <div id="rwAirDensityDisplay" class="font-mono text-indigo-400 font-bold text-sm mt-0.5">1.225 kg/m³</div>
+            <div id="rwAirDensitySub" class="text-[10px] text-slate-500 font-mono">Appalachian Adjusted</div>
+          </div>
+
+          <!-- Metric 5: Preconditioning / HVAC -->
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
+            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
+              <i data-lucide="battery-charging" class="w-3 h-3 text-amber-400"></i>
+              <span>Preconditioning</span>
+            </div>
+            <div id="rwPrecondDisplay" class="font-mono text-amber-400 font-bold text-sm mt-0.5">Ready</div>
+            <div id="rwPrecondSub" class="text-[10px] text-slate-500 font-mono">Ultium Thermal Auto</div>
+          </div>
         </div>
       </div>
 
@@ -1030,6 +1137,10 @@
       document.getElementById('whPerMile').innerText = Math.round(sampleSim.wh_per_mi) + ' Wh/mi';
       document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
       document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
+
+      if (typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')?.checked) {
+        renderManualWeatherInHUD();
+      }
     }
 
     // --- COMPREHENSIVE TOPOGRAPHIC & ELEVATION PHYSICS ENGINE ---
@@ -1684,19 +1795,40 @@
           step_bearing = calcBearingDeg(c[0][0], c[0][1], c[c.length - 1][0], c[c.length - 1][1]);
         }
 
-        const rel_wind_rad = (step_bearing - wind_dir) * Math.PI / 180.0;
-        const v_head_ms = v_wind_ms * Math.cos(rel_wind_rad);
-        const v_cross_ms = v_wind_ms * Math.sin(rel_wind_rad);
-        const v_airspeed_ms = Math.max(3.0, Math.hypot(v_ms + v_head_ms, v_cross_ms));
-        const yaw_deg = Math.abs(Math.atan2(v_cross_ms, Math.max(0.1, v_ms + v_head_ms))) * 180.0 / Math.PI;
+        // Dynamic along-route smart microclimate or manual override
+        const isOverrideActive = (typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')?.checked);
+        const smartWp = (!isOverrideActive && window.activeWeatherReport) ? getRouteWeatherAtMile(cum_m) : null;
+
+        const effective_temp = (smartWp && smartWp.ambient_temp_f != null) ? smartWp.ambient_temp_f : temp_f;
+        const effective_rho = (smartWp && smartWp.air_density_kg_m3 != null) ? smartWp.air_density_kg_m3 : rho;
+
+        const rel_manual_wind_rad = (step_bearing - wind_dir) * Math.PI / 180.0;
+        let step_v_head_ms = v_wind_ms * Math.cos(rel_manual_wind_rad);
+        let step_v_cross_ms = v_wind_ms * Math.sin(rel_manual_wind_rad);
+        if (smartWp) {
+          const w_ms = (smartWp.wind_speed_mph || 0) * 0.44704;
+          const w_dir = (smartWp.wind_direction_deg != null) ? smartWp.wind_direction_deg : 270.0;
+          const rel_w_rad = (step_bearing - w_dir) * Math.PI / 180.0;
+          step_v_head_ms = w_ms * Math.cos(rel_w_rad);
+          step_v_cross_ms = w_ms * Math.sin(rel_w_rad);
+        }
+
+        const v_airspeed_ms = Math.max(3.0, Math.hypot(v_ms + step_v_head_ms, step_v_cross_ms));
+        const yaw_deg = Math.abs(Math.atan2(step_v_cross_ms, Math.max(0.1, v_ms + step_v_head_ms))) * 180.0 / Math.PI;
         const cd_yaw = 0.332 * (1.0 + (0.008 * Math.min(25.0, yaw_deg)));
-        const f_aero = 0.5 * rho * (cd_yaw * 2.60) * Math.pow(v_airspeed_ms, 2);
+        const f_aero = 0.5 * effective_rho * (cd_yaw * 2.60) * Math.pow(v_airspeed_ms, 2);
 
         let crr = is_local ? 0.0105 : 0.0095;
-        if (road_cond === "wet") crr *= 1.40;
-        else if (road_cond === "snow_ice") crr *= 2.20;
+        let isWetRoad = (road_cond === "wet");
+        if (smartWp) {
+          crr = smartWp.rolling_resistance_crr || (is_local ? 0.0105 : 0.0095);
+          isWetRoad = (smartWp.road_condition === "wet" || smartWp.road_condition === "heavy_wet");
+        } else {
+          if (road_cond === "wet") crr *= 1.40;
+          else if (road_cond === "snow_ice") crr *= 2.20;
+        }
         const f_rr = crr * total_mass_kg * 9.80665;
-        const f_spray = (road_cond === "wet") ? (0.5 * 0.35 * 1000.0 * (4 * 0.235) * 0.0005 * Math.pow(v_ms, 2)) : 0.0;
+        const f_spray = isWetRoad ? (0.5 * 0.35 * 1000.0 * (4 * 0.235) * 0.0005 * Math.pow(v_ms, 2)) : 0.0;
 
         const mBearingDiff = (s.maneuver && s.maneuver.bearing_after != null && s.maneuver.bearing_before != null) 
           ? Math.abs(s.maneuver.bearing_after - s.maneuver.bearing_before) : 0;
@@ -1730,13 +1862,21 @@
         const step_tot_hours = slice_hours + idle_hours + maneuver_delay_hours + traffic_delay_hours;
 
         let hvac_kw = 0.35;
-        if (temp_f < 45) hvac_kw = Math.min(5.2, 0.45 + (0.09 * (45 - temp_f)));
-        else if (temp_f > 75) hvac_kw = Math.min(2.8, 0.40 + (0.06 * (temp_f - 75)));
+        if (smartWp && smartWp.hvac_power_kw != null) {
+          hvac_kw = smartWp.hvac_power_kw;
+        } else {
+          if (effective_temp < 45) hvac_kw = Math.min(5.2, 0.45 + (0.09 * (45 - effective_temp)));
+          else if (effective_temp > 75) hvac_kw = Math.min(2.8, 0.40 + (0.06 * (effective_temp - 75)));
+        }
         const aux_kwh = (0.35 + hvac_kw) * step_tot_hours;
 
         let batt_eff = 1.0;
-        if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.0045));
-        else if (temp_f < 55) batt_eff = 0.90 + ((temp_f - 32) / 23) * 0.10;
+        if (smartWp && smartWp.battery_eff_factor != null) {
+          batt_eff = smartWp.battery_eff_factor;
+        } else {
+          if (effective_temp < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - effective_temp) * 0.0045));
+          else if (effective_temp < 55) batt_eff = 0.90 + ((effective_temp - 32) / 23) * 0.10;
+        }
 
         const slice_total_kwh = ((tractive_planar_kwh + kinetic_kwh) / (tractive_planar_kwh >= 0 ? batt_eff : 1.0)) + aux_kwh;
 
@@ -1818,7 +1958,11 @@
       const traffic_profile = (typeof document !== 'undefined' && document.getElementById('trafficProfile')) 
         ? document.getElementById('trafficProfile').value : 'typical';
 
-      const lutKey = `${payload_lbs}_${temp_f}_${wind_speed}_${wind_dir}_${road_cond}_${speed_offset}_${max_cap}_${traffic_profile}`;
+      const isManual = (typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')?.checked);
+      const weatherKey = isManual
+        ? `manual_${temp_f}_${wind_speed}_${wind_dir}_${road_cond}`
+        : (window.activeWeatherReport ? `smart_${window.activeWeatherReport.departure_time_iso}_${window.activeWeatherReport.route_id}` : `default_${temp_f}_${road_cond}`);
+      const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${weatherKey}`;
       if (!steps._lut || steps._lutKey !== lutKey) {
         steps._lut = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile);
         steps._lutKey = lutKey;
@@ -2093,6 +2237,567 @@
       return parseInt(parts[0], 10) + (parseInt(parts[1], 10) / 60.0);
     }
 
+    // =========================================================================
+    // SMART ROUTE WEATHER ENGINE INTEGRATION (FORECAST & HISTORICAL REANALYSIS)
+    // =========================================================================
+
+    const PRECOMPUTED_CLIENT_CHECKPOINTS = {
+      st_onge: [
+        { name: "West High School (Columbus, OH)", lat: 39.9512, lon: -83.0750, elev_ft: 760, dist_mi: 0.0, speed_mph: 65 },
+        { name: "Zanesville, OH (I-70)", lat: 39.9403, lon: -82.0132, elev_ft: 710, dist_mi: 56.5, speed_mph: 70 },
+        { name: "Cambridge, OH (I-70)", lat: 40.0345, lon: -81.5833, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
+        { name: "St. Clairsville, OH (I-70)", lat: 40.0812, lon: -80.9015, elev_ft: 1220, dist_mi: 117.2, speed_mph: 70 },
+        { name: "Wheeling, WV (I-70 / Ohio River)", lat: 40.0639, lon: -80.7209, elev_ft: 680, dist_mi: 128.5, speed_mph: 60 },
+        { name: "Washington, PA (I-70 / I-79)", lat: 40.1740, lon: -80.2462, elev_ft: 1040, dist_mi: 159.0, speed_mph: 65 },
+        { name: "New Stanton, PA (PA Turnpike Entry 75)", lat: 40.2223, lon: -79.6106, elev_ft: 980, dist_mi: 194.5, speed_mph: 70 },
+        { name: "Somerset, PA (PA Turnpike Summit)", lat: 40.0084, lon: -79.0781, elev_ft: 2264, dist_mi: 236.8, speed_mph: 70 },
+        { name: "Breezewood, PA (PA Turnpike Gateway)", lat: 40.0017, lon: -78.2383, elev_ft: 1020, dist_mi: 284.2, speed_mph: 70 },
+        { name: "Fort Littleton, PA (PA Turnpike 180)", lat: 40.0461, lon: -77.9622, elev_ft: 850, dist_mi: 304.5, speed_mph: 70 },
+        { name: "Carlisle, PA (PA Turnpike Exit 226)", lat: 40.2015, lon: -77.1889, elev_ft: 480, dist_mi: 348.0, speed_mph: 70 },
+        { name: "Chester Springs, PA (PA Turnpike 312)", lat: 40.0934, lon: -75.6268, elev_ft: 340, dist_mi: 412.3, speed_mph: 68 },
+        { name: "St. Onge Residence (Marlton, NJ)", lat: 39.8912, lon: -74.9218, elev_ft: 70, dist_mi: 441.5, speed_mph: 45 }
+      ],
+      billings: [
+        { name: "West High School (Columbus, OH)", lat: 39.9512, lon: -83.0750, elev_ft: 760, dist_mi: 0.0, speed_mph: 65 },
+        { name: "Zanesville, OH (I-70)", lat: 39.9403, lon: -82.0132, elev_ft: 710, dist_mi: 56.5, speed_mph: 70 },
+        { name: "Cambridge, OH (I-70 / US-22)", lat: 40.0345, lon: -81.5833, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
+        { name: "Cadiz / Steubenville, OH (US-22)", lat: 40.3634, lon: -80.6137, elev_ft: 980, dist_mi: 132.0, speed_mph: 60 },
+        { name: "Weirton, WV / PA Line (US-22)", lat: 40.4087, lon: -80.5284, elev_ft: 820, dist_mi: 146.5, speed_mph: 60 },
+        { name: "Billings Residence (Sewickley, PA)", lat: 40.5401, lon: -80.1834, elev_ft: 780, dist_mi: 162.2, speed_mph: 45 }
+      ],
+      decamilla: [
+        { name: "West High School (Columbus, OH)", lat: 39.9512, lon: -83.0750, elev_ft: 760, dist_mi: 0.0, speed_mph: 65 },
+        { name: "Zanesville, OH (I-70)", lat: 39.9403, lon: -82.0132, elev_ft: 710, dist_mi: 56.5, speed_mph: 70 },
+        { name: "Cambridge, OH (I-70)", lat: 40.0345, lon: -81.5833, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
+        { name: "St. Clairsville, OH (I-70)", lat: 40.0812, lon: -80.9015, elev_ft: 1220, dist_mi: 117.2, speed_mph: 70 },
+        { name: "Wheeling, WV (I-70 / Ohio River)", lat: 40.0639, lon: -80.7209, elev_ft: 680, dist_mi: 128.5, speed_mph: 60 },
+        { name: "Washington, PA (I-70)", lat: 40.1740, lon: -80.2462, elev_ft: 1040, dist_mi: 159.0, speed_mph: 65 },
+        { name: "New Stanton, PA (PA Turnpike Entry 75)", lat: 40.2223, lon: -79.6106, elev_ft: 980, dist_mi: 194.5, speed_mph: 70 },
+        { name: "Somerset, PA (PA Turnpike Summit)", lat: 40.0084, lon: -79.0781, elev_ft: 2264, dist_mi: 236.8, speed_mph: 70 },
+        { name: "Breezewood, PA (PA Turnpike 161)", lat: 40.0017, lon: -78.2383, elev_ft: 1020, dist_mi: 284.2, speed_mph: 70 },
+        { name: "DeCamilla Residence (Dillsburg, PA)", lat: 40.1413, lon: -77.0156, elev_ft: 520, dist_mi: 328.0, speed_mph: 55 }
+      ]
+    };
+
+    function initDepartureDateTimeControls() {
+      const dateEl = document.getElementById('departureDate');
+      const timeEl = document.getElementById('departureTime');
+      if (!dateEl || !timeEl) return;
+
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      if (!dateEl.value) {
+        dateEl.value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      const curVal = timeEl.value;
+      timeEl.innerHTML = '';
+      const curHour = now.getHours();
+      const curMin = now.getMinutes();
+      let defaultIdx = Math.ceil((curHour * 60 + curMin) / 30);
+      if (defaultIdx >= 48) defaultIdx = 0;
+
+      for (let slot = 0; slot < 48; slot++) {
+        const h = Math.floor(slot / 2);
+        const m = (slot % 2) * 30;
+        const hh = String(h).padStart(2, '0');
+        const minStr = String(m).padStart(2, '0');
+        const val = `${hh}:${minStr}`;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = (h % 12) === 0 ? 12 : (h % 12);
+        const label = `${h12}:${minStr} ${ampm}`;
+
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = label;
+        if (curVal ? (val === curVal) : (slot === defaultIdx)) {
+          opt.selected = true;
+        }
+        timeEl.appendChild(opt);
+      }
+
+      updateDepartureTimeDisplay();
+    }
+
+    async function onDepartureDateTimeChanged() {
+      updateDepartureTimeDisplay();
+      const destText = document.getElementById('destAddress')?.value.trim();
+      if (destText && activeRoutesData && activeRoutesData.length > 0) {
+        await fetchRouteWeatherData(destText, activeRoutesData[0]);
+        await recomputeCurrentRoute();
+      }
+    }
+
+    function initManualWeatherOverride() {
+      const chk = document.getElementById('manualWeatherOverride');
+      const controls = document.getElementById('manualWeatherControls');
+      const badge = document.getElementById('weatherEngineModeBadge');
+      if (!chk || !controls) return;
+
+      if (chk.checked) {
+        controls.classList.remove('opacity-60', 'pointer-events-none');
+        controls.classList.add('opacity-100', 'pointer-events-auto');
+        if (badge) {
+          badge.className = "text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400";
+          badge.innerText = "Manual Override Active";
+        }
+      } else {
+        controls.classList.remove('opacity-100', 'pointer-events-auto');
+        controls.classList.add('opacity-60', 'pointer-events-none');
+        if (badge) {
+          badge.className = "text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
+          badge.innerText = "Smart Weather Active";
+        }
+      }
+    }
+
+    async function toggleManualWeatherOverride() {
+      initManualWeatherOverride();
+      const destText = document.getElementById('destAddress')?.value.trim();
+      if (destText && activeRoutesData && activeRoutesData.length > 0) {
+        await fetchRouteWeatherData(destText, activeRoutesData[0]);
+        await recomputeCurrentRoute();
+      }
+    }
+
+    function getRouteWeatherAtMile(mile) {
+      if (!window.activeWeatherReport || !window.activeWeatherReport.waypoints || window.activeWeatherReport.waypoints.length === 0) {
+        return null;
+      }
+      const wps = window.activeWeatherReport.waypoints;
+      if (mile <= wps[0].distance_from_start_miles) return wps[0];
+      const last = wps[wps.length - 1];
+      if (mile >= last.distance_from_start_miles) return last;
+      for (let i = 0; i < wps.length - 1; i++) {
+        if (mile >= wps[i].distance_from_start_miles && mile <= wps[i + 1].distance_from_start_miles) {
+          const d = wps[i + 1].distance_from_start_miles - wps[i].distance_from_start_miles;
+          const frac = d > 0 ? (mile - wps[i].distance_from_start_miles) / d : 0;
+          return frac > 0.5 ? wps[i + 1] : wps[i];
+        }
+      }
+      return wps[0];
+    }
+
+    async function fetchRouteWeatherData(destText, activeRoute) {
+      const isOverride = document.getElementById('manualWeatherOverride')?.checked;
+      const depDate = document.getElementById('departureDate')?.value;
+      const depTime = document.getElementById('departureTime')?.value;
+
+      if (isOverride) {
+        window.activeWeatherReport = null;
+        renderManualWeatherInHUD();
+        return null;
+      }
+
+      const q = (destText || "").toLowerCase();
+      let destKey = "custom";
+      if (q.includes("marlton") || q.includes("st. onge") || q.includes("conestoga")) {
+        destKey = "st_onge";
+      } else if (q.includes("sewickley") || q.includes("billings") || q.includes("beaver")) {
+        destKey = "billings";
+      } else if (q.includes("dillsburg") || q.includes("decamilla") || q.includes("gettysburg pike")) {
+        destKey = "decamilla";
+      }
+
+      const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
+      const maxCap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
+
+      let report = null;
+      try {
+        const resp = await fetch('/api/weather/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: destKey,
+            departure_date: depDate,
+            departure_time: depTime,
+            custom_coordinates: (destKey === "custom" && activeRoute) ? activeRoute.coordinates : null,
+            speed_offset_mph: speedOffset,
+            max_cap_mph: maxCap
+          })
+        });
+        if (resp.ok) {
+          report = await resp.json();
+        }
+      } catch (err) {
+        console.warn("Backend /api/weather/preview unreachable, attempting client-side Open-Meteo fallback:", err);
+      }
+
+      if (!report) {
+        report = await fetchClientSideRouteWeather(destKey, depDate, depTime, activeRoute, speedOffset, maxCap);
+      }
+
+      window.activeWeatherReport = report;
+      renderRouteWeatherCard(report);
+      return report;
+    }
+
+    async function fetchClientSideRouteWeather(destKey, depDateStr, depTimeStr, activeRoute, speedOffset, maxCap) {
+      try {
+        const depDate = depDateStr ? new Date(depDateStr + "T00:00:00") : new Date();
+        const depParts = (depTimeStr || "08:00").split(':');
+        depDate.setHours(parseInt(depParts[0] || 8), parseInt(depParts[1] || 0), 0, 0);
+
+        let waypoints = PRECOMPUTED_CLIENT_CHECKPOINTS[destKey] ? JSON.parse(JSON.stringify(PRECOMPUTED_CLIENT_CHECKPOINTS[destKey])) : null;
+        if (!waypoints && activeRoute && activeRoute.coordinates && activeRoute.coordinates.length > 0) {
+          const coords = activeRoute.coordinates;
+          const totalMiles = activeRoute.distance || 100;
+          const stepCount = Math.max(4, Math.min(15, Math.round(totalMiles / 30.0)));
+          waypoints = [];
+          for (let i = 0; i < stepCount; i++) {
+            const idx = Math.floor((i / (stepCount - 1)) * (coords.length - 1));
+            const pt = coords[idx];
+            waypoints.push({
+              name: i === 0 ? "Origin" : (i === stepCount - 1 ? "Destination" : `Waypoint ${i+1}`),
+              lat: pt[1],
+              lon: pt[0],
+              elev_ft: 800,
+              dist_mi: (i / (stepCount - 1)) * totalMiles,
+              speed_mph: 65
+            });
+          }
+        }
+
+        if (!waypoints || waypoints.length === 0) return null;
+
+        // Build elapsed time timeline
+        let elapsedMins = 0;
+        const timeline = [];
+        for (let i = 0; i < waypoints.length; i++) {
+          const wp = waypoints[i];
+          const segDist = i === 0 ? 0 : Math.max(0, wp.dist_mi - waypoints[i-1].dist_mi);
+          const cruiseMph = Math.min(wp.speed_mph + speedOffset, maxCap);
+          if (i > 0) {
+            elapsedMins += (segDist / cruiseMph) * 60;
+          }
+          const arrDt = new Date(depDate.getTime() + elapsedMins * 60000);
+          timeline.push({
+            ...wp,
+            seg_dist: segDist,
+            arr_dt: arrDt,
+            hour_idx: arrDt.getHours(),
+            iso_date: arrDt.toISOString().slice(0, 10),
+            clock_str: formatClockTime(arrDt.getHours() + (arrDt.getMinutes() / 60))
+          });
+        }
+
+        // Query Open-Meteo
+        const lats = timeline.map(w => w.lat.toFixed(4)).join(',');
+        const lons = timeline.map(w => w.lon.toFixed(4)).join(',');
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const diffDays = Math.round((depDate - today) / (1000 * 60 * 60 * 24));
+        const isForecast = diffDays <= 16;
+
+        let apiUrl = "";
+        if (isForecast) {
+          apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&past_days=1&forecast_days=16`;
+        } else {
+          const pastYr = depDate.getFullYear() - 1;
+          const mm = String(depDate.getMonth() + 1).padStart(2, '0');
+          const dd = String(depDate.getDate()).padStart(2, '0');
+          apiUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lats}&longitude=${lons}&start_date=${pastYr}-${mm}-${dd}&end_date=${pastYr}-${mm}-${dd}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
+        }
+
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error("Open-Meteo HTTP " + res.status);
+        const data = await res.json();
+        const seriesList = Array.isArray(data) ? data : [data];
+
+        const outWaypoints = [];
+        let totalEnergyKwh = 0, baselineEnergyKwh = 0, totalHvacKwh = 0;
+
+        for (let i = 0; i < timeline.length; i++) {
+          const t = timeline[i];
+          const series = (seriesList[i] && seriesList[i].hourly) ? seriesList[i].hourly : (seriesList[0] ? seriesList[0].hourly : null);
+          if (!series) continue;
+
+          let slot = 0;
+          const targetPrefix = `${t.iso_date}T${String(t.hour_idx).padStart(2, '0')}`;
+          if (series.time) {
+            const found = series.time.findIndex(str => str.startsWith(targetPrefix));
+            slot = found >= 0 ? found : Math.min(t.hour_idx, series.time.length - 1);
+          }
+
+          const tempF = series.temperature_2m ? series.temperature_2m[slot] : 68.0;
+          const rh = series.relative_humidity_2m ? series.relative_humidity_2m[slot] : 50.0;
+          const precip = series.precipitation ? series.precipitation[slot] : 0.0;
+          const wmo = series.weather_code ? series.weather_code[slot] : 0;
+          const pres = series.surface_pressure ? series.surface_pressure[slot] : 1013.25;
+          const wSpeed = series.wind_speed_10m ? series.wind_speed_10m[slot] : 5.0;
+          const wDir = series.wind_direction_10m ? series.wind_direction_10m[slot] : 270.0;
+
+          // Road condition
+          let road = "dry", crr = 0.0095;
+          if (wmo >= 71 || (tempF <= 32 && precip > 0)) {
+            road = "snow_slush"; crr = 0.0210;
+          } else if (wmo >= 56 && wmo <= 67 && tempF <= 32) {
+            road = "ice"; crr = 0.0240;
+          } else if (precip > 0.10 || wmo === 65 || wmo === 82) {
+            road = "heavy_wet"; crr = 0.0165;
+          } else if (precip > 0.01 || (wmo >= 51 && wmo <= 63) || wmo === 80 || wmo === 81) {
+            road = "wet"; crr = 0.0138;
+          } else if (rh > 90.0 && wmo > 0) {
+            road = "damp"; crr = 0.0110;
+          }
+
+          // Moist air density
+          const tempK = (tempF - 32) * 5 / 9 + 273.15;
+          const pPa = pres * 100.0;
+          const es = 610.78 * Math.exp((17.27 * (tempK - 273.15)) / (tempK - 35.85));
+          const pv = (rh / 100.0) * es;
+          const pd = pPa - pv;
+          const rho = (pd / (287.058 * tempK)) + (pv / (461.495 * tempK));
+
+          // Wind vector
+          const bearing = i < timeline.length - 1 
+            ? calcBearingDeg(t.lon, t.lat, timeline[i+1].lon, timeline[i+1].lat)
+            : 90.0;
+          const relRad = (bearing - wDir) * Math.PI / 180.0;
+          const headwind = wSpeed * Math.cos(relRad);
+          const crosswind = Math.abs(wSpeed * Math.sin(relRad));
+
+          // HVAC & Battery
+          let hvacKw = 0.35;
+          if (tempF < 45) hvacKw = Math.min(5.2, 0.45 + 0.09 * (45 - tempF));
+          else if (tempF > 75) hvacKw = Math.min(2.8, 0.40 + 0.06 * (tempF - 75));
+
+          let battEff = 1.0;
+          if (tempF < 32) battEff = Math.max(0.78, 0.90 - (32 - tempF) * 0.0045);
+          else if (tempF < 55) battEff = 0.90 + ((tempF - 32) / 23) * 0.10;
+
+          // Segment energy
+          const distM = t.seg_dist * 1609.34;
+          const vCruisems = Math.min(t.speed_mph + speedOffset, maxCap) * 0.44704;
+          const segHours = t.seg_dist / Math.max(15, vCruisems * 2.23694);
+
+          const vAirms = Math.max(3.0, Math.hypot(vCruisems + headwind * 0.44704, crosswind * 0.44704));
+          const yaw = Math.abs(Math.atan2(crosswind * 0.44704, Math.max(0.1, vCruisems + headwind * 0.44704))) * 180 / Math.PI;
+          const cdYaw = 0.332 * (1.0 + 0.008 * Math.min(25, yaw));
+          const fAero = 0.5 * rho * (cdYaw * 2.60) * Math.pow(vAirms, 2);
+          const fRr = crr * 2420.0 * 9.80665;
+          const fSpray = (road === "wet" || road === "heavy_wet") ? (0.5 * 0.35 * 1000.0 * 0.94 * 0.0005 * Math.pow(vCruisems, 2)) : 0.0;
+          const fTotal = (fAero + fRr + fSpray) * 1.025;
+          const segKwh = ((fTotal * distM) / 3.6e6 / 0.91 / battEff) + ((0.35 + hvacKw) * segHours);
+
+          totalEnergyKwh += segKwh;
+          totalHvacKwh += hvacKw * segHours;
+
+          outWaypoints.push({
+            name: t.name,
+            lat: t.lat,
+            lon: t.lon,
+            elevation_ft: t.elev_ft,
+            distance_from_start_miles: t.dist_mi,
+            segment_distance_miles: t.seg_dist,
+            elapsed_time_minutes: elapsedMins,
+            arrival_time_clock: t.clock_str,
+            ambient_temp_f: Math.round(tempF * 10) / 10,
+            relative_humidity_pct: Math.round(rh),
+            surface_pressure_hpa: Math.round(pres),
+            air_density_kg_m3: Math.round(rho * 1000) / 1000,
+            road_condition: road,
+            rolling_resistance_crr: crr,
+            wind_speed_mph: Math.round(wSpeed * 10) / 10,
+            wind_direction_deg: Math.round(wDir),
+            effective_headwind_mph: Math.round(headwind * 10) / 10,
+            crosswind_mph: Math.round(crosswind * 10) / 10,
+            hvac_power_kw: Math.round(hvacKw * 100) / 100,
+            battery_eff_factor: Math.round(battEff * 100) / 100
+          });
+        }
+
+        const temps = outWaypoints.map(w => w.ambient_temp_f);
+        const minTemp = Math.min(...temps);
+        const maxTemp = Math.max(...temps);
+        const avgTemp = Math.round((temps.reduce((a, b) => a + b, 0) / temps.length) * 10) / 10;
+        const wetCount = outWaypoints.filter(w => w.road_condition === 'wet' || w.road_condition === 'heavy_wet').length;
+        const snowCount = outWaypoints.filter(w => w.road_condition === 'snow_slush' || w.road_condition === 'ice').length;
+        const maxTail = Math.max(0, ...outWaypoints.map(w => -w.effective_headwind_mph));
+        const maxHead = Math.max(0, ...outWaypoints.map(w => w.effective_headwind_mph));
+        const totalDist = waypoints[waypoints.length - 1].dist_mi;
+
+        return {
+          route_id: destKey,
+          route_name: destKey,
+          departure_time_iso: depDate.toISOString(),
+          departure_time_clock: formatClockTime(depDate.getHours() + (depDate.getMinutes() / 60)),
+          total_distance_miles: totalDist,
+          total_duration_hours: Math.round((elapsedMins / 60) * 10) / 10,
+          mode: isForecast ? "forecast" : "historical",
+          waypoints: outWaypoints,
+          summary: {
+            min_temp_f: minTemp,
+            max_temp_f: maxTemp,
+            avg_temp_f: avgTemp,
+            max_headwind_mph: Math.round(maxHead * 10) / 10,
+            max_tailwind_mph: Math.round(maxTail * 10) / 10,
+            wet_road_pct: Math.round((wetCount / outWaypoints.length) * 100),
+            snow_ice_road_pct: Math.round((snowCount / outWaypoints.length) * 100),
+            total_energy_kwh: Math.round(totalEnergyKwh * 10) / 10,
+            total_hvac_kwh: Math.round(totalHvacKwh * 10) / 10,
+            avg_consumption_wh_per_mi: Math.round((totalEnergyKwh * 1000) / Math.max(1, totalDist))
+          }
+        };
+      } catch (err) {
+        console.error("Client-side Open-Meteo simulation failed:", err);
+        return null;
+      }
+    }
+
+    function renderRouteWeatherCard(report) {
+      const card = document.getElementById('routeWeatherCard');
+      if (!card) return;
+
+      if (!report || !report.summary) {
+        renderManualWeatherInHUD();
+        return;
+      }
+
+      const badge = document.getElementById('routeWeatherModeBadge');
+      const subtext = document.getElementById('routeWeatherSubtext');
+      const tempDisp = document.getElementById('rwTempDisplay');
+      const tempSub = document.getElementById('rwTempSub');
+      const roadDisp = document.getElementById('rwRoadDisplay');
+      const roadSub = document.getElementById('rwRoadSub');
+      const windDisp = document.getElementById('rwWindDisplay');
+      const windSub = document.getElementById('rwWindSub');
+      const airDisp = document.getElementById('rwAirDensityDisplay');
+      const airSub = document.getElementById('rwAirDensitySub');
+      const precondDisp = document.getElementById('rwPrecondDisplay');
+      const precondSub = document.getElementById('rwPrecondSub');
+
+      const s = report.summary;
+      const isForecast = report.mode === 'forecast';
+
+      if (badge) {
+        badge.innerText = isForecast ? "Live Forecast (Hourly)" : "ERA5 Reanalysis (Archive)";
+        badge.className = isForecast 
+          ? "text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-semibold"
+          : "text-[10px] font-mono px-2 py-0.5 rounded border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 font-semibold";
+      }
+
+      if (subtext) {
+        const depClock = report.departure_time_clock || document.getElementById('departureTimeDisplay')?.innerText || "--";
+        const depDate = document.getElementById('departureDate')?.value || "--";
+        subtext.innerText = `Departing ${depDate} at ${depClock} • ${report.waypoints?.length || 0} Along-Route Stations`;
+      }
+
+      if (tempDisp) tempDisp.innerText = `${s.avg_temp_f}°F avg`;
+      if (tempSub) tempSub.innerText = `${s.min_temp_f}°F min to ${s.max_temp_f}°F max`;
+
+      if (roadDisp) {
+        if (s.snow_ice_road_pct > 0) {
+          roadDisp.innerText = `${s.snow_ice_road_pct}% Snow/Ice`;
+          roadDisp.className = "font-mono text-purple-400 font-bold text-sm mt-0.5";
+        } else if (s.wet_road_pct > 0) {
+          roadDisp.innerText = `${s.wet_road_pct}% Wet / Damp`;
+          roadDisp.className = "font-mono text-cyan-400 font-bold text-sm mt-0.5";
+        } else {
+          roadDisp.innerText = "100% Dry Asphalt";
+          roadDisp.className = "font-mono text-emerald-400 font-bold text-sm mt-0.5";
+        }
+      }
+      if (roadSub) {
+        const minCrr = s.snow_ice_road_pct > 0 ? "0.0210" : (s.wet_road_pct > 0 ? "0.0110" : "0.0095");
+        roadSub.innerText = `Crr baseline: ${minCrr}`;
+      }
+
+      if (windDisp) {
+        const tail = s.max_tailwind_mph || 0;
+        const head = s.max_headwind_mph || 0;
+        if (tail >= head) {
+          windDisp.innerText = `+${tail.toFixed(1)} mph Tailwind`;
+          windDisp.className = "font-mono text-emerald-400 font-bold text-sm mt-0.5";
+          if (windSub) windSub.innerText = `Aerodynamic Drag Assist`;
+        } else {
+          windDisp.innerText = `-${head.toFixed(1)} mph Headwind`;
+          windDisp.className = "font-mono text-amber-400 font-bold text-sm mt-0.5";
+          if (windSub) windSub.innerText = `Headwind Resistance`;
+        }
+      }
+
+      if (report.waypoints && report.waypoints.length > 0) {
+        const avgRho = report.waypoints.reduce((acc, w) => acc + (w.air_density_kg_m3 || 1.225), 0) / report.waypoints.length;
+        const deltaPct = ((avgRho - 1.225) / 1.225) * 100.0;
+        if (airDisp) airDisp.innerText = `${avgRho.toFixed(3)} kg/m³`;
+        if (airSub) airSub.innerText = `${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}% vs STP (Elev. Offset)`;
+      }
+
+      if (precondDisp) {
+        if (s.min_temp_f < 55.0) {
+          precondDisp.innerText = "Active (<55°F)";
+          precondDisp.className = "font-mono text-cyan-400 font-bold text-sm mt-0.5";
+          if (precondSub) precondSub.innerText = "Ultium Battery Conditioning";
+        } else {
+          precondDisp.innerText = "Optimal (≥55°F)";
+          precondDisp.className = "font-mono text-emerald-400 font-bold text-sm mt-0.5";
+          if (precondSub) precondSub.innerText = "Full DC Fast Speed Ready";
+        }
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderManualWeatherInHUD() {
+      const badge = document.getElementById('routeWeatherModeBadge');
+      const subtext = document.getElementById('routeWeatherSubtext');
+      const tempDisp = document.getElementById('rwTempDisplay');
+      const tempSub = document.getElementById('rwTempSub');
+      const roadDisp = document.getElementById('rwRoadDisplay');
+      const roadSub = document.getElementById('rwRoadSub');
+      const windDisp = document.getElementById('rwWindDisplay');
+      const windSub = document.getElementById('rwWindSub');
+      const airDisp = document.getElementById('rwAirDensityDisplay');
+      const airSub = document.getElementById('rwAirDensitySub');
+      const precondDisp = document.getElementById('rwPrecondDisplay');
+      const precondSub = document.getElementById('rwPrecondSub');
+
+      if (badge) {
+        badge.innerText = "Manual Override Mode";
+        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-400 font-semibold";
+      }
+      if (subtext) subtext.innerText = "Manual environmental inputs from Advanced Settings applied across whole route";
+
+      const temp_f = parseFloat(document.getElementById('tempF')?.value) || 68;
+      const wind_speed = parseFloat(document.getElementById('windSpeed')?.value) || 8;
+      const wind_dir = parseFloat(document.getElementById('windDir')?.value) || 270;
+      const road_cond = document.getElementById('roadCond')?.value || 'dry';
+
+      if (tempDisp) tempDisp.innerText = `${temp_f}°F`;
+      if (tempSub) tempSub.innerText = `Fixed uniform input`;
+
+      if (roadDisp) {
+        roadDisp.innerText = road_cond === 'snow_ice' ? "Snow / Ice" : (road_cond === 'wet' ? "Wet / Rain" : "Dry Asphalt");
+        roadDisp.className = road_cond === 'snow_ice' ? "font-mono text-purple-400 font-bold text-sm mt-0.5" : (road_cond === 'wet' ? "font-mono text-cyan-400 font-bold text-sm mt-0.5" : "font-mono text-emerald-400 font-bold text-sm mt-0.5");
+      }
+      if (roadSub) roadSub.innerText = road_cond === 'snow_ice' ? "Crr 0.0210" : (road_cond === 'wet' ? "Crr 0.0135" : "Crr 0.0095");
+
+      if (windDisp) windDisp.innerText = `${wind_speed} mph @ ${wind_dir}°`;
+      if (windSub) windSub.innerText = "Eastbound highway projection";
+
+      const temp_c = (temp_f - 32) * 5 / 9;
+      const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
+      if (airDisp) airDisp.innerText = `${rho.toFixed(3)} kg/m³`;
+      if (airSub) airSub.innerText = `Sea-level unadjusted`;
+
+      if (precondDisp) {
+        if (temp_f < 55.0) {
+          precondDisp.innerText = "Active (<55°F)";
+          precondDisp.className = "font-mono text-cyan-400 font-bold text-sm mt-0.5";
+          if (precondSub) precondSub.innerText = "Ultium Battery Conditioning";
+        } else {
+          precondDisp.innerText = "Optimal (≥55°F)";
+          precondDisp.className = "font-mono text-emerald-400 font-bold text-sm mt-0.5";
+          if (precondSub) precondSub.innerText = "Full DC Fast Speed Ready";
+        }
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
     function resolveStationTariff(st, arrival_hours_decimal, is_member) {
       if (!st) return { rate: 0.50, label: "", is_tou: false };
 
@@ -2185,6 +2890,9 @@
       searchBtn.disabled = true;
       searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Finding Routes...</span>`;
       lucide.createIcons();
+
+      const auditStatusText = document.getElementById('auditStatusText');
+      if (auditStatusText) auditStatusText.innerText = "Finding Corridors...";
 
       try {
         // Resolve Origin & Destination
@@ -2379,6 +3087,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         if (!routesFound) {
           buildCalibratedCorridor(originGeo, destGeo);
         }
+
+        // Pull smart along-route weather (or apply manual override)
+        await fetchRouteWeatherData(destText, activeRoutesData[0]);
 
         await recomputeCurrentRoute();
 
@@ -2793,6 +3504,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       };
 
       renderResultsUI();
+      if (document.getElementById('manualWeatherOverride')?.checked) {
+        renderManualWeatherInHUD();
+      } else if (window.activeWeatherReport) {
+        renderRouteWeatherCard(window.activeWeatherReport);
+      }
     }
 
     // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---    // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---
@@ -2829,6 +3545,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       document.getElementById('whPerMile').innerText = Math.round(sampleSim.wh_per_mi) + ' Wh/mi';
       document.getElementById('hvacDraw').innerText = sampleSim.hvac_kw.toFixed(2) + ' kW';
       document.getElementById('batteryTempFactor').innerText = (85.0 * sampleSim.batt_eff).toFixed(1) + ' kWh';
+
+      if (typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')?.checked) {
+        renderManualWeatherInHUD();
+      }
 
       // Elements for live Audit UI
       const auditStatusText = document.getElementById('auditStatusText');
@@ -3213,7 +3933,20 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const detour_miles = stDetour.detour_miles;
             const detour_mins = stDetour.detour_mins;
 
-            const total_leg_energy = legSim.kwh + (stDetour.kwh / 2.0);
+            // Ultium Battery Preconditioning for DC Fast Chargers in cold weather (<55°F)
+            let precond_kwh = 0.0;
+            if (!st.is_decamilla && (st.kw >= 50 || st.network !== "Private")) {
+              let arrTemp = temp_f;
+              if (window.activeWeatherReport && !document.getElementById('manualWeatherOverride')?.checked) {
+                const wpSt = getRouteWeatherAtMile(st.mile);
+                if (wpSt) arrTemp = wpSt.ambient_temp_f;
+              }
+              if (arrTemp < 55.0) {
+                precond_kwh = Math.min(2.5, Math.max(0.5, 0.05 * (55.0 - arrTemp)));
+              }
+            }
+
+            const total_leg_energy = legSim.kwh + (stDetour.kwh / 2.0) + precond_kwh;
             const total_leg_hrs = legSim.hours + (detour_mins / 60.0 / 2.0);
             const arr_soc = curr.soc - (total_leg_energy / 85.0);
 
@@ -3811,6 +4544,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           </div>
         `;
       }      renderResultsUI();
+      if (document.getElementById('manualWeatherOverride')?.checked) {
+        renderManualWeatherInHUD();
+      } else if (window.activeWeatherReport) {
+        renderRouteWeatherCard(window.activeWeatherReport);
+      }
       } catch (err) {
         console.error("Route computation error:", err);
         const auditStatusText = document.getElementById('auditStatusText');
@@ -5459,6 +6197,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       initDurationTolerance();
       initMap();
       initStopGapsDefault();
+      initDepartureDateTimeControls();
+      initManualWeatherOverride();
       updatePhysicsHUD();
       // Route calculation is not run automatically on load, allowing settings adjustment first
       lucide.createIcons();

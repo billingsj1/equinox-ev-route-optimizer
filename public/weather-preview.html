@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2025 Equinox EV - Route Weather Engine Preview</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .leaflet-popup-content-wrapper {
+      background: #0f172a;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      padding: 0;
+    }
+    .leaflet-popup-content {
+      margin: 0.75rem 1rem;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .leaflet-popup-tip {
+      background: #0f172a;
+    }
+    #routeMap {
+      height: 480px;
+      width: 100%;
+      border-radius: 0.75rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <i data-lucide="cloud-sun" class="w-5 h-5 text-slate-950 stroke-[2.5]"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base tracking-tight text-white">Route Weather Engine</h1>
+            <span class="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 font-semibold">Standalone Preview &bull; Permanent Side Tool</span>
+          </div>
+          <p class="text-xs text-slate-400">2025 Chevrolet Equinox EV &bull; Along-Route Microclimate &amp; Physics Simulation</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/" class="text-xs text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>Master Optimizer</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 space-y-4">
+
+    <!-- CONTROLS & TRIP DEPARTURE CARD -->
+    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <!-- Left Column: Route & Quick Dests (5 cols) -->
+        <div class="lg:col-span-5 space-y-3">
+          <div>
+            <label class="text-xs font-medium text-slate-400 block mb-1">Departure Origin (Fixed Base)</label>
+            <div class="relative">
+              <input type="text" id="originDisplay" value="179 S Powell Ave, Columbus, OH (West High School)" readonly
+                     class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400 absolute right-3 top-2.5"></i>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-medium text-slate-400 block mb-1.5">Destination Route Corridor</label>
+            <!-- 3 Quick Destinations -->
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="selectQuickDest('st_onge')" id="btnDest_st_onge"
+                      class="px-2.5 py-2 rounded-lg border text-xs font-semibold text-center transition flex flex-col items-center gap-0.5 bg-emerald-500/10 border-emerald-500/40 text-emerald-300">
+                <span>St. Onge</span>
+                <span class="text-[10px] text-slate-400 font-normal">Marlton, NJ (441 mi)</span>
+              </button>
+              <button type="button" onclick="selectQuickDest('billings')" id="btnDest_billings"
+                      class="px-2.5 py-2 rounded-lg border text-xs font-semibold text-center transition flex flex-col items-center gap-0.5 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700">
+                <span>Billings</span>
+                <span class="text-[10px] text-slate-400 font-normal">Sewickley, PA (162 mi)</span>
+              </button>
+              <button type="button" onclick="selectQuickDest('decamilla')" id="btnDest_decamilla"
+                      class="px-2.5 py-2 rounded-lg border text-xs font-semibold text-center transition flex flex-col items-center gap-0.5 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700">
+                <span>DeCamilla</span>
+                <span class="text-[10px] text-slate-400 font-normal">Dillsburg, PA (328 mi)</span>
+              </button>
+            </div>
+            
+            <!-- Additional Verified Test Corridors -->
+            <div class="mt-2 flex items-center gap-2 text-xs">
+              <span class="text-slate-500 text-[11px]">More corridors:</span>
+              <button type="button" onclick="selectCustomRoute('washington_dc')" class="text-cyan-400 hover:underline">Washington DC (I-70/I-270)</button>
+              <span class="text-slate-700">&bull;</span>
+              <button type="button" onclick="selectCustomRoute('cleveland')" class="text-cyan-400 hover:underline">Cleveland OH (I-71)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Column: Departure Date & 30-min Time Picker (4 cols) -->
+        <div class="lg:col-span-4 space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs font-medium text-slate-400 block mb-1">Departure Date</label>
+              <input type="date" id="departureDate" onchange="onDateTimeChanged()"
+                     class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-xs font-medium text-slate-400 block mb-1">Departure Time (30m)</label>
+              <select id="departureTime" onchange="onDateTimeChanged()"
+                      class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-slate-100 font-mono focus:border-emerald-500 focus:outline-none">
+                <!-- Populated dynamically with 48 half-hour slots -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Mode Banner / Horizon Info -->
+          <div id="modeBanner" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/70 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <i data-lucide="satellite" class="w-4 h-4 text-emerald-400"></i>
+              <span id="modeLabel" class="font-medium text-slate-200">Live Forecast Mode</span>
+            </div>
+            <span id="modeBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Open-Meteo GFS/HRRR</span>
+          </div>
+        </div>
+
+        <!-- Right Column: Trigger Button & Action (3 cols) -->
+        <div class="lg:col-span-3 flex flex-col justify-end space-y-2">
+          <button type="button" id="btnCalculate" onclick="handleCalculateWeather()"
+                  class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition active:scale-[0.98]">
+            <i data-lucide="refresh-cw" id="btnCalcIcon" class="w-4 h-4"></i>
+            <span id="btnCalcText">Calculate Route Weather</span>
+          </button>
+          <div class="text-[11px] text-slate-400 text-center">
+            Pavement drying &bull; Vector wind &bull; Moist air density
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TRIP WEATHER & ENERGY IMPACT HUD (Summary Cards) -->
+    <div id="hudDeck" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <!-- 1. Ambient Temp -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-[11px]">Temperature</span>
+          <i data-lucide="thermometer" class="w-3.5 h-3.5 text-amber-400"></i>
+        </div>
+        <div class="text-base font-bold font-mono text-white" id="hudTempRange">--°F</div>
+        <div class="text-[10px] text-slate-500" id="hudTempAvg">Avg: --°F</div>
+      </div>
+
+      <!-- 2. Wind & Aerodynamics -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-[11px]">Vector Wind</span>
+          <i data-lucide="wind" class="w-3.5 h-3.5 text-cyan-400"></i>
+        </div>
+        <div class="text-base font-bold font-mono text-white" id="hudWindSummary">--</div>
+        <div class="text-[10px] text-slate-500" id="hudWindSub">Tailwind / Headwind</div>
+      </div>
+
+      <!-- 3. Road Surface State -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-[11px]">Road Moisture</span>
+          <i data-lucide="droplets" class="w-3.5 h-3.5 text-blue-400"></i>
+        </div>
+        <div class="text-base font-bold font-mono text-white" id="hudRoadState">--% Dry</div>
+        <div class="text-[10px] text-slate-500" id="hudRoadSub">Dynamic Crr applied</div>
+      </div>
+
+      <!-- 4. Weather Consumption -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-[11px]">Consumption</span>
+          <i data-lucide="gauge" class="w-3.5 h-3.5 text-emerald-400"></i>
+        </div>
+        <div class="text-base font-bold font-mono text-emerald-400" id="hudConsumption">-- Wh/mi</div>
+        <div class="text-[10px] text-slate-500" id="hudBaselineWh">Base: -- Wh/mi</div>
+      </div>
+
+      <!-- 5. Total Energy Delta -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-[11px]">Net Energy Delta</span>
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-400"></i>
+        </div>
+        <div class="text-base font-bold font-mono text-white" id="hudDeltaKwh">-- kWh</div>
+        <div class="text-[10px] font-mono text-slate-400" id="hudDeltaPct">--% vs 70°F base</div>
+      </div>
+
+      <!-- 6. HVAC Power Draw -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 mb-1">
+          <span class="text-[11px]">Ultium HVAC Draw</span>
+          <i data-lucide="sun-snowflake" class="w-3.5 h-3.5 text-indigo-400"></i>
+        </div>
+        <div class="text-base font-bold font-mono text-white" id="hudHvacTotal">-- kWh</div>
+        <div class="text-[10px] text-slate-500">Heat Pump / PTC</div>
+      </div>
+    </div>
+
+    <!-- MAP CONTAINER -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div class="p-3 border-b border-slate-800 flex items-center justify-between text-xs bg-slate-950/60">
+        <div class="flex items-center gap-2">
+          <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+          <span class="font-semibold text-white">Route Map &bull; Segment Road State</span>
+          <span class="text-slate-500 text-[11px]">(Green = Dry Asphalt &bull; Blue = Damp/Wet &bull; Purple = Snow/Ice)</span>
+        </div>
+        <div class="flex items-center gap-3 font-mono text-[11px]">
+          <span id="routeDistanceDisplay" class="text-slate-300">-- miles</span>
+          <span class="text-slate-600">&bull;</span>
+          <span id="routeDurationDisplay" class="text-slate-300">-- driving</span>
+        </div>
+      </div>
+      <div id="routeMap" class="z-0 border border-slate-800 shadow-inner"></div>
+    </div>
+
+    <!-- ALONG-ROUTE WEATHER TIMELINE CARDS -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="git-commit" class="w-4 h-4 text-cyan-400"></i>
+          <h2 class="text-sm font-semibold text-white">Along-Route Regional Weather Timeline</h2>
+        </div>
+        <span id="waypointCountBadge" class="text-xs font-mono text-slate-400">0 checkpoints</span>
+      </div>
+
+      <!-- Waypoint Cards Grid -->
+      <div id="timelineContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="col-span-full py-12 text-center text-slate-400 text-xs">
+          <div class="inline-flex flex-col sm:flex-row items-center gap-2 bg-slate-950/80 border border-slate-800 px-5 py-3.5 rounded-xl text-center">
+            <span class="text-emerald-400 text-base">🌤️</span>
+            <span>Select your corridor, departure date &amp; time above, then click <b class="text-white">Calculate Route Weather</b> to run simulation.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC WITH DUAL BACKEND + CLIENT-SIDE FALLBACK -->
+  <script>
+    // State
+    let currentDestination = "st_onge";
+    let customCoords = null;
+    let mapInstance = null;
+    let routeLayers = [];
+    let markerLayers = [];
+
+    // Predefined Corridor Definitions for Client-Side Standalone Execution
+    const PREDEFINED_CORRIDORS = {
+      "st_onge": {
+        route_id: "quick_st_onge",
+        route_name: "Columbus OH to Marlton NJ (St. Onge)",
+        origin_name: "West High School (Columbus, OH)",
+        destination_name: "St. Onge (Marlton, NJ)",
+        waypoints: [
+          ["Columbus Metro (West High School)", 39.9512, -83.0750, 230.0, 65.0],
+          ["Zanesville / Muskingum Valley", 39.9400, -82.0130, 215.0, 70.0],
+          ["Eastern Ohio Plateau (St. Clairsville)", 40.0780, -80.9850, 360.0, 70.0],
+          ["Ohio River Valley (Wheeling, WV)", 40.0630, -80.7200, 205.0, 65.0],
+          ["Western PA (Washington, PA)", 40.1740, -80.2462, 310.0, 70.0],
+          ["New Stanton Interchange", 40.2187, -79.6103, 340.0, 70.0],
+          ["Laurel Highlands Crest (Somerset, PA)", 40.0084, -79.0781, 690.0, 70.0],
+          ["South Central Valley (Bedford / Breezewood)", 40.0187, -78.5039, 380.0, 70.0],
+          ["Cumberland Mountain Passes (Fort Littleton)", 40.0495, -77.9620, 300.0, 70.0],
+          ["Susquehanna Valley (Carlisle, PA)", 40.2014, -77.1889, 150.0, 70.0],
+          ["Lancaster County (Bowmansville, PA)", 40.1830, -76.0120, 130.0, 70.0],
+          ["Delaware Valley (Valley Forge / KOP)", 40.0880, -75.4050, 60.0, 65.0],
+          ["Marlton / St. Onge Destination", 39.9050, -74.9436, 25.0, 50.0]
+        ]
+      },
+      "billings": {
+        route_id: "quick_billings",
+        route_name: "Columbus OH to Sewickley PA (Billings)",
+        origin_name: "West High School (Columbus, OH)",
+        destination_name: "Billings (Sewickley, PA)",
+        waypoints: [
+          ["Columbus Metro (West High School)", 39.9512, -83.0750, 230.0, 65.0],
+          ["Zanesville / I-70 Corridor", 39.9400, -82.0130, 215.0, 70.0],
+          ["Cambridge / US-22 Cadiz Foothills", 40.0300, -81.5900, 260.0, 65.0],
+          ["Appalachian Ridge (Steubenville, OH)", 40.2700, -80.8500, 360.0, 65.0],
+          ["Ohio River Crossing (Weirton, WV)", 40.4100, -80.5800, 230.0, 60.0],
+          ["Sewickley / Billings Destination", 40.5415, -80.1820, 225.0, 55.0]
+        ]
+      },
+      "decamilla": {
+        route_id: "quick_decamilla",
+        route_name: "Columbus OH to Dillsburg PA (DeCamilla)",
+        origin_name: "West High School (Columbus, OH)",
+        destination_name: "DeCamilla (Dillsburg, PA)",
+        waypoints: [
+          ["Columbus Metro (West High School)", 39.9512, -83.0750, 230.0, 65.0],
+          ["Zanesville / Muskingum Valley", 39.9400, -82.0130, 215.0, 70.0],
+          ["Eastern Ohio Plateau (St. Clairsville)", 40.0780, -80.9850, 360.0, 70.0],
+          ["Ohio River Valley (Wheeling, WV)", 40.0630, -80.7200, 205.0, 65.0],
+          ["Western PA (Washington, PA)", 40.1740, -80.2462, 310.0, 70.0],
+          ["Laurel Highlands Crest (Somerset, PA)", 40.0084, -79.0781, 690.0, 70.0],
+          ["South Central Valley (Bedford / Breezewood)", 40.0187, -78.5039, 380.0, 70.0],
+          ["Kittatinny Tunnel / Newburg", 40.1340, -77.5560, 240.0, 70.0],
+          ["Turnpike Exit 236 (US-15 S / Mechanicsburg)", 40.1980, -77.0180, 140.0, 65.0],
+          ["Dillsburg / DeCamilla Destination", 40.1413, -77.0156, 170.0, 50.0]
+        ]
+      }
+    };
+
+    const PREDEFINED_CUSTOM_ROUTES = {
+      "washington_dc": {
+        name: "Washington, DC",
+        coords: [
+          [-83.0750, 39.9512, 230.0],
+          [-82.0130, 39.9400, 215.0],
+          [-80.7200, 40.0630, 205.0],
+          [-79.9559, 39.6295, 290.0],
+          [-78.9284, 39.6582, 640.0],
+          [-78.7625, 39.6529, 210.0],
+          [-77.7200, 39.6418, 170.0],
+          [-77.4105, 39.4143, 90.0],
+          [-77.0369, 38.9072, 20.0]
+        ]
+      },
+      "cleveland": {
+        name: "Cleveland, OH",
+        coords: [
+          [-83.0750, 39.9512, 230.0],
+          [-82.8000, 40.3500, 340.0],
+          [-82.5180, 40.7580, 380.0],
+          [-82.0000, 41.0800, 320.0],
+          [-81.6944, 41.4993, 200.0]
+        ]
+      }
+    };
+
+    const WMO_MAP = {
+      0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+      45: "Fog", 48: "Rime Fog", 51: "Light Drizzle", 53: "Drizzle", 55: "Dense Drizzle",
+      61: "Slight Rain", 63: "Moderate Rain", 65: "Heavy Rain", 66: "Freezing Rain", 67: "Heavy Freezing Rain",
+      71: "Slight Snow", 73: "Moderate Snow", 75: "Heavy Snow", 77: "Snow Grains",
+      80: "Rain Showers", 81: "Moderate Showers", 82: "Heavy Showers",
+      85: "Snow Showers", 86: "Heavy Snow Showers", 95: "Thunderstorm"
+    };
+
+    // Initialize Page
+    document.addEventListener("DOMContentLoaded", () => {
+      initDepartureControls();
+      initMap();
+      renderCorridorPreview(currentDestination, customCoords);
+      // Route weather is NOT calculated automatically on page load.
+      // Calculation only executes when the user clicks 'Calculate Route Weather'.
+      lucide.createIcons();
+    });
+
+    window.addEventListener('resize', () => {
+      if (mapInstance) mapInstance.invalidateSize();
+    });
+
+    function initDepartureControls() {
+      const dateEl = document.getElementById('departureDate');
+      const timeEl = document.getElementById('departureTime');
+      
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      dateEl.value = `${yyyy}-${mm}-${dd}`;
+
+      timeEl.innerHTML = '';
+      let curHour = now.getHours();
+      let curMin = now.getMinutes();
+      let roundedHour = curHour;
+      let roundedMin = 0;
+      if (curMin > 0 && curMin <= 30) {
+        roundedMin = 30;
+      } else if (curMin > 30) {
+        roundedHour = (curHour + 1) % 24;
+        roundedMin = 0;
+      }
+      const targetRoundedStr = `${String(roundedHour).padStart(2, '0')}:${String(roundedMin).padStart(2, '0')}`;
+
+      for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 30) {
+          const val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          const dispH = h % 12 === 0 ? 12 : h % 12;
+          const dispM = String(m).padStart(2, '0');
+          const label = `${dispH}:${dispM} ${ampm}`;
+
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = label;
+          if (val === targetRoundedStr) {
+            opt.selected = true;
+          }
+          timeEl.appendChild(opt);
+        }
+      }
+
+      updateModeBanner();
+    }
+
+    function onDateTimeChanged() {
+      updateModeBanner();
+      // Only updates mode horizon; does NOT auto-recalculate
+    }
+
+    function updateModeBanner() {
+      const dateVal = document.getElementById('departureDate').value;
+      if (!dateVal) return;
+
+      const depDate = new Date(dateVal + "T00:00:00");
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const diffDays = Math.round((depDate - today) / (1000 * 60 * 60 * 24));
+
+      const labelEl = document.getElementById('modeLabel');
+      const badgeEl = document.getElementById('modeBadge');
+
+      if (diffDays <= 16) {
+        labelEl.innerText = "Live Forecast Mode";
+        badgeEl.innerText = "Open-Meteo GFS/HRRR (Hourly)";
+        badgeEl.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      } else {
+        labelEl.innerText = "Historical Climatology Mode";
+        badgeEl.innerText = "ERA5 Multi-Year Reanalysis";
+        badgeEl.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+      }
+    }
+
+    function selectQuickDest(destKey) {
+      currentDestination = destKey;
+      customCoords = null;
+
+      ['st_onge', 'billings', 'decamilla'].forEach(k => {
+        const btn = document.getElementById(`btnDest_${k}`);
+        if (!btn) return;
+        if (k === destKey) {
+          btn.className = "px-2.5 py-2 rounded-lg border text-xs font-semibold text-center transition flex flex-col items-center gap-0.5 bg-emerald-500/10 border-emerald-500/40 text-emerald-300";
+        } else {
+          btn.className = "px-2.5 py-2 rounded-lg border text-xs font-semibold text-center transition flex flex-col items-center gap-0.5 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700";
+        }
+      });
+
+      renderCorridorPreview(currentDestination, customCoords);
+      // Does NOT auto-recalculate; waits for Calculate button
+    }
+
+    function selectCustomRoute(routeKey) {
+      const routeInfo = PREDEFINED_CUSTOM_ROUTES[routeKey];
+      if (!routeInfo) return;
+
+      currentDestination = routeInfo.name;
+      customCoords = routeInfo.coords;
+
+      ['st_onge', 'billings', 'decamilla'].forEach(k => {
+        const btn = document.getElementById(`btnDest_${k}`);
+        if (btn) {
+          btn.className = "px-2.5 py-2 rounded-lg border text-xs font-semibold text-center transition flex flex-col items-center gap-0.5 bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700";
+        }
+      });
+
+      renderCorridorPreview(currentDestination, customCoords);
+      // Does NOT auto-recalculate; waits for Calculate button
+    }
+
+    function initMap() {
+      mapInstance = L.map('routeMap', {
+        zoomControl: true,
+        attributionControl: false
+      });
+
+      // OpenStreetMap Tiles (Reliable, free, highway roadmap view)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18
+      }).addTo(mapInstance);
+
+      mapInstance.whenReady(() => {
+        setTimeout(() => {
+          if (mapInstance) mapInstance.invalidateSize();
+        }, 50);
+      });
+    }
+
+    function renderCorridorPreview(destKey, customPoints) {
+      if (!mapInstance) return;
+
+      routeLayers.forEach(l => mapInstance.removeLayer(l));
+      markerLayers.forEach(m => mapInstance.removeLayer(m));
+      routeLayers = [];
+      markerLayers = [];
+
+      let latlngs = [];
+      let pointsMeta = [];
+      let distStr = "-- miles";
+      let durStr = "-- driving";
+
+      if (customPoints && customPoints.length > 0) {
+        latlngs = customPoints.map(p => [p[1], p[0]]);
+        pointsMeta = customPoints.map((p, idx) => ({
+          name: idx === 0 ? "Route Origin (West High School)" : (idx === customPoints.length - 1 ? currentDestination : `Checkpoint ${idx+1}`),
+          lat: p[1],
+          lon: p[0],
+          elev: p[2] || 200
+        }));
+        if (currentDestination.includes("Washington")) {
+          distStr = "424 miles";
+          durStr = "~7.1 hrs";
+        } else if (currentDestination.includes("Cleveland")) {
+          distStr = "143 miles";
+          durStr = "~2.2 hrs";
+        }
+      } else {
+        const cfg = PREDEFINED_CORRIDORS[destKey] || PREDEFINED_CORRIDORS['st_onge'];
+        latlngs = cfg.waypoints.map(w => [w[1], w[2]]);
+        pointsMeta = cfg.waypoints.map(w => ({
+          name: w[0],
+          lat: w[1],
+          lon: w[2],
+          elev: w[3]
+        }));
+        if (destKey === 'st_onge') {
+          distStr = "441 miles";
+          durStr = "~7.4 hrs";
+        } else if (destKey === 'billings') {
+          distStr = "162 miles";
+          durStr = "~2.9 hrs";
+        } else if (destKey === 'decamilla') {
+          distStr = "328 miles";
+          durStr = "~5.3 hrs";
+        }
+      }
+
+      document.getElementById('routeDistanceDisplay').innerText = distStr;
+      document.getElementById('routeDurationDisplay').innerText = durStr;
+      document.getElementById('waypointCountBadge').innerText = `${pointsMeta.length} checkpoints`;
+
+      // Render crisp highway route corridor line
+      const poly = L.polyline(latlngs, {
+        color: '#2563eb',
+        weight: 5.5,
+        opacity: 0.95
+      }).addTo(mapInstance);
+      routeLayers.push(poly);
+
+      // Render checkpoint milestone markers
+      pointsMeta.forEach((pt, idx) => {
+        const isStart = idx === 0;
+        const isEnd = idx === pointsMeta.length - 1;
+        const isSummit = pt.elev > 500;
+        const pinColor = isStart ? '#10b981' : (isEnd ? '#06b6d4' : (isSummit ? '#f59e0b' : '#64748b'));
+        const radius = isStart || isEnd || isSummit ? 7 : 5;
+
+        const marker = L.circleMarker([pt.lat, pt.lon], {
+          radius: radius,
+          fillColor: pinColor,
+          color: '#0f172a',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.95
+        }).addTo(mapInstance);
+
+        marker.bindPopup(`
+          <div class="space-y-1">
+            <div class="font-bold text-xs text-white border-b border-slate-700 pb-1">${pt.name}</div>
+            <div class="text-[11px] text-slate-300">Elevation: <span class="text-amber-400 font-mono">${Math.round(pt.elev * 3.28084)} ft</span></div>
+            <div class="text-[10px] text-slate-400 mt-1">Click "Calculate Route Weather" to simulate along-route conditions.</div>
+          </div>
+        `);
+        markerLayers.push(marker);
+      });
+
+      if (latlngs.length > 0) {
+        mapInstance.fitBounds(L.latLngBounds(latlngs), { padding: [35, 35] });
+      }
+
+      setTimeout(() => {
+        if (mapInstance) mapInstance.invalidateSize();
+      }, 100);
+    }
+
+    async function handleCalculateWeather() {
+      const btn = document.getElementById('btnCalculate');
+      const btnText = document.getElementById('btnCalcText');
+      const btnIcon = document.getElementById('btnCalcIcon');
+      
+      btnText.innerText = "Analyzing Weather & Physics...";
+      btnIcon.classList.add("animate-spin");
+      btn.disabled = true;
+
+      const dateStr = document.getElementById('departureDate').value;
+      const timeStr = document.getElementById('departureTime').value;
+
+      const payload = {
+        destination: currentDestination,
+        departure_date: dateStr,
+        departure_time: timeStr,
+        custom_coordinates: customCoords
+      };
+
+      try {
+        if (window.location.protocol === 'file:') {
+          // Direct file execution -> Use robust client-side Open-Meteo engine
+          const report = await runClientSideSimulation(payload);
+          renderWeatherReport(report);
+        } else {
+          // Standard server mode
+          const res = await fetch("/api/weather/preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error("API call failed: " + res.status);
+          const report = await res.json();
+          renderWeatherReport(report);
+        }
+      } catch (err) {
+        console.warn("Backend API unavailable, executing client-side browser simulation:", err);
+        try {
+          const report = await runClientSideSimulation(payload);
+          renderWeatherReport(report);
+        } catch (clientErr) {
+          console.error("Client-side simulation error:", clientErr);
+        }
+      } finally {
+        btnText.innerText = "Calculate Route Weather";
+        btn.disabled = false;
+        const activeIcon = document.getElementById('btnCalcIcon');
+        if (activeIcon) {
+          activeIcon.classList.remove("animate-spin");
+        }
+        setTimeout(() => {
+          const currentIcon = document.getElementById('btnCalcIcon');
+          if (currentIcon) currentIcon.classList.remove("animate-spin");
+          if (mapInstance) mapInstance.invalidateSize();
+        }, 100);
+      }
+    }
+
+    // Client-side execution fallback (runs directly in browser if opened via file://)
+    async function runClientSideSimulation(req) {
+      let cfg = PREDEFINED_CORRIDORS[req.destination];
+      let rawWps = cfg ? cfg.waypoints : null;
+      let rName = cfg ? cfg.route_name : `${req.destination} Route`;
+
+      if (!rawWps && req.custom_coordinates) {
+        rawWps = req.custom_coordinates.map((pt, idx) => [`Waypoint ${idx+1}`, pt[1], pt[0], pt[2] || 200, 65]);
+        rawWps[0][0] = "Route Origin (West High School)";
+        rawWps[rawWps.length - 1][0] = req.destination;
+      }
+      if (!rawWps) {
+        cfg = PREDEFINED_CORRIDORS['st_onge'];
+        rawWps = cfg.waypoints;
+        rName = cfg.route_name;
+      }
+
+      const depDateParts = (req.departure_date || '2026-10-30').split('-');
+      const depTimeParts = (req.departure_time || '08:00').split(':');
+      let depDt = new Date(depDateParts[0], depDateParts[1]-1, depDateParts[2], depTimeParts[0], depTimeParts[1]);
+
+      // Calculate timeline
+      let cumDist = 0, cumSec = 0;
+      const timeline = [];
+      for (let i = 0; i < rawWps.length; i++) {
+        const [wName, wLat, wLon, wElev, wSpeed] = rawWps[i];
+        if (i === 0) {
+          timeline.push({
+            name: wName, lat: wLat, lon: wLon, elev_m: wElev, elev_ft: Math.round(wElev * 3.28084),
+            dist_from_start_miles: 0, segment_dist_miles: 0, elapsed_minutes: 0,
+            arrival_dt: new Date(depDt.getTime()), speed_limit: wSpeed, bearing: 90
+          });
+          continue;
+        }
+        const prev = rawWps[i-1];
+        const segDist = haversineMiles(prev[1], prev[2], wLat, wLon);
+        cumDist += segDist;
+        const vMph = Math.min(75, wSpeed + 5);
+        cumSec += (segDist / vMph) * 3600;
+        const arrDt = new Date(depDt.getTime() + cumSec * 1000);
+        const brg = calculateBearing(prev[1], prev[2], wLat, wLon);
+
+        timeline.push({
+          name: wName, lat: wLat, lon: wLon, elev_m: wElev, elev_ft: Math.round(wElev * 3.28084),
+          dist_from_start_miles: Math.round(cumDist * 10) / 10,
+          segment_dist_miles: Math.round(segDist * 10) / 10,
+          elapsed_minutes: Math.round(cumSec / 60),
+          arrival_dt: arrDt, speed_limit: wSpeed, bearing: Math.round(brg)
+        });
+      }
+
+      // Query Open-Meteo
+      const lats = timeline.map(w => w.lat.toFixed(4)).join(',');
+      const lons = timeline.map(w => w.lon.toFixed(4)).join(',');
+      const diffDays = Math.round((depDt - new Date()) / (1000 * 60 * 60 * 24));
+      const isForecast = diffDays <= 16;
+
+      let apiUrl = "";
+      if (isForecast) {
+        apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&past_days=1&forecast_days=16`;
+      } else {
+        const pastYr = depDt.getFullYear() - 1;
+        const mm = String(depDt.getMonth()+1).padStart(2,'0');
+        const dd = String(depDt.getDate()).padStart(2,'0');
+        apiUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lats}&longitude=${lons}&start_date=${pastYr}-${mm}-${dd}&end_date=${pastYr}-${mm}-${dd}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
+      }
+
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+      const seriesList = Array.isArray(data) ? data : [data];
+
+      // Assemble waypoints
+      const outWaypoints = [];
+      let totalEnergyKwh = 0, baselineEnergyKwh = 0, totalHvacKwh = 0;
+
+      for (let i = 0; i < timeline.length; i++) {
+        const wp = timeline[i];
+        const s = seriesList[i] || seriesList[0];
+        const times = s.hourly.time;
+        const targetIsoHour = wp.arrival_dt.toISOString().substring(0, 13) + ":00";
+        
+        let mIdx = times.indexOf(targetIsoHour);
+        if (mIdx === -1) {
+          mIdx = 0;
+          let bestD = Infinity;
+          times.forEach((tStr, idx) => {
+            const diff = Math.abs(new Date(tStr) - wp.arrival_dt);
+            if (diff < bestD) { bestD = diff; mIdx = idx; }
+          });
+        }
+
+        const tF = s.hourly.temperature_2m[mIdx];
+        const hum = s.hourly.relative_humidity_2m[mIdx];
+        const wSpd = s.hourly.wind_speed_10m[mIdx];
+        const wDir = s.hourly.wind_direction_10m[mIdx];
+        const code = s.hourly.weather_code[mIdx];
+        const press = s.hourly.surface_pressure[mIdx] || (1013.25 * Math.pow(1 - 0.0065 * wp.elev_m / 288.15, 5.255));
+        const pCur = s.hourly.precipitation[mIdx] || 0;
+        const isDay = s.hourly.is_day ? Boolean(s.hourly.is_day[mIdx]) : true;
+
+        // Air density
+        const tC = (tF - 32) * 5 / 9;
+        const pSat = 6.1078 * Math.pow(10, (7.5 * tC) / (tC + 237.3));
+        const pV = (hum / 100) * pSat;
+        const pD = Math.max(10, press - pV);
+        const rho = ((pD * 100) / (287.058 * (tC + 273.15))) + ((pV * 100) / (461.495 * (tC + 273.15)));
+        const rhoDelta = ((rho - 1.225) / 1.225) * 100;
+
+        // Vector wind
+        const relRad = (wp.bearing - wDir) * Math.PI / 180;
+        const headwind = wSpd * Math.cos(relRad);
+        const crosswind = Math.abs(wSpd * Math.sin(relRad));
+
+        // Road condition
+        let rCond = "dry", crr = 0.0095;
+        if (code >= 71 && code <= 77) { rCond = "snow_slush"; crr = 0.0195; }
+        else if (code === 66 || code === 67) { rCond = "ice"; crr = 0.0210; }
+        else if (pCur >= 0.15) { rCond = "heavy_wet"; crr = 0.0145; }
+        else if (pCur >= 0.03 || (code >= 61 && code <= 65)) { rCond = "wet"; crr = 0.0130; }
+        else if (pCur > 0.005 || (code >= 51 && code <= 55)) { rCond = "damp"; crr = 0.0112; }
+
+        // Physics: Equinox EV Wh/mi
+        const vMph = Math.min(75, wp.speed_limit + 5);
+        const vMs = vMph * 0.44704;
+        const vAir = Math.max(0, vMs + headwind * 0.44704);
+        const fAero = 0.5 * rho * (0.8632 * (1 + 0.015 * Math.min(10, Math.atan2(crosswind*0.44704, Math.max(5, vAir))*180/Math.PI))) * Math.pow(vAir, 2);
+        const fRr = crr * 2350 * 9.80665;
+        const fNet = fAero + fRr;
+        const workKwh = (fNet * wp.segment_dist_miles * 1609.34) / 3.6e6;
+        const tractionKwh = workKwh / 0.91;
+
+        // HVAC
+        let hvacKw = 0.25;
+        if (tF < 40) hvacKw = Math.min(5.0, 1.8 + 0.075 * (40 - tF));
+        else if (tF < 67) hvacKw = Math.min(2.5, 0.45 + 0.045 * (70 - tF));
+        else if (tF > 72) hvacKw = Math.min(2.5, 0.40 + 0.05 * (tF - 70));
+
+        const durH = wp.segment_dist_miles / Math.max(15, vMph);
+        const segKwh = tractionKwh + (0.35 + hvacKw) * durH;
+        const whMi = (segKwh * 1000) / Math.max(0.1, wp.segment_dist_miles);
+
+        // Baseline (70F dry sea-level)
+        const fAeroB = 0.5 * 1.225 * 0.8632 * Math.pow(vMs, 2);
+        const fRrB = 0.0095 * 2350 * 9.80665;
+        const segKwhB = ((fAeroB + fRrB) * wp.segment_dist_miles * 1609.34 / 3.6e6) / 0.91 + (0.35 + 0.25) * durH;
+        const whMiB = (segKwhB * 1000) / Math.max(0.1, wp.segment_dist_miles);
+
+        totalEnergyKwh += segKwh;
+        baselineEnergyKwh += segKwhB;
+        totalHvacKwh += hvacKw * durH;
+
+        const timeParts = wp.arrival_dt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        outWaypoints.push({
+          name: wp.name, lat: wp.lat, lon: wp.lon, elevation_ft: wp.elev_ft,
+          distance_from_start_miles: wp.dist_from_start_miles,
+          segment_distance_miles: wp.segment_dist_miles,
+          elapsed_minutes: wp.elapsed_minutes,
+          arrival_time_clock: timeParts,
+          ambient_temp_f: Math.round(tF * 10) / 10,
+          weather_description: (isForecast ? "" : "Hist. ") + (WMO_MAP[code] || "Fair"),
+          wind_speed_mph: Math.round(wSpd * 10) / 10,
+          wind_direction_cardinal: degreesToCardinal(wDir),
+          effective_headwind_mph: Math.round(headwind * 10) / 10,
+          crosswind_mph: Math.round(crosswind * 10) / 10,
+          road_condition: rCond, rolling_resistance_crr: crr,
+          air_density_kg_m3: Math.round(rho * 1000) / 1000,
+          air_density_delta_pct: Math.round(rhoDelta * 10) / 10,
+          estimated_consumption_wh_per_mi: Math.round(whMi),
+          baseline_consumption_wh_per_mi: Math.round(whMiB),
+          wh_per_mi_delta: Math.round(whMi - whMiB)
+        });
+      }
+
+      const totalDist = timeline[timeline.length - 1].dist_from_start_miles;
+      const totalDurH = Math.round((timeline[timeline.length - 1].elapsed_minutes / 60) * 100) / 100;
+      const temps = outWaypoints.map(w => w.ambient_temp_f);
+      const hwVals = outWaypoints.map(w => w.effective_headwind_mph);
+      const deltaKwh = totalEnergyKwh - baselineEnergyKwh;
+
+      return {
+        route_name: rName,
+        total_distance_miles: totalDist,
+        total_duration_hours: totalDurH,
+        waypoints: outWaypoints,
+        summary: {
+          min_temp_f: Math.min(...temps),
+          max_temp_f: Math.max(...temps),
+          avg_temp_f: Math.round(temps.reduce((a,b)=>a+b,0)/temps.length),
+          max_headwind_mph: Math.max(0, Math.max(...hwVals)),
+          max_tailwind_mph: Math.abs(Math.min(0, Math.min(...hwVals))),
+          wet_road_pct: Math.round(outWaypoints.filter(w=>w.road_condition.includes('wet')||w.road_condition==='damp').length / outWaypoints.length * 100),
+          snow_ice_road_pct: Math.round(outWaypoints.filter(w=>w.road_condition==='snow_slush'||w.road_condition==='ice').length / outWaypoints.length * 100),
+          avg_consumption_wh_per_mi: Math.round((totalEnergyKwh * 1000) / totalDist),
+          baseline_avg_wh_per_mi: Math.round((baselineEnergyKwh * 1000) / totalDist),
+          total_energy_kwh: Math.round(totalEnergyKwh * 100) / 100,
+          baseline_energy_kwh: Math.round(baselineEnergyKwh * 100) / 100,
+          energy_delta_kwh: Math.round(deltaKwh * 100) / 100,
+          energy_delta_pct: Math.round((deltaKwh / baselineEnergyKwh) * 1000) / 10,
+          total_hvac_kwh: Math.round(totalHvacKwh * 100) / 100
+        }
+      };
+    }
+
+    function haversineMiles(lat1, lon1, lat2, lon2) {
+      const R = 3958.8;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function calculateBearing(lat1, lon1, lat2, lon2) {
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
+      const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) - Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    function degreesToCardinal(deg) {
+      const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+      return dirs[Math.round(deg / 22.5) % 16];
+    }
+
+    function renderWeatherReport(rep) {
+      const s = rep.summary;
+      document.getElementById('hudTempRange').innerText = `${Math.round(s.min_temp_f)}° - ${Math.round(s.max_temp_f)}°F`;
+      document.getElementById('hudTempAvg').innerText = `Avg: ${Math.round(s.avg_temp_f)}°F`;
+
+      const hw = s.max_headwind_mph;
+      const tw = s.max_tailwind_mph;
+      if (tw > hw) {
+        document.getElementById('hudWindSummary').innerHTML = `<span class="text-emerald-400">Tail +${tw.toFixed(0)} mph</span>`;
+      } else if (hw > 2.0) {
+        document.getElementById('hudWindSummary').innerHTML = `<span class="text-rose-400">Head +${hw.toFixed(0)} mph</span>`;
+      } else {
+        document.getElementById('hudWindSummary').innerHTML = `<span>Calm / Cross</span>`;
+      }
+
+      document.getElementById('hudRoadState').innerText = `${(100 - s.wet_road_pct - s.snow_ice_road_pct).toFixed(0)}% Dry`;
+      document.getElementById('hudRoadSub').innerText = s.wet_road_pct > 0 ? `${s.wet_road_pct}% Wet / Damp` : (s.snow_ice_road_pct > 0 ? `${s.snow_ice_road_pct}% Snow/Ice` : 'Optimal friction');
+
+      document.getElementById('hudConsumption').innerText = `${Math.round(s.avg_consumption_wh_per_mi)} Wh/mi`;
+      document.getElementById('hudBaselineWh').innerText = `Base: ${Math.round(s.baseline_avg_wh_per_mi)} Wh/mi`;
+
+      const sign = s.energy_delta_kwh >= 0 ? '+' : '';
+      const deltaColor = s.energy_delta_kwh <= 0 ? 'text-emerald-400' : 'text-amber-400';
+      document.getElementById('hudDeltaKwh').innerHTML = `<span class="${deltaColor}">${sign}${s.energy_delta_kwh.toFixed(1)} kWh</span>`;
+      document.getElementById('hudDeltaPct').innerText = `${sign}${s.energy_delta_pct.toFixed(1)}% vs 70°F base`;
+
+      document.getElementById('hudHvacTotal').innerText = `${s.total_hvac_kwh.toFixed(2)} kWh`;
+
+      document.getElementById('routeDistanceDisplay').innerText = `${rep.total_distance_miles} miles`;
+      document.getElementById('routeDurationDisplay').innerText = `~${rep.total_duration_hours} hrs`;
+      document.getElementById('waypointCountBadge').innerText = `${rep.waypoints.length} checkpoints`;
+
+      updateMapGeometry(rep);
+      renderTimelineCards(rep.waypoints);
+      lucide.createIcons();
+    }
+
+    function updateMapGeometry(rep) {
+      if (!mapInstance) return;
+
+      routeLayers.forEach(l => mapInstance.removeLayer(l));
+      markerLayers.forEach(m => mapInstance.removeLayer(m));
+      routeLayers = [];
+      markerLayers = [];
+
+      const wps = rep.waypoints;
+      if (!wps || wps.length === 0) return;
+
+      const latlngs = wps.map(w => [w.lat, w.lon]);
+
+      for (let i = 0; i < wps.length - 1; i++) {
+        const p1 = [wps[i].lat, wps[i].lon];
+        const p2 = [wps[i+1].lat, wps[i+1].lon];
+        
+        let color = '#10b981';
+        if (wps[i].road_condition === 'wet' || wps[i].road_condition === 'heavy_wet') {
+          color = '#06b6d4';
+        } else if (wps[i].road_condition === 'damp') {
+          color = '#38bdf8';
+        } else if (wps[i].road_condition === 'snow_slush' || wps[i].road_condition === 'ice') {
+          color = '#a855f7';
+        }
+
+        const poly = L.polyline([p1, p2], {
+          color: color,
+          weight: 5,
+          opacity: 0.85
+        }).addTo(mapInstance);
+        routeLayers.push(poly);
+      }
+
+      wps.forEach((w, idx) => {
+        const isStart = idx === 0;
+        const isEnd = idx === wps.length - 1;
+        const isSummit = w.elevation_ft > 1800;
+
+        const pinColor = isStart ? '#10b981' : (isEnd ? '#06b6d4' : (isSummit ? '#f59e0b' : '#64748b'));
+        const radius = isStart || isEnd || isSummit ? 7 : 5;
+
+        const marker = L.circleMarker([w.lat, w.lon], {
+          radius: radius,
+          fillColor: pinColor,
+          color: '#0f172a',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.95
+        }).addTo(mapInstance);
+
+        const popupContent = `
+          <div class="space-y-1.5">
+            <div class="font-bold text-xs text-white border-b border-slate-700 pb-1">${w.name}</div>
+            <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+              <div>Arrival: <span class="text-emerald-400 font-mono font-semibold">${w.arrival_time_clock}</span></div>
+              <div>Elapsed: <span class="font-mono">${w.distance_from_start_miles} mi</span></div>
+              <div>Elev: <span class="font-mono text-amber-300">${Math.round(w.elevation_ft)} ft</span></div>
+              <div>Temp: <span class="font-mono">${Math.round(w.ambient_temp_f)}°F</span></div>
+              <div>Wind: <span class="font-mono">${w.wind_speed_mph} mph ${w.wind_direction_cardinal}</span></div>
+              <div>Road: <span class="font-semibold uppercase">${w.road_condition}</span></div>
+              <div class="col-span-2 text-slate-400">Consumption: <span class="text-emerald-400 font-mono font-bold">${Math.round(w.estimated_consumption_wh_per_mi)} Wh/mi</span> (vs ${Math.round(w.baseline_consumption_wh_per_mi)})</div>
+            </div>
+          </div>
+        `;
+        marker.bindPopup(popupContent);
+        markerLayers.push(marker);
+      });
+
+      mapInstance.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30] });
+      setTimeout(() => {
+        if (mapInstance) mapInstance.invalidateSize();
+      }, 100);
+    }
+
+    function renderTimelineCards(wps) {
+      const container = document.getElementById('timelineContainer');
+      container.innerHTML = '';
+
+      wps.forEach((w) => {
+        let roadBadgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+        if (w.road_condition === "wet" || w.road_condition === "heavy_wet") {
+          roadBadgeClass = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+        } else if (w.road_condition === "damp") {
+          roadBadgeClass = "bg-sky-500/10 text-sky-300 border-sky-500/20";
+        } else if (w.road_condition === "snow_slush" || w.road_condition === "ice") {
+          roadBadgeClass = "bg-purple-500/10 text-purple-400 border-purple-500/20";
+        }
+
+        let vectorBadge = "";
+        if (w.effective_headwind_mph <= -2.0) {
+          vectorBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold">Tailwind -${Math.abs(w.effective_headwind_mph).toFixed(0)} mph</span>`;
+        } else if (w.effective_headwind_mph >= 2.0) {
+          vectorBadge = `<span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold">Headwind +${w.effective_headwind_mph.toFixed(0)} mph</span>`;
+        } else {
+          vectorBadge = `<span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono">Cross ${w.crosswind_mph.toFixed(0)} mph</span>`;
+        }
+
+        const deltaColor = w.wh_per_mi_delta <= 0 ? 'text-emerald-400' : 'text-amber-400';
+        const sign = w.wh_per_mi_delta >= 0 ? '+' : '';
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-950 border border-slate-800/90 rounded-xl p-3 space-y-2.5 hover:border-slate-700 transition";
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-xs font-bold text-white leading-snug">${w.name}</div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-mono mt-0.5">
+                <span>Mile ${w.distance_from_start_miles.toFixed(1)}</span>
+                <span>&bull;</span>
+                <span class="text-amber-400/90">${Math.round(w.elevation_ft)} ft elev</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs font-mono font-bold text-emerald-400">${w.arrival_time_clock}</div>
+              <div class="text-[10px] text-slate-500 font-mono">+${Math.round(w.elapsed_minutes)} mins</div>
+            </div>
+          </div>
+
+          <!-- Weather Conditions -->
+          <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-900">
+            <div>
+              <span class="text-slate-400 text-[10px] block">Temperature</span>
+              <span class="font-bold font-mono text-white text-sm">${Math.round(w.ambient_temp_f)}°F</span>
+              <span class="text-[10px] text-slate-400 block truncate">${w.weather_description}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">Wind & Direction</span>
+              <div class="flex items-center gap-1">
+                <span class="font-mono text-xs text-slate-200">${w.wind_speed_mph}m ${w.wind_direction_cardinal}</span>
+              </div>
+              <div class="mt-0.5">${vectorBadge}</div>
+            </div>
+          </div>
+
+          <!-- Road State & Density -->
+          <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-900 text-[11px]">
+            <div>
+              <span class="text-slate-400 text-[10px] block">Road State</span>
+              <span class="font-mono uppercase font-semibold px-1.5 py-0.5 rounded border text-[10px] inline-block mt-0.5 ${roadBadgeClass}">${w.road_condition}</span>
+              <span class="text-[10px] text-slate-500 block font-mono">Crr: ${w.rolling_resistance_crr.toFixed(4)}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">Moist Air Density</span>
+              <span class="font-mono text-slate-300">${w.air_density_kg_m3.toFixed(3)} kg/m³</span>
+              <span class="text-[10px] text-slate-500 block font-mono">${w.air_density_delta_pct >= 0 ? '+' : ''}${w.air_density_delta_pct.toFixed(1)}% vs STP</span>
+            </div>
+          </div>
+
+          <!-- Equinox EV Consumption Delta -->
+          <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs font-mono">
+            <div>
+              <span class="text-slate-400 text-[10px] block font-sans">Simulated Consumption</span>
+              <span class="font-bold text-white text-sm">${Math.round(w.estimated_consumption_wh_per_mi)} <span class="text-[10px] text-slate-400 font-normal">Wh/mi</span></span>
+            </div>
+            <div class="text-right">
+              <span class="text-slate-400 text-[10px] block font-sans">Delta vs 70°F Base</span>
+              <span class="${deltaColor} font-semibold">${sign}${w.wh_per_mi_delta} Wh/mi</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>

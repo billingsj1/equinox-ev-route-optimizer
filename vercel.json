@@ -2,6 +2,14 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/weather-preview",
+      "destination": "/weather_preview.html"
+    },
+    {
+      "source": "/weather",
+      "destination": "/weather_preview.html"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
     }

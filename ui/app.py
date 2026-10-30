@@ -62,7 +62,11 @@ class OptimizationRequest(BaseModel):
     ideal_time_min_minutes: float = 90.0
     ideal_time_max_minutes: float = 150.0
 
-    # Weather
+    # Weather & Departure
+    departure_date: Optional[str] = ""
+    departure_time: Optional[str] = ""
+    manual_weather_override: bool = False
+    destination_name: Optional[str] = ""
     weather_mode: str = "manual" # "manual", "historical", "live"
     temperature_f: float = 68.0
     wind_speed_mph: float = 7.0
@@ -76,6 +80,15 @@ class OptimizationRequest(BaseModel):
     has_nj_green_pass: bool = True
     time_of_day_hour: int = 14
     has_ea_pass: bool = False
+
+def _round_to_next_30m(dt: datetime) -> datetime:
+    minutes = dt.minute
+    if minutes == 0 and dt.second == 0 and dt.microsecond == 0:
+        return dt
+    if minutes < 30:
+        return dt.replace(minute=30, second=0, microsecond=0)
+    else:
+        return (dt + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
 
 @app.get("/", response_class=HTMLResponse)
 @app.get("/api", response_class=HTMLResponse)
@@ -146,26 +159,66 @@ async def run_optimization(req: OptimizationRequest):
     )
 
     # 3. Weather
-    if req.weather_mode == "live":
-        weather = await weather_service.get_live_weather(
-            lat=req.start_lat,
-            lon=req.start_lon,
-            cabin_temp_f=req.cabin_temp_f
-        )
-    elif req.weather_mode == "historical":
-        weather = weather_service.get_historical_weather(
-            month=req.historical_month,
-            cabin_temp_f=req.cabin_temp_f
-        )
+    now = datetime.now()
+    dep_date = now.date()
+    if req.departure_date and req.departure_date.strip():
+        try:
+            dep_date = datetime.strptime(req.departure_date.strip(), "%Y-%m-%d").date()
+        except Exception:
+            pass
+
+    if req.departure_time and req.departure_time.strip():
+        try:
+            parsed_time = datetime.strptime(req.departure_time.strip(), "%H:%M").time()
+            dep_dt = datetime.combine(dep_date, parsed_time)
+        except Exception:
+            dep_dt = _round_to_next_30m(datetime.combine(dep_date, now.time()))
     else:
-        weather = WeatherConditions(
-            temperature_f=req.temperature_f,
-            wind_speed_mph=req.wind_speed_mph,
-            wind_direction_deg=req.wind_direction_deg,
-            road_condition=req.road_condition,
-            cabin_temp_f=req.cabin_temp_f,
-            mode="manual"
-        )
+        dep_dt = _round_to_next_30m(datetime.combine(dep_date, now.time()))
+
+    route_weather_report = None
+    if not req.manual_weather_override:
+        dest_key = req.destination_name or ""
+        try:
+            route_weather_report = await weather_engine.get_route_weather_report(
+                destination_key_or_name=dest_key or "st_onge",
+                departure_dt=dep_dt,
+                custom_coordinates=[[req.start_lon, req.start_lat], [req.end_lon, req.end_lat]],
+                speed_offset_mph=req.speed_offset_mph,
+                max_cap_mph=req.max_speed_cap_mph
+            )
+            weather = WeatherConditions(
+                temperature_f=route_weather_report.summary["avg_temp_f"],
+                wind_speed_mph=float(route_weather_report.summary.get("max_headwind_mph", 0.0) or route_weather_report.summary.get("max_tailwind_mph", 5.0)),
+                wind_direction_deg=270.0,
+                road_condition="wet" if route_weather_report.summary.get("wet_road_pct", 0) > 25.0 else ("snow_ice" if route_weather_report.summary.get("snow_ice_road_pct", 0) > 10.0 else "dry"),
+                cabin_temp_f=req.cabin_temp_f,
+                mode=route_weather_report.mode
+            )
+        except Exception as e:
+            route_weather_report = None
+
+    if not route_weather_report:
+        if req.weather_mode == "live":
+            weather = await weather_service.get_live_weather(
+                lat=req.start_lat,
+                lon=req.start_lon,
+                cabin_temp_f=req.cabin_temp_f
+            )
+        elif req.weather_mode == "historical":
+            weather = weather_service.get_historical_weather(
+                month=req.historical_month,
+                cabin_temp_f=req.cabin_temp_f
+            )
+        else:
+            weather = WeatherConditions(
+                temperature_f=req.temperature_f,
+                wind_speed_mph=req.wind_speed_mph,
+                wind_direction_deg=req.wind_direction_deg,
+                road_condition=req.road_condition,
+                cabin_temp_f=req.cabin_temp_f,
+                mode="manual"
+            )
 
     # 4. Tolls
     toll_config = TollPassConfig(
@@ -185,7 +238,8 @@ async def run_optimization(req: OptimizationRequest):
         payload=payload,
         profile=profile,
         toll_config=toll_config,
-        initial_soc=initial_soc
+        initial_soc=initial_soc,
+        weather_report=route_weather_report
     )
 
     def serialize_itin(itin: Itinerary) -> Dict[str, Any]:
@@ -251,7 +305,8 @@ async def run_optimization(req: OptimizationRequest):
             "cheapest": serialize_itin(results["cheapest"]),
             "balanced": serialize_itin(results["balanced"])
         },
-        "routes": routes_geojson
+        "routes": routes_geojson,
+        "route_weather": asdict(route_weather_report) if route_weather_report else None
     }
 
 
