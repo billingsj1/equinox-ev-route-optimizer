@@ -3932,9 +3932,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 if (isTeslaNetwork(sp.station.network)) {
                   const tariff = resolveStationTariff(sp.station, arr_clock_dec, tesla_active);
                   effective_rate = tariff.rate;
-                  badge = tesla_active 
-                    ? (has_tesla_preowned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
-                    : (tariff.label || "");
+                  if (tesla_active) {
+                    const tLabel = tariff.label || "Member";
+                    badge = (tLabel === "Member")
+                      ? (has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)")
+                      : (has_tesla_preowned ? `${tLabel} (Active)` : `${tLabel} (Auto-ROI)`);
+                  } else {
+                    badge = (tariff.label && tariff.label !== "Member") ? tariff.label : "";
+                  }
                 } else if (isGmDiscountEligible(sp.station)) {
                   effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
                   badge = "10% GM";
@@ -4498,7 +4503,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let total_ch_hrs = 0.0;
         let total_ch_cost = 0.0;
         let valid = true;
-        let polishedStops = [];
+        
 
         const isPreheated = (typeof document !== 'undefined' && document.getElementById('scheduledDeparturePreheat'))
           ? document.getElementById('scheduledDeparturePreheat').checked
@@ -4511,6 +4516,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           : 0.0;
         let pack_temp = isPreheated ? Math.max(48.0, ambTemp0) : ambTemp0;
 
+        const rawStops = [];
+
         for (let idx = 0; idx < cand.stops.length; idx++) {
           const sp = cand.stops[idx];
           const leg = osrmData.legs[idx];
@@ -4520,14 +4527,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           let arrAmb = temp_f;
           if (window.activeWeatherReport && !document.getElementById('manualWeatherOverride')?.checked) {
-            const wpSt = getRouteWeatherAtMile(sp.mile);
-            if (wpSt && wpSt.ambient_temp_f != null) arrAmb = wpSt.ambient_temp_f;
+            const wp = getRouteWeatherAtMile(sp.mile);
+            if (wp && wp.ambient_temp_f != null) arrAmb = wp.ambient_temp_f;
           }
-          const arrPack = arrAmb + (pack_temp - arrAmb) * Math.exp(-legSim.hours / 3.5);
+
+          const currentPack = (pack_temp != null) ? pack_temp : arrAmb;
+          const arrPack = arrAmb + (currentPack - arrAmb) * Math.exp(-legSim.hours / 3.5);
 
           let adjusted_leg_kwh = legSim.kwh;
-          if (idx > 0 && pack_temp > arrAmb && arrAmb < 55.0) {
-            const avgPack = (pack_temp + arrPack) / 2.0;
+          if (idx > 0 && currentPack > arrAmb && arrAmb < 55.0) {
+            const avgPack = (currentPack + arrPack) / 2.0;
             const coldEff = (arrAmb < 32.0) ? Math.max(0.78, 0.90 - ((32.0 - arrAmb) * 0.0045)) : (0.90 + ((arrAmb - 32.0) / 23.0) * 0.10);
             const warmEff = (avgPack >= 55.0) ? 1.0 : ((avgPack < 32.0) ? Math.max(0.78, 0.90 - ((32.0 - avgPack) * 0.0045)) : (0.90 + ((avgPack - 32.0) / 23.0) * 0.10));
             if (warmEff > coldEff) adjusted_leg_kwh *= (coldEff / warmEff);
@@ -4555,14 +4564,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const nextLeg = osrmData.legs[idx + 1];
           const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
           const needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
-          const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer; // exact need; callers round UP to whole % so the buffer is still guaranteed
+          const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer;
 
           if (min_safe_departure > 0.95) {
             valid = false;
             break;
           }
 
-          let target_soc, stop_mins, added_kwh, stop_cost, effective_rate, badge, charge_mins, setup_mins;
+          let target_soc, stop_mins, added_kwh, charge_mins, setup_mins;
           const arr_clock_dec = departure_hours + total_drive_hrs + total_ch_hrs;
 
           if (sp.is_decamilla) {
@@ -4577,55 +4586,29 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             stop_mins = Math.round(decamillaHrs * 60.0);
             charge_mins = stop_mins;
             setup_mins = 0;
-            stop_cost = 0.0;
-            effective_rate = 0.0;
-            badge = "Free (Private L2)";
           } else {
             const cand_target = sp.tgt_soc / 100.0;
-            // Tier 2: 1% Continuous Dial-In Refinement
             const exact_dialed_target = Math.ceil(Math.max(current_soc + min_charge_pct, min_safe_departure) * 100 - 1e-9) / 100.0;
             target_soc = trimSlack
               ? Math.min(0.92, exact_dialed_target)
               : Math.min(0.92, Math.max(cand_target, exact_dialed_target));
 
-            effective_rate = sp.rate;
-            badge = sp.badge;
-            if (isTeslaNetwork(sp.station.network)) {
-              const is_mem_active = cand.memberships && cand.memberships.tesla && cand.memberships.tesla.active;
-              const tariff = resolveStationTariff(sp.station, arr_clock_dec, is_mem_active);
-              effective_rate = tariff.rate;
-              badge = is_mem_active 
-                ? (cand.memberships.tesla.pre_owned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
-                : (tariff.label || "");
-            } else if (isGmDiscountEligible(sp.station)) {
-              effective_rate = sp.station.on * (1.0 - (sp.station.gm_pct || 0.10));
-              badge = "10% GM";
-            } else if (sp.station.ea_pass && cand.memberships && cand.memberships.ea && cand.memberships.ea.active) {
-              effective_rate = sp.station.on * 0.75;
-              badge = cand.memberships.ea.pre_owned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
-            } else {
-              const tariff = resolveStationTariff(sp.station, arr_clock_dec, false);
-              effective_rate = tariff.rate;
-              badge = tariff.label || "";
-            }
-
-            const ch = calculateCharging(current_soc, target_soc, sp.station.kw, effective_rate, sp.station);
+            const ch = calculateCharging(current_soc, target_soc, sp.station.kw, 0, sp.station);
             stop_mins = Math.round(ch.mins + sp.setup_mins);
             charge_mins = Math.round(ch.mins);
             setup_mins = sp.setup_mins;
             added_kwh = Math.round(ch.added_kwh * 10) / 10;
-            stop_cost = Math.round(ch.cost * 100) / 100;
           }
 
           const arr_clock = formatClockTime(arr_clock_dec);
           const dep_clock = formatClockTime(arr_clock_dec + (stop_mins / 60.0));
           total_ch_hrs += (stop_mins / 60.0);
-          total_ch_cost += stop_cost;
 
           const actual_detour_miles = sp.is_decamilla ? 12.8 : Math.max(0.0, Math.round((leg.distance_miles - (sp.mile - (idx === 0 ? 0 : cand.stops[idx-1].mile))) * 10) / 10);
 
-          polishedStops.push({
+          rawStops.push({
             ...sp,
+            arr_clock_dec: arr_clock_dec,
             leg_drive_hrs: legSim.hours,
             leg_drive_mins: Math.round(legSim.hours * 60.0),
             leg_miles: Math.round(leg.distance_miles * 10) / 10,
@@ -4638,10 +4621,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             setup_mins: setup_mins,
             mins: stop_mins,
             arr_clock: arr_clock,
-            dep_clock: dep_clock,
-            rate: effective_rate,
-            badge: badge,
-            cost: stop_cost
+            dep_clock: dep_clock
           });
 
           current_soc = target_soc;
@@ -4672,21 +4652,21 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           return null;
         }
 
+        // Pass 1.5: Evaluate Membership ROI strictly on refined/trimmed energy
         const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
         const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
 
         let p_ea_kwh = 0, p_ea_gross_savings = 0;
         let p_tesla_kwh = 0, p_tesla_gross_savings = 0;
 
-        polishedStops.forEach(sp => {
+        rawStops.forEach(sp => {
           if (sp.station.ea_pass) {
             p_ea_kwh += sp.added_kwh;
             p_ea_gross_savings += (sp.added_kwh * (sp.station.on * 0.25));
           }
           if (isTeslaNetwork(sp.station.network)) {
-            const arr_dec = parseTimeToDecimal(sp.arr_clock);
-            const non_mem = resolveStationTariff(sp.station, arr_dec, false);
-            const mem = resolveStationTariff(sp.station, arr_dec, true);
+            const non_mem = resolveStationTariff(sp.station, sp.arr_clock_dec, false);
+            const mem = resolveStationTariff(sp.station, sp.arr_clock_dec, true);
             if (non_mem.rate > mem.rate) {
               p_tesla_kwh += sp.added_kwh;
               p_tesla_gross_savings += (sp.added_kwh * (non_mem.rate - mem.rate));
@@ -4701,6 +4681,55 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const p_tesla_active = has_tesla_preowned || (p_tesla_gross_savings >= 6.50);
         const p_tesla_fee = has_tesla_preowned ? 0.0 : (p_tesla_active ? 6.50 : 0.0);
         const p_tesla_net = p_tesla_gross_savings - p_tesla_fee;
+
+        // Pass 2: Resolve stop rates, badges, and costs in 100% sync with active memberships
+        total_ch_cost = 0.0;
+        const polishedStops = rawStops.map(sp => {
+          if (sp.is_decamilla) {
+            return {
+              ...sp,
+              rate: 0.0,
+              badge: "Free (Private L2)",
+              cost: 0.0
+            };
+          }
+
+          let effective_rate = sp.station.on;
+          let badge = "";
+
+          if (isTeslaNetwork(sp.station.network)) {
+            const tariff = resolveStationTariff(sp.station, sp.arr_clock_dec, p_tesla_active);
+            effective_rate = tariff.rate;
+            if (p_tesla_active) {
+              const tLabel = tariff.label || "Member";
+              badge = (tLabel === "Member")
+                ? (has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)")
+                : (has_tesla_preowned ? `${tLabel} (Active)` : `${tLabel} (Auto-ROI)`);
+            } else {
+              badge = (tariff.label && tariff.label !== "Member") ? tariff.label : "";
+            }
+          } else if (isGmDiscountEligible(sp.station)) {
+            effective_rate = sp.station.on * (1.0 - (sp.station.gm_pct || 0.10));
+            badge = "10% GM";
+          } else if (sp.station.ea_pass && p_ea_active) {
+            effective_rate = sp.station.on * 0.75;
+            badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
+          } else {
+            const tariff = resolveStationTariff(sp.station, sp.arr_clock_dec, false);
+            effective_rate = tariff.rate;
+            badge = tariff.label || "";
+          }
+
+          const stop_cost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
+          total_ch_cost += stop_cost;
+
+          return {
+            ...sp,
+            rate: effective_rate,
+            badge: badge,
+            cost: stop_cost
+          };
+        });
 
         const p_membership_fees = Math.round((p_ea_fee + p_tesla_fee) * 100) / 100;
         const total_time = total_drive_hrs + total_ch_hrs;
