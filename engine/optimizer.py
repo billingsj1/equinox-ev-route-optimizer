@@ -144,12 +144,33 @@ class MultiObjectiveOptimizer:
         elapsed_trip_hours = 0.0
         time_since_last_stop_min = 0.0
 
+        current_pack_temp = getattr(weather, 'temperature_f', 70.0)
+        if weather_report and getattr(weather_report, 'summary', None) and "avg_temp_f" in weather_report.summary:
+            current_pack_temp = weather_report.summary["avg_temp_f"]
+
         for i, leg in enumerate(legs):
+            amb_temp = getattr(weather, 'temperature_f', 70.0)
+            if weather_report and getattr(weather_report, 'summary', None) and "avg_temp_f" in weather_report.summary:
+                amb_temp = weather_report.summary["avg_temp_f"]
+
             end_soc, leg_dur_hours, leg_kwh = self._simulate_leg(
                 leg, weather, payload, profile, current_soc, weather_report
             )
             elapsed_trip_hours += leg_dur_hours
             time_since_last_stop_min += (leg_dur_hours * 60.0)
+
+            # Exponential thermal cooldown of pack while driving (3.5 hour thermal time constant)
+            arr_pack_temp = amb_temp + (current_pack_temp - amb_temp) * math.exp(-leg_dur_hours / 3.5)
+
+            # If pack is warm from previous charging, apply warm battery electrochemical efficiency adjustment
+            if i > 0 and current_pack_temp > amb_temp and amb_temp < 55.0:
+                avg_pack = (current_pack_temp + arr_pack_temp) / 2.0
+                cold_eff = max(0.78, 0.90 - ((32.0 - amb_temp) * 0.0045)) if amb_temp < 32.0 else (0.90 + ((amb_temp - 32.0) / 23.0) * 0.10)
+                warm_eff = 1.0 if avg_pack >= 55.0 else (max(0.78, 0.90 - ((32.0 - avg_pack) * 0.0045)) if avg_pack < 32.0 else (0.90 + ((avg_pack - 32.0) / 23.0) * 0.10))
+                if warm_eff > cold_eff:
+                    recovered_kwh = leg_kwh * (1.0 - (cold_eff / warm_eff))
+                    leg_kwh -= recovered_kwh
+                    end_soc = min(1.0, end_soc + (recovered_kwh / self.vehicle.usable_battery_kwh))
 
             # Safety buffer check during transit: cannot drop below min_safety_buffer_soc
             if end_soc < profile.min_safety_buffer_soc:
@@ -160,13 +181,16 @@ class MultiObjectiveOptimizer:
             if i < len(candidate_stations):
                 station = candidate_stations[i]
                 
-                # Check for Ultium battery preconditioning in cold weather (< 55°F) for DC Fast Chargers
+                # Check for Ultium battery preconditioning in cold weather for DC Fast Chargers
+                # Uses arrival pack temperature (retaining warmth from previous DCFC stops)
                 if station.power_kw >= 50.0:
-                    amb_temp = getattr(weather, 'temperature_f', 70.0)
-                    if weather_report and getattr(weather_report, 'summary', None) and "avg_temp_f" in weather_report.summary:
-                        amb_temp = weather_report.summary["avg_temp_f"]
-                    if amb_temp < 55.0:
-                        precond_kwh = min(2.5, max(0.5, 0.05 * (55.0 - amb_temp)))
+                    if arr_pack_temp < 55.0:
+                        precond_kwh = min(2.5, max(0.5, 0.05 * (55.0 - arr_pack_temp)))
+                        current_soc -= (precond_kwh / self.vehicle.usable_battery_kwh)
+                        if current_soc < profile.min_safety_buffer_soc:
+                            return None
+                    elif arr_pack_temp < 70.0:
+                        precond_kwh = min(0.6, max(0.0, 0.025 * (70.0 - arr_pack_temp)))
                         current_soc -= (precond_kwh / self.vehicle.usable_battery_kwh)
                         if current_soc < profile.min_safety_buffer_soc:
                             return None
@@ -208,6 +232,12 @@ class MultiObjectiveOptimizer:
                     rate_per_kwh=effective_rate,
                     session_fee=station.session_fee
                 )
+
+                # Update pack temperature after fast charging session
+                if station.power_kw >= 50.0:
+                    current_pack_temp = max(95.0, amb_temp)
+                else:
+                    current_pack_temp = max(amb_temp, min(75.0, arr_pack_temp + 5.0))
 
                 # Session Setup & Plugin Time:
                 # GM "Plug and Go" (IONNA, EVgo, ChargePoint): ~1.0 min auto-handshake
