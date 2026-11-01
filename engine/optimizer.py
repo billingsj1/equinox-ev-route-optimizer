@@ -119,7 +119,8 @@ class MultiObjectiveOptimizer:
         initial_soc: float = 1.00,
         has_ea_pass: bool = False,
         has_tesla_membership: bool = False,
-        weather_report: Optional[Any] = None
+        weather_report: Optional[Any] = None,
+        scheduled_departure_preheat: bool = True
     ) -> Optional[Itinerary]:
         """
         Simulates driving legs, applies time between stops bounding constraints,
@@ -144,9 +145,15 @@ class MultiObjectiveOptimizer:
         elapsed_trip_hours = 0.0
         time_since_last_stop_min = 0.0
 
-        current_pack_temp = getattr(weather, 'temperature_f', 70.0)
+        amb_temp0 = getattr(weather, 'temperature_f', 70.0)
         if weather_report and getattr(weather_report, 'summary', None) and "avg_temp_f" in weather_report.summary:
-            current_pack_temp = weather_report.summary["avg_temp_f"]
+            amb_temp0 = weather_report.summary["avg_temp_f"]
+
+        # Scheduled departure / "charge later": cabin preheated on wall power ($0 battery draw);
+        # battery coolant loop warms pack to ~48F "take-off readiness" floor.
+        # If cold-soaked without shore preheating, battery expends transient cabin/seat warm-up energy spike.
+        cold_cabin_warmup_kwh = min(1.6, max(0.0, 0.035 * (70.0 - amb_temp0))) if (not scheduled_departure_preheat and amb_temp0 < 70.0) else 0.0
+        current_pack_temp = max(48.0, amb_temp0) if scheduled_departure_preheat else amb_temp0
 
         for i, leg in enumerate(legs):
             amb_temp = getattr(weather, 'temperature_f', 70.0)
@@ -159,11 +166,16 @@ class MultiObjectiveOptimizer:
             elapsed_trip_hours += leg_dur_hours
             time_since_last_stop_min += (leg_dur_hours * 60.0)
 
+            # If not preheated on wall power, account for cabin warm-up spike from battery on leg 0
+            if i == 0 and cold_cabin_warmup_kwh > 0:
+                end_soc -= (cold_cabin_warmup_kwh / self.vehicle.usable_battery_kwh)
+                leg_kwh += cold_cabin_warmup_kwh
+
             # Exponential thermal cooldown of pack while driving (3.5 hour thermal time constant)
             arr_pack_temp = amb_temp + (current_pack_temp - amb_temp) * math.exp(-leg_dur_hours / 3.5)
 
-            # If pack is warm from previous charging, apply warm battery electrochemical efficiency adjustment
-            if i > 0 and current_pack_temp > amb_temp and amb_temp < 55.0:
+            # If pack is warm from previous charging or departure preheating, apply warm battery electrochemical efficiency adjustment
+            if (i > 0 or scheduled_departure_preheat) and current_pack_temp > amb_temp and amb_temp < 55.0:
                 avg_pack = (current_pack_temp + arr_pack_temp) / 2.0
                 cold_eff = max(0.78, 0.90 - ((32.0 - amb_temp) * 0.0045)) if amb_temp < 32.0 else (0.90 + ((amb_temp - 32.0) / 23.0) * 0.10)
                 warm_eff = 1.0 if avg_pack >= 55.0 else (max(0.78, 0.90 - ((32.0 - avg_pack) * 0.0045)) if avg_pack < 32.0 else (0.90 + ((avg_pack - 32.0) / 23.0) * 0.10))
@@ -366,7 +378,8 @@ class MultiObjectiveOptimizer:
         toll_config: TollPassConfig,
         initial_soc: float = 1.00,
         max_duration_tolerance_pct: float = 0.10,
-        weather_report: Optional[Any] = None
+        weather_report: Optional[Any] = None,
+        scheduled_departure_preheat: bool = True
     ) -> Dict[str, Any]:
         """
         Runs combinatorial search across valid charger stops, builds the Pareto frontier,
@@ -382,7 +395,8 @@ class MultiObjectiveOptimizer:
 
             # 0-stop check (if battery can make it all the way to destination with >= target_arrival_soc)
             itin_0 = self.evaluate_candidate_plan(
-                route, [], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report
+                route, [], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report,
+                scheduled_departure_preheat=scheduled_departure_preheat
             )
             if itin_0:
                 candidates.append(itin_0)
@@ -390,7 +404,8 @@ class MultiObjectiveOptimizer:
             # 1-stop combinations
             for ch in chargers:
                 itin_1 = self.evaluate_candidate_plan(
-                    route, [ch], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report
+                    route, [ch], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report,
+                    scheduled_departure_preheat=scheduled_departure_preheat
                 )
                 if itin_1:
                     candidates.append(itin_1)
@@ -400,7 +415,8 @@ class MultiObjectiveOptimizer:
                 for i in range(len(chargers)):
                     for j in range(i + 1, min(len(chargers), i + 4)):
                         itin_2 = self.evaluate_candidate_plan(
-                            route, [chargers[i], chargers[j]], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report
+                            route, [chargers[i], chargers[j]], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report,
+                            scheduled_departure_preheat=scheduled_departure_preheat
                         )
                         if itin_2:
                             candidates.append(itin_2)

@@ -403,6 +403,33 @@
         </div>
       </div>
 
+          <!-- Scheduled Departure & Wall Preconditioning -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+                <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
+                <span>Scheduled Departure</span>
+              </h2>
+              <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                L2 "Charge Later"
+              </span>
+            </div>
+            <div class="space-y-2 text-xs">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="scheduledDeparturePreheat" checked onchange="updatePhysicsHUD(); if (typeof recomputeCurrentRoute === 'function') recomputeCurrentRoute();" class="accent-emerald-500 rounded">
+                <span class="font-medium text-slate-200">Preheated on Wall Power (Scheduled Departure / "Charge Later")</span>
+              </label>
+              <div class="p-2.5 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                <div class="text-emerald-300 font-medium flex items-center gap-1.5">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  <span>Equinox EV Departure Conditioning:</span>
+                </div>
+                <div>• <b>Cabin &amp; Seats:</b> Preheated to 70°F setpoint with active seat warmers on AC grid power ($0 battery draw for initial warmup).</div>
+                <div>• <b>Battery Readiness:</b> Coolant loop warms pack to ~48°F–50°F "take-off readiness" floor, preventing sub-freezing cold-soak kinetics on Leg 1.</div>
+              </div>
+            </div>
+          </div>
+
           <!-- 3. Weather & Environmental Modifiers -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
         <div class="flex items-center justify-between mb-3">
@@ -2127,8 +2154,12 @@
 
       // 5. Battery Internal Resistance / Electrochemical efficiency modifier
       let batt_eff = 1.0;
-      if (temp_f < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - temp_f) * 0.0045));
-      else if (temp_f < 55) batt_eff = 0.90 + ((temp_f - 32) / 23) * 0.10;
+      const isPreheated = (typeof document !== 'undefined' && document.getElementById('scheduledDeparturePreheat'))
+        ? document.getElementById('scheduledDeparturePreheat').checked
+        : true;
+      const effPackTemp = isPreheated ? Math.max(48.0, temp_f) : temp_f;
+      if (effPackTemp < 32) batt_eff = Math.max(0.78, 0.90 - ((32 - effPackTemp) * 0.0045));
+      else if (effPackTemp < 55) batt_eff = 0.90 + ((effPackTemp - 32) / 23) * 0.10;
 
       const total_energy_kwh = (tractive_kwh / batt_eff) + aux_kwh;
       return {
@@ -3735,9 +3766,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         // Forward Tree Search Queue with Pareto State Dominance
-        const initialPackTemp = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
+        const isPreheated = (typeof document !== 'undefined' && document.getElementById('scheduledDeparturePreheat'))
+          ? document.getElementById('scheduledDeparturePreheat').checked
+          : true;
+
+        const ambTemp0 = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
           ? window.activeWeatherReport.summary.avg_temp_f
           : temp_f;
+
+        // If preheated on wall power (scheduled departure / charge later), battery starts at ~48F "take-off readiness" floor
+        const initialPackTemp = isPreheated ? Math.max(48.0, ambTemp0) : ambTemp0;
+
+        // Cabin & seat warmup transient energy spike: if departing cold-soaked without shore preheating,
+        // battery must expend ~0.035 kWh per deg F below 70F (up to 1.6 kWh) to heat cabin air, seats, and interior thermal mass
+        const coldCabinWarmupKwh = (!isPreheated && ambTemp0 < 70.0)
+          ? Math.min(1.6, Math.max(0.0, 0.035 * (70.0 - ambTemp0)))
+          : 0.0;
 
         const queue = [{
           stationIdx: -1,
@@ -3769,7 +3813,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             last_exit_kwh = lastDetour.last_exit_kwh;
           }
 
-          let leg_to_dest_kwh = destLeg.kwh + last_exit_kwh;
+          let leg_to_dest_kwh = destLeg.kwh + last_exit_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
           const leg_to_dest_hrs = destLeg.hours + (last_exit_detour / 28.0);
           const leg_to_dest_mins = leg_to_dest_hrs * 60.0;
 
@@ -3981,7 +4025,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               }
             }
 
-            const total_leg_energy = adjusted_leg_kwh + (stDetour.kwh / 2.0) + precond_kwh;
+            const total_leg_energy = adjusted_leg_kwh + (stDetour.kwh / 2.0) + precond_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
             const arr_soc = curr.soc - (total_leg_energy / 85.0);
 
             if (arr_soc < min_buffer_soc) continue;
@@ -4398,9 +4442,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let total_ch_cost = 0.0;
         let valid = true;
         let polishedStops = [];
-        let pack_temp = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
+
+        const isPreheated = (typeof document !== 'undefined' && document.getElementById('scheduledDeparturePreheat'))
+          ? document.getElementById('scheduledDeparturePreheat').checked
+          : true;
+        const ambTemp0 = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
           ? window.activeWeatherReport.summary.avg_temp_f
           : temp_f;
+        const coldCabinWarmupKwh = (!isPreheated && ambTemp0 < 70.0)
+          ? Math.min(1.6, Math.max(0.0, 0.035 * (70.0 - ambTemp0)))
+          : 0.0;
+        let pack_temp = isPreheated ? Math.max(48.0, ambTemp0) : ambTemp0;
 
         for (let idx = 0; idx < cand.stops.length; idx++) {
           const sp = cand.stops[idx];
@@ -4424,7 +4476,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (warmEff > coldEff) adjusted_leg_kwh *= (coldEff / warmEff);
           }
 
-          current_soc -= (adjusted_leg_kwh / 85.0);
+          const legWarmup = (idx === 0) ? coldCabinWarmupKwh : 0.0;
+          current_soc -= ((adjusted_leg_kwh + legWarmup) / 85.0);
 
           if (current_soc < (min_buffer_soc - 0.02)) {
             valid = false;
@@ -4546,7 +4599,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (warmEff > coldEff) final_leg_kwh *= (coldEff / warmEff);
         }
 
-        current_soc -= (final_leg_kwh / 85.0);
+        current_soc -= ((final_leg_kwh + (cand.stops.length === 0 ? coldCabinWarmupKwh : 0.0)) / 85.0);
 
         if (current_soc < (target_arrival_soc - 0.02)) {
           return null;

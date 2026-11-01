@@ -74,6 +74,7 @@ class OptimizationRequest(BaseModel):
     road_condition: str = "dry"       # "dry", "wet", "snow_ice"
     cabin_temp_f: float = 70.0
     historical_month: int = 10
+    scheduled_departure_preheat: bool = True
 
     # Tolls & Passes
     has_ezpass: bool = True
@@ -239,7 +240,8 @@ async def run_optimization(req: OptimizationRequest):
         profile=profile,
         toll_config=toll_config,
         initial_soc=initial_soc,
-        weather_report=route_weather_report
+        weather_report=route_weather_report,
+        scheduled_departure_preheat=req.scheduled_departure_preheat
     )
 
     def serialize_itin(itin: Itinerary) -> Dict[str, Any]:
