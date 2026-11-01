@@ -84,8 +84,8 @@ class StationManager:
                     connectors=connectors,
                     rate_off_peak=float(off_peak),
                     rate_on_peak=float(on_peak),
-                    gm_discount_eligible=bool(item.get("gm_discount_eligible", False)),
-                    gm_discount_pct=float(item.get("gm_discount_pct", 0.0)),
+                    gm_discount_eligible=bool(item.get("gm_discount_eligible", False)) and str(item.get("network", "")).strip().lower() in ("evgo", "ionna") and not ("pilot" in str(item.get("name", "")).lower() or "flying j" in str(item.get("name", "")).lower()),
+                    gm_discount_pct=float(item.get("gm_discount_pct", 0.0)) if (str(item.get("network", "")).strip().lower() in ("evgo", "ionna") and not ("pilot" in str(item.get("name", "")).lower() or "flying j" in str(item.get("name", "")).lower())) else 0.0,
                     ea_pass_eligible=bool(item.get("ea_pass_eligible", False)),
                     membership_rate_off_peak=float(mem_off),
                     membership_rate_on_peak=float(mem_on),
@@ -107,8 +107,8 @@ class StationManager:
         is_off_peak = (hour < 10 or hour >= 22)
         base_rate = station.rate_off_peak if is_off_peak else station.rate_on_peak
 
-        # 1. GM EV perks: 10% discount at IONNA and EVgo
-        if is_gm_ev and station.gm_discount_eligible:
+        # 1. GM EV perks: 10% discount ONLY at IONNA and EVgo (never Pilot or Tesla)
+        if is_gm_ev and station.gm_discount_eligible and station.network.lower() in ("evgo", "ionna"):
             return round(base_rate * (1.0 - station.gm_discount_pct), 2)
 
         # 2. Electrify America Pass+ (25% off) if eligible at that specific station

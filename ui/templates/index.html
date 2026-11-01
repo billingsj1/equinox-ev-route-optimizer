@@ -1034,7 +1034,7 @@
             <b>${s.name}</b><br>
             <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
             <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
-            ${s.gm && !isPilotStation(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+            ${isGmDiscountEligible(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
             ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
             ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
           </div>
@@ -2837,8 +2837,39 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    function isPilotStation(st) {
+      if (!st) return false;
+      let title = st.name || st.title || '';
+      let addr = st.address || '';
+      let net = st.network || '';
+      let city = st.city || st.town || '';
+      let plug = st.plug || '';
+      if (st.AddressInfo) {
+        title = title || st.AddressInfo.Title || '';
+        addr = addr || st.AddressInfo.AddressLine1 || '';
+        city = city || st.AddressInfo.Town || '';
+      }
+      if (st.OperatorInfo) {
+        net = net || st.OperatorInfo.Title || '';
+      }
+      const text = `${title} ${net} ${addr} ${city} ${plug}`.toLowerCase();
+      return text.includes('pilot') || text.includes('flying j') || text.includes('flying-j') || text.includes('flyingj') || text.includes('pfj');
+    }
+
+    function isGmDiscountEligible(st) {
+      if (!st) return false;
+      const net = (st.network || '').trim();
+      // GM 10% discount is ONLY valid on EVgo (excluding Pilot / Flying J locations) and IONNA.
+      // It NEVER applies to Tesla (Tesla CCS1, Tesla NACS, Tesla), Electrify America, ChargePoint, Applegreen, etc.
+      if (net !== 'EVgo' && net !== 'IONNA') return false;
+      if (isPilotStation(st)) return false;
+      return st.gm !== false;
+    }
+
     function resolveStationTariff(st, arrival_hours_decimal, is_member) {
       if (!st) return { rate: 0.50, label: "", is_tou: false };
+
+      const isTesla = isTeslaNetwork(st.network);
 
       if (st.tou_rates && Array.isArray(st.tou_rates) && st.tou_rates.length > 0) {
         const hr = ((arrival_hours_decimal % 24) + 24) % 24;
@@ -2854,7 +2885,10 @@
           if (inWindow) {
             const rate = is_member && (tier.mem_on != null) ? tier.mem_on : tier.on;
             const baseLabel = tier.label || (tier.on < (st.on || 0.60) ? "Off-Peak" : "Peak");
-            const badge = is_member ? `Member ${baseLabel}` : baseLabel;
+            const badge = is_member ? `Member (${baseLabel})` : baseLabel;
+            if (!isTesla && isGmDiscountEligible(st)) {
+              return { rate: rate * (1.0 - (st.gm_pct || 0.10)), label: `10% GM (${baseLabel})`, is_tou: true };
+            }
             return { rate: rate, label: badge, is_tou: true };
           }
         }
@@ -2862,7 +2896,12 @@
 
       let rate = st.on;
       let badge = "";
-      if (st.gm && !isPilotStation(st)) {
+      if (isTesla) {
+        if (is_member && st.mem_on) {
+          rate = st.mem_on;
+          badge = "Member";
+        }
+      } else if (isGmDiscountEligible(st)) {
         rate *= (1.0 - (st.gm_pct || 0.10));
         badge = "10% GM";
       } else if (is_member && st.mem_on) {
@@ -3890,18 +3929,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 let effective_rate = sp.station.on;
                 let badge = "";
 
-                if (sp.station.gm && !isPilotStation(sp.station)) {
-                  effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
-                  badge = "10% GM";
-                } else if (sp.station.ea_pass && ea_active) {
-                  effective_rate *= 0.75;
-                  badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
-                } else if (isTeslaNetwork(sp.station.network)) {
+                if (isTeslaNetwork(sp.station.network)) {
                   const tariff = resolveStationTariff(sp.station, arr_clock_dec, tesla_active);
                   effective_rate = tariff.rate;
                   badge = tesla_active 
                     ? (has_tesla_preowned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
                     : (tariff.label || "");
+                } else if (isGmDiscountEligible(sp.station)) {
+                  effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
+                  badge = "10% GM";
+                } else if (sp.station.ea_pass && ea_active) {
+                  effective_rate *= 0.75;
+                  badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
+                } else {
+                  const tariff = resolveStationTariff(sp.station, arr_clock_dec, false);
+                  effective_rate = tariff.rate;
+                  badge = tariff.label || "";
                 }
 
                 const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
@@ -4554,6 +4597,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               badge = is_mem_active 
                 ? (cand.memberships.tesla.pre_owned ? `Member (${tariff.label || 'Active'})` : `Member (${tariff.label || 'Auto-ROI'})`)
                 : (tariff.label || "");
+            } else if (isGmDiscountEligible(sp.station)) {
+              effective_rate = sp.station.on * (1.0 - (sp.station.gm_pct || 0.10));
+              badge = "10% GM";
+            } else if (sp.station.ea_pass && cand.memberships && cand.memberships.ea && cand.memberships.ea.active) {
+              effective_rate = sp.station.on * 0.75;
+              badge = cand.memberships.ea.pre_owned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
+            } else {
+              const tariff = resolveStationTariff(sp.station, arr_clock_dec, false);
+              effective_rate = tariff.rate;
+              badge = tariff.label || "";
             }
 
             const ch = calculateCharging(current_soc, target_soc, sp.station.kw, effective_rate, sp.station);
@@ -4619,8 +4672,39 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           return null;
         }
 
+        const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
+        const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
+
+        let p_ea_kwh = 0, p_ea_gross_savings = 0;
+        let p_tesla_kwh = 0, p_tesla_gross_savings = 0;
+
+        polishedStops.forEach(sp => {
+          if (sp.station.ea_pass) {
+            p_ea_kwh += sp.added_kwh;
+            p_ea_gross_savings += (sp.added_kwh * (sp.station.on * 0.25));
+          }
+          if (isTeslaNetwork(sp.station.network)) {
+            const arr_dec = parseTimeToDecimal(sp.arr_clock);
+            const non_mem = resolveStationTariff(sp.station, arr_dec, false);
+            const mem = resolveStationTariff(sp.station, arr_dec, true);
+            if (non_mem.rate > mem.rate) {
+              p_tesla_kwh += sp.added_kwh;
+              p_tesla_gross_savings += (sp.added_kwh * (non_mem.rate - mem.rate));
+            }
+          }
+        });
+
+        const p_ea_active = has_ea_preowned || (p_ea_gross_savings >= 3.50);
+        const p_ea_fee = has_ea_preowned ? 0.0 : (p_ea_active ? 3.50 : 0.0);
+        const p_ea_net = p_ea_gross_savings - p_ea_fee;
+
+        const p_tesla_active = has_tesla_preowned || (p_tesla_gross_savings >= 6.50);
+        const p_tesla_fee = has_tesla_preowned ? 0.0 : (p_tesla_active ? 6.50 : 0.0);
+        const p_tesla_net = p_tesla_gross_savings - p_tesla_fee;
+
+        const p_membership_fees = Math.round((p_ea_fee + p_tesla_fee) * 100) / 100;
         const total_time = total_drive_hrs + total_ch_hrs;
-        const total_cost = Math.round((total_ch_cost + cand.membership_fees + cand.route.toll) * 100) / 100;
+        const total_cost = Math.round((total_ch_cost + p_membership_fees + cand.route.toll) * 100) / 100;
         const dest_arr_clock = formatClockTime(departure_hours + total_drive_hrs + total_ch_hrs);
 
         return {
@@ -4634,9 +4718,28 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           final_leg_mins: Math.round(finalLegSim.hours * 60.0),
           final_leg_miles: Math.round(finalLeg.distance_miles * 10) / 10,
           ch_cost: Math.round(total_ch_cost * 100) / 100,
+          membership_fees: p_membership_fees,
           total_cost: total_cost,
           final_soc: Math.round(current_soc * 100),
           stops: polishedStops,
+          memberships: {
+            ea: {
+              kwh: Math.round(p_ea_kwh * 10) / 10,
+              active: p_ea_active,
+              pre_owned: has_ea_preowned,
+              fee: p_ea_fee,
+              savings: Math.round(p_ea_gross_savings * 100) / 100,
+              net: Math.round(p_ea_net * 100) / 100
+            },
+            tesla: {
+              kwh: Math.round(p_tesla_kwh * 10) / 10,
+              active: p_tesla_active,
+              pre_owned: has_tesla_preowned,
+              fee: p_tesla_fee,
+              savings: Math.round(p_tesla_gross_savings * 100) / 100,
+              net: Math.round(p_tesla_net * 100) / 100
+            }
+          },
           osrmDetailedCoords: osrmData.coordinates
         };
       };
@@ -4917,7 +5020,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               <b>${s.name}</b><br>
               <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
               <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
-              ${s.gm && !isPilotStation(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+              ${isGmDiscountEligible(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
               ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
               ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
             </div>
@@ -5288,25 +5391,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       return false;
     }
 
-    function isPilotStation(st) {
-      if (!st) return false;
-      let title = st.name || st.title || '';
-      let addr = st.address || '';
-      let net = st.network || '';
-      let city = st.city || st.town || '';
-      let plug = st.plug || '';
-      if (st.AddressInfo) {
-        title = title || st.AddressInfo.Title || '';
-        addr = addr || st.AddressInfo.AddressLine1 || '';
-        city = city || st.AddressInfo.Town || '';
-      }
-      if (st.OperatorInfo) {
-        net = net || st.OperatorInfo.Title || '';
-      }
-      const text = `${title} ${net} ${addr} ${city} ${plug}`.toLowerCase();
-      return text.includes('pilot') || text.includes('flying j') || text.includes('flying-j') || text.includes('flyingj') || text.includes('pfj');
-    }
-
     function purgeBlockedStations() {
       // 1. Remove explicitly blocked stations
       for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
@@ -5357,7 +5441,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         if (s.network === 'Tesla') {
           s.network = 'Tesla CCS1';
         }
-        if (isPilotStation(s)) {
+        if (!isGmDiscountEligible(s)) {
           s.gm = false;
           s.gm_pct = 0.0;
         }
@@ -5373,7 +5457,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               if (s.network === 'Tesla') {
                 s.network = 'Tesla CCS1';
               }
-              if (isPilotStation(s)) {
+              if (!isGmDiscountEligible(s)) {
                 s.gm = false;
                 s.gm_pct = 0.0;
               }
@@ -5407,22 +5491,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       'evgo-pilot-belmont-oh': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
       'ocm-306630': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
       'mb-washington-pa': { on: 0.44, off: 0.44, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
-      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus/location/supercharger/somersetsupercharger', verified: true },
-      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus/location/supercharger/26674', verified: true },
-      'tesla-mt-laurel-nj': { on: 0.51, off: 0.35, mem_on: 0.38, mem_off: 0.26, url: 'https://www.tesla.com/findus/location/supercharger/406608', verified: true },
-      'tesla-woodlyn-pa': { on: 0.62, off: 0.32, mem_on: 0.44, mem_off: 0.23, url: 'https://www.tesla.com/findus/location/supercharger/59209', verified: true },
-      'tesla-cherry-hill-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, url: 'https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger', verified: true },
-      'tesla-maple-shade-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, url: 'https://www.tesla.com/findus/location/supercharger/26769', verified: true },
-            'tesla-pittsburgh-freeport-pa': { on: 0.59, off: 0.3, mem_on: 0.44, mem_off: 0.22, url: 'https://www.tesla.com/findus/location/supercharger/20506', verified: true },
-      'tesla-summerdale-pa': { on: 0.55, off: 0.28, mem_on: 0.4, mem_off: 0.21, url: 'https://www.tesla.com/findus/location/supercharger/33951', verified: true },
-      'tesla-lawnside-nj': { on: 0.49, off: 0.34, mem_on: 0.36, mem_off: 0.25, url: 'https://www.tesla.com/findus/location/supercharger/402407', verified: true },
-      'tesla-aston-pa': { on: 0.56, off: 0.28, mem_on: 0.4, mem_off: 0.2, url: 'https://www.tesla.com/findus/location/supercharger/35027', verified: true },
-      'tesla-shrewsbury-pa': { on: 0.68, off: 0.3, mem_on: 0.49, mem_off: 0.22, url: 'https://www.tesla.com/findus/location/supercharger/36287', verified: true },
-      'tesla-timonium-md': { on: 0.6, off: 0.38, mem_on: 0.43, mem_off: 0.27, url: 'https://www.tesla.com/findus/location/supercharger/33688', verified: true },
-      'tesla-waynesburg-pa': { on: 0.57, off: 0.57, mem_on: 0.41, mem_off: 0.41, url: 'https://www.tesla.com/findus/location/supercharger/401410', verified: true },
-      'tesla-medford-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, url: 'https://www.tesla.com/findus/location/supercharger/19516', verified: true },
-      'tesla-hamilton-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, url: 'https://www.tesla.com/findus/location/supercharger/424861', verified: true },
-      'tesla-blackwood-nj': { on: 0.73, off: 0.38, mem_on: 0.52, mem_off: 0.27, url: 'https://www.tesla.com/findus/location/supercharger/59126', verified: true },
+      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/somersetsupercharger', verified: true },
+      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/26674', verified: true },
+      'tesla-mt-laurel-nj': { on: 0.51, off: 0.35, mem_on: 0.38, mem_off: 0.26, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/406608', verified: true },
+      'tesla-woodlyn-pa': { on: 0.62, off: 0.32, mem_on: 0.44, mem_off: 0.23, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/59209', verified: true },
+      'tesla-cherry-hill-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger', verified: true },
+      'tesla-maple-shade-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/26769', verified: true },
+      'tesla-pittsburgh-freeport-pa': { on: 0.59, off: 0.3, mem_on: 0.44, mem_off: 0.22, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/20506', verified: true },
+      'tesla-summerdale-pa': { on: 0.55, off: 0.28, mem_on: 0.4, mem_off: 0.21, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/33951', verified: true },
+      'tesla-lawnside-nj': { on: 0.49, off: 0.34, mem_on: 0.36, mem_off: 0.25, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/402407', verified: true },
+      'tesla-aston-pa': { on: 0.56, off: 0.28, mem_on: 0.4, mem_off: 0.2, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/35027', verified: true },
+      'tesla-shrewsbury-pa': { on: 0.68, off: 0.3, mem_on: 0.49, mem_off: 0.22, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/36287', verified: true },
+      'tesla-timonium-md': { on: 0.6, off: 0.38, mem_on: 0.43, mem_off: 0.27, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/33688', verified: true },
+      'tesla-waynesburg-pa': { on: 0.57, off: 0.57, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/401410', verified: true },
+      'tesla-medford-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/19516', verified: true },
+      'tesla-hamilton-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/424861', verified: true },
+      'tesla-blackwood-nj': { on: 0.73, off: 0.38, mem_on: 0.52, mem_off: 0.27, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/59126', verified: true },
       'evgo-pilot-marengo-oh': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-306512': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-351529': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
@@ -5443,14 +5527,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // 1. Manually verified overrides
       if (MANUALLY_VERIFIED_OVERRIDES[station.id]) {
         const ov = MANUALLY_VERIFIED_OVERRIDES[station.id];
-        const isPilot = isPilotStation(station) || (ov.gm === false);
+        const canGm = isGmDiscountEligible(station) && (ov.gm !== false);
         return {
           on: ov.on,
           off: ov.off,
           mem_on: ov.mem_on,
           mem_off: ov.mem_off,
-          gm: isPilot ? false : (ov.gm !== undefined ? ov.gm : true),
-          gm_pct: isPilot ? 0.0 : (ov.gm_pct !== undefined ? ov.gm_pct : 0.10),
+          gm: canGm,
+          gm_pct: canGm ? (ov.gm_pct || 0.10) : 0.0,
           url: ov.url,
           verified: true
         };
