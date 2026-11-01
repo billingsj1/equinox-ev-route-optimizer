@@ -204,88 +204,36 @@
 
       <!-- Departure, Battery & Stint Limits -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm space-y-3">
-        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-          <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span>Departure, Battery &amp; Stints</span>
-        </h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Departure, Battery &amp; Stints</span>
+          </h2>
+          <span id="idealWindowBadge" class="font-mono text-[10px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">70 – 120 mins</span>
+        </div>
 
-        <!-- Departure Date & Time Grid -->
-        <div class="grid grid-cols-2 gap-2">
+        <!-- Row 1: Departure Date, Time, Speed vs Limit, Max Speed Cap (All on One Row) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div>
-            <label class="text-[11px] text-slate-400 block mb-1">Departure Date</label>
-            <input type="date" id="departureDate" onchange="onDepartureDateTimeChanged()" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
+            <label class="text-[11px] text-slate-400 block mb-1">Dep Date</label>
+            <input type="date" id="departureDate" onchange="onDepartureDateTimeChanged()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
           </div>
           <div>
             <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
               <span>Time</span>
               <span id="departureTimeDisplay" class="font-mono text-emerald-400 text-[10px]">08:00 AM</span>
             </div>
-            <select id="departureTime" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
+            <select id="departureTime" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
               <!-- Populated dynamically with 48 half-hour slots -->
               <option value="08:00" selected>08:00 AM</option>
             </select>
           </div>
-        </div>
-
-        <!-- Battery SoC Sliders (Clean with Tooltips) -->
-        <div class="space-y-2 pt-1 border-t border-slate-800/80">
-          <div>
-            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
-              <span class="flex items-center gap-1">
-                <span>Start State of Charge</span>
-                <span class="relative group cursor-pointer inline-flex items-center">
-                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
-                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-48 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
-                    Charge level when unplugging from home L2 charger at departure.
-                  </span>
-                </span>
-              </span>
-              <span id="startSocDisplay" class="font-mono text-emerald-400 font-semibold text-xs">100% (85.0 kWh)</span>
-            </div>
-            <input type="range" id="startSocSlider" min="15" max="100" value="100" step="5" oninput="document.getElementById('startSocDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
-          </div>
-
-          <div>
-            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
-              <span class="flex items-center gap-1">
-                <span>Minimum Buffer SoC</span>
-                <span class="relative group cursor-pointer inline-flex items-center">
-                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-amber-400 transition"></i>
-                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
-                    Target minimum safe battery percentage before reaching any fast charger.
-                  </span>
-                </span>
-              </span>
-              <span id="bufferDisplay" class="font-mono text-amber-400 font-semibold text-xs">10% (8.5 kWh)</span>
-            </div>
-            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-amber-500 h-1 bg-slate-800 rounded cursor-pointer">
-          </div>
-
-          <div>
-            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
-              <span class="flex items-center gap-1">
-                <span>Target Arrival SoC</span>
-                <span class="relative group cursor-pointer inline-flex items-center">
-                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
-                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
-                    Desired battery level remaining upon reaching final trip destination.
-                  </span>
-                </span>
-              </span>
-              <span id="targetArrivalDisplay" class="font-mono text-cyan-400 font-semibold text-xs">20% (17.0 kWh)</span>
-            </div>
-            <input type="range" id="targetArrivalSlider" min="5" max="80" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
-          </div>
-        </div>
-
-        <!-- Driving Speed & Cap (2-Column Grid) -->
-        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">Speed vs Limit</label>
             <select id="speedOffset" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
-              <option value="0">Limit (+0 mph)</option>
+              <option value="0">Limit (+0)</option>
               <option value="5">+5 mph</option>
-              <option value="9" selected>+9 mph (Flow)</option>
+              <option value="9" selected>+9 mph</option>
               <option value="15">+15 mph</option>
             </select>
           </div>
@@ -293,67 +241,121 @@
             <label class="text-[11px] text-slate-400 block mb-1">Max Speed Cap</label>
             <select id="maxSpeedCap" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
               <option value="70">70 mph</option>
-              <option value="75" selected>75 mph (Sweet Spot)</option>
+              <option value="75" selected>75 mph</option>
               <option value="80">80 mph</option>
-              <option value="85">85 mph (No Cap)</option>
+              <option value="85">85 mph</option>
             </select>
           </div>
         </div>
 
-        <!-- Driving Stints Window (Min default 70 mins) -->
-        <div class="space-y-2 pt-1 border-t border-slate-800/80">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-300">Driving Stint Window</span>
-            <span id="idealWindowBadge" class="font-mono text-[10px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">70 – 120 mins</span>
-          </div>
-
-          <div>
-            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
-              <span class="flex items-center gap-1">
-                <span>Min Time Between Stops</span>
-                <span class="relative group cursor-pointer inline-flex items-center">
-                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
-                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
-                    Lowering allows shorter legs to take advantage of cheaper charging stations. Default 70 min.
+        <!-- Sliders Group -->
+        <div class="space-y-2.5 pt-2 border-t border-slate-800/80">
+          
+          <!-- Row 2: Start SoC & Target Arrival SoC (One Row) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+                <span class="flex items-center gap-1">
+                  <span>Start State of Charge</span>
+                  <span class="relative group cursor-pointer inline-flex items-center">
+                    <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
+                    <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-48 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                      Charge level when unplugging from home L2 charger at departure.
+                    </span>
                   </span>
                 </span>
-              </span>
-              <span id="minTimeDisplay" class="font-mono text-emerald-400 font-semibold text-xs">70 mins (~88 mi)</span>
+                <span id="startSocDisplay" class="font-mono text-emerald-400 font-semibold text-xs">100% (85.0 kWh)</span>
+              </div>
+              <input type="range" id="startSocSlider" min="15" max="100" value="100" step="5" oninput="document.getElementById('startSocDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
             </div>
-            <input type="range" id="minTimeSlider" min="30" max="120" value="70" step="5" autocomplete="off" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
-          </div>
 
-          <div>
-            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
-              <span class="flex items-center gap-1">
-                <span>Max Time Between Stops</span>
-                <span class="relative group cursor-pointer inline-flex items-center">
-                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
-                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
-                    Maximum continuous driving stretch before requiring a rest/charge break.
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+                <span class="flex items-center gap-1">
+                  <span>Target Arrival SoC</span>
+                  <span class="relative group cursor-pointer inline-flex items-center">
+                    <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
+                    <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                      Desired battery level remaining upon reaching final trip destination.
+                    </span>
                   </span>
                 </span>
-              </span>
-              <span id="maxTimeDisplay" class="font-mono text-cyan-400 font-semibold text-xs">120 mins (~150 mi)</span>
+                <span id="targetArrivalDisplay" class="font-mono text-cyan-400 font-semibold text-xs">20% (17.0 kWh)</span>
+              </div>
+              <input type="range" id="targetArrivalSlider" min="5" max="80" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
             </div>
-            <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" autocomplete="off" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
           </div>
 
-          <div>
-            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
-              <span class="flex items-center gap-1">
-                <span>Min Charge Added</span>
-                <span class="relative group cursor-pointer inline-flex items-center">
-                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
-                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
-                    Minimum battery % added per stop. Prevents brief 4-min micro-stops so breaks are meaningful.
+          <!-- Row 3: Min Buffer SoC & Min Charge Added (One Row) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+                <span class="flex items-center gap-1">
+                  <span>Minimum Buffer SoC</span>
+                  <span class="relative group cursor-pointer inline-flex items-center">
+                    <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-amber-400 transition"></i>
+                    <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                      Target minimum safe battery percentage before reaching any fast charger.
+                    </span>
                   </span>
                 </span>
-              </span>
-              <span id="minChargePctDisplay" class="font-mono text-emerald-400 font-semibold text-xs">15% (~12.8 kWh / ~12 min)</span>
+                <span id="bufferDisplay" class="font-mono text-amber-400 font-semibold text-xs">10% (8.5 kWh)</span>
+              </div>
+              <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-amber-500 h-1 bg-slate-800 rounded cursor-pointer">
             </div>
-            <input type="range" id="minChargePctSlider" min="5" max="40" value="15" step="5" oninput="handleMinChargePctChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+                <span class="flex items-center gap-1">
+                  <span>Min Charge Added</span>
+                  <span class="relative group cursor-pointer inline-flex items-center">
+                    <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
+                    <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                      Minimum battery % added per stop. Prevents brief 4-min micro-stops so breaks are meaningful.
+                    </span>
+                  </span>
+                </span>
+                <span id="minChargePctDisplay" class="font-mono text-emerald-400 font-semibold text-xs">15% (~12.8 kWh / ~12 min)</span>
+              </div>
+              <input type="range" id="minChargePctSlider" min="5" max="40" value="15" step="5" oninput="handleMinChargePctChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+            </div>
           </div>
+
+          <!-- Row 4: Min & Max Time Between Stops (One Row) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+                <span class="flex items-center gap-1">
+                  <span>Min Time Between Stops</span>
+                  <span class="relative group cursor-pointer inline-flex items-center">
+                    <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
+                    <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                      Lowering allows shorter legs to take advantage of cheaper charging stations. Default 70 min.
+                    </span>
+                  </span>
+                </span>
+                <span id="minTimeDisplay" class="font-mono text-emerald-400 font-semibold text-xs">70 mins (~88 mi)</span>
+              </div>
+              <input type="range" id="minTimeSlider" min="30" max="120" value="70" step="5" autocomplete="off" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+                <span class="flex items-center gap-1">
+                  <span>Max Time Between Stops</span>
+                  <span class="relative group cursor-pointer inline-flex items-center">
+                    <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
+                    <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                      Maximum continuous driving stretch before requiring a rest/charge break.
+                    </span>
+                  </span>
+                </span>
+                <span id="maxTimeDisplay" class="font-mono text-cyan-400 font-semibold text-xs">120 mins (~150 mi)</span>
+              </div>
+              <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" autocomplete="off" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
+            </div>
+          </div>
+
         </div>
 
         <!-- Max Duration Tolerance Cap (Relocated into Settings) -->
@@ -5429,8 +5431,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const legMiles = s.leg_miles || fallbackLegMiles;
 
         const rateCents = Math.round(s.rate * 100);
-        const kwStr = s.is_decamilla ? '7.7 kW' : `${s.station.kw} kW`;
-        const rateSub = s.is_decamilla ? 'Free L2 (7.7 kW)' : `${rateCents}¢/kWh · ${kwStr}`;
+        const rateSub = s.is_decamilla ? `Free L2 · ${s.added_kwh} kWh` : `${rateCents}¢/kWh · ${s.added_kwh} kWh`;
 
         row.innerHTML = `
           <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-2">
@@ -5501,6 +5502,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 <div>Energy: ${s.added_kwh} kWh added</div>
                 <div>Tariff Rate: $${s.rate.toFixed(2)}/kWh (${Math.round(s.rate*100)}¢)</div>
                 <div>Dispenser: ${s.station.kw} kW (${s.station.network || 'DCFC'})</div>
+                <div>Calculation: ${rateCents}¢/kWh &times; ${s.added_kwh} kWh = $${s.cost.toFixed(2)}</div>
                 ${s.badge ? `<div class="text-emerald-400 font-medium mt-1">Perk: ${s.badge}</div>` : ''}
               </div>
             </div>
