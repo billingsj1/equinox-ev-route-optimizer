@@ -78,539 +78,308 @@
   <!-- Main Layout -->
   <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1700px] w-full mx-auto">
     
-    <!-- LEFT SIDEBAR: Parameter Controls -->
-    <div class="lg:col-span-4 space-y-4">
+        <!-- LEFT SIDEBAR: Parameter Controls -->
+    <div class="lg:col-span-4 space-y-3.5">
       
       <!-- Address & Destination Search -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm">
+        <h2 class="text-sm font-semibold text-white mb-2.5 flex items-center gap-2">
           <i data-lucide="navigation-2" class="w-4 h-4 text-emerald-400"></i>
-          Trip Departure & Destination
+          <span>Trip Route &amp; Destination</span>
         </h2>
-        <div class="space-y-3">
+        <div class="space-y-2.5">
           <div>
-            <label class="text-xs text-slate-400 block mb-1">Departure Origin (Home / Base)</label>
-            <div class="relative">
-              <input type="text" id="originAddress" value="179 S Powell Ave, Columbus, OH 43204 (West High School)" onkeydown="if(event.key==='Enter') handleSearchRoute()" class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 pr-8">
-              <i data-lucide="home" class="w-4 h-4 text-slate-500 absolute right-2.5 top-2.5"></i>
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>Departure Origin</span>
+              <span class="text-[10px] text-slate-500">Columbus, OH (Home)</span>
             </div>
-            <span class="text-[10px] text-slate-500 mt-1 block">Default: West High School (39.9512° N, -83.0750° W)</span>
+            <div class="relative">
+              <input type="text" id="originAddress" value="179 S Powell Ave, Columbus, OH 43204 (West High School)" onkeydown="if(event.key==='Enter') handleSearchRoute()" class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 pr-8">
+              <i data-lucide="home" class="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5"></i>
+            </div>
           </div>
 
           <div>
-            <label class="text-xs text-slate-400 block mb-1">Trip Destination Address, City, or Landmark</label>
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+              <span>Destination</span>
+            </div>
             <div class="flex gap-2">
               <div class="relative flex-1">
-                <input type="text" id="destAddress" value="270 Conestoga Dr, Marlton, NJ 08053" onkeydown="if(event.key==='Enter') handleSearchRoute()" class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 pr-8" placeholder="e.g. 270 Conestoga Dr, Marlton, NJ 08053">
-                <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400 absolute right-2.5 top-2.5"></i>
+                <input type="text" id="destAddress" value="270 Conestoga Dr, Marlton, NJ 08053" onkeydown="if(event.key==='Enter') handleSearchRoute()" class="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 pr-8" placeholder="Destination Address, City, or Landmark">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400 absolute right-2.5 top-2.5"></i>
               </div>
-              <button onclick="handleSearchRoute()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-md text-xs font-semibold flex items-center gap-1.5 transition">
+              <button onclick="handleSearchRoute()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
                 <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                 <span>Go</span>
               </button>
             </div>
           </div>
 
+          <!-- Quick Destination Pills -->
           <div>
-            <label class="text-[11px] text-slate-400 block mb-1.5 font-medium">Quick Destinations:</label>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button type="button" onclick="setQuickDest('270 Conestoga Dr, Marlton, NJ 08053')" class="px-2.5 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/60 text-emerald-300 text-xs font-semibold text-left transition flex flex-col shadow-sm">
-                <span class="flex items-center gap-1">
-                  <i data-lucide="star" class="w-3 h-3 text-emerald-400 fill-emerald-400"></i>
-                  <span>St. Onge (Default)</span>
-                </span>
-                <span class="text-[10px] text-slate-400 font-normal truncate">Marlton, NJ</span>
+            <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+              <button type="button" onclick="setQuickDest('270 Conestoga Dr, Marlton, NJ 08053')" class="px-2 py-1.5 rounded-lg bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/70 text-emerald-300 text-xs font-semibold text-center transition truncate cursor-pointer" title="St. Onge - Marlton, NJ">
+                ★ St. Onge
               </button>
-              <button type="button" onclick="setQuickDest('301 Beaver Rd, Sewickley, PA 15143')" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium text-left transition flex flex-col shadow-sm">
-                <span class="font-semibold text-white">Billings</span>
-                <span class="text-[10px] text-slate-400 truncate">Sewickley, PA</span>
+              <button type="button" onclick="setQuickDest('301 Beaver Rd, Sewickley, PA 15143')" class="px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium text-center transition truncate cursor-pointer" title="Billings - Sewickley, PA">
+                Billings
               </button>
-              <button type="button" onclick="setQuickDest('1185 Gettysburg Pike, Dillsburg, PA 17019')" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium text-left transition flex flex-col shadow-sm">
-                <span class="font-semibold text-white">DeCamilla</span>
-                <span class="text-[10px] text-slate-400 truncate">Dillsburg, PA</span>
+              <button type="button" onclick="setQuickDest('1185 Gettysburg Pike, Dillsburg, PA 17019')" class="px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium text-center transition truncate cursor-pointer" title="DeCamilla - Dillsburg, PA">
+                DeCamilla
               </button>
             </div>
 
             <!-- DeCamilla Stop & Charge Option (for St. Onge route) -->
-            <div id="decamillaOptionBox" class="mt-2.5 p-2.5 bg-slate-950/70 border border-slate-800 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs">
-              <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-md bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 shrink-0">
-                  <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i>
-                </div>
-                <div>
-                  <div class="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5 flex-wrap">
-                    <span>Intermediate Stop at DeCamilla (Dillsburg, PA)</span>
-                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/50 font-normal font-mono">Free 7.7 kW L2</span>
-                  </div>
-                  <div class="text-[10px] text-slate-400">ChargePoint Flex 32A @ brother-in-law's · +8.13% SoC/hr ($0.00)</div>
-                </div>
+            <div id="decamillaOptionBox" class="mt-2 p-2 bg-slate-950/70 border border-slate-800 rounded-lg flex items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-1.5 truncate">
+                <i data-lucide="home" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+                <span class="font-medium text-slate-200 truncate">DeCamilla L2 Stop</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
+                    Adds stop &amp; free Level 2 charging on St. Onge route via Exit 236 (US-15 S / Dillsburg, PA).
+                  </span>
+                </span>
               </div>
-              <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-                <select id="decamillaStopDuration" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-md px-2 py-1 focus:outline-none focus:border-emerald-500 font-mono">
-                  <option value="0" selected>Direct (No Stop)</option>
-                  <option value="0.5">0.5 hr (+4.1%)</option>
-                  <option value="1.0">1.0 hr (+8.1%)</option>
-                  <option value="1.5">1.5 hr (+12.2%)</option>
-                  <option value="2.0">2.0 hr (+16.3%)</option>
-                  <option value="2.5">2.5 hr (+20.3%)</option>
-                  <option value="3.0">3.0 hr (+24.4%)</option>
-                  <option value="4.0">4.0 hr (+32.5%)</option>
-                  <option value="5.0">5.0 hr (+40.7%)</option>
-                  <option value="6.0">6.0 hr (+48.8%)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-            <!-- Payload Weight Toggles -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-3 flex items-center justify-between">
-          <span class="flex items-center gap-2">
-            <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
-            Payload Configuration
-          </span>
-          <span class="text-xs text-slate-400 font-normal">Curb: 4,923 lbs</span>
-        </h2>
-        <div class="grid grid-cols-2 gap-2 text-xs mb-3">
-          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
-            <input type="checkbox" id="josh" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-            <span>Josh (150 lbs)</span>
-          </label>
-          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
-            <input type="checkbox" id="courtney" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-            <span>Courtney (130 lbs)</span>
-          </label>
-          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
-            <input type="checkbox" id="asher" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-            <span>Asher (20 lbs)</span>
-          </label>
-          <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded border border-slate-800/80 cursor-pointer hover:border-slate-700">
-            <input type="checkbox" id="arno" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-            <span>Arno Dog (50 lbs)</span>
-          </label>
-        </div>
-        <div>
-          <div class="flex justify-between text-xs text-slate-400 mb-1">
-            <span>Cargo / Gear Weight</span>
-            <span id="gearDisplay" class="font-mono text-emerald-400">100 lbs</span>
-          </div>
-          <input type="range" id="gearSlider" min="0" max="250" value="100" step="5" oninput="updateMass()" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-        </div>
-      </div>
-
-      <!-- Battery & Driving Policy -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-          <i data-lucide="gauge" class="w-4 h-4 text-emerald-400"></i>
-          Battery & Driving Policy
-        </h2>
-        <div class="space-y-3 text-xs">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <div class="flex justify-between text-slate-400 mb-1">
-                <span>Departure Date</span>
-              </div>
-              <input type="date" id="departureDate" onchange="onDepartureDateTimeChanged()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200 font-mono text-xs focus:border-emerald-500 focus:outline-none">
-            </div>
-            <div>
-              <div class="flex justify-between text-slate-400 mb-1">
-                <span>Departure Time</span>
-                <span id="departureTimeDisplay" class="font-mono text-emerald-400 text-[11px]">08:00 AM</span>
-              </div>
-              <select id="departureTime" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200 font-mono text-xs focus:border-emerald-500 focus:outline-none">
-                <!-- Populated dynamically with 48 half-hour slots -->
-                <option value="08:00" selected>08:00 AM</option>
+              <select id="decamillaStopDuration" class="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] rounded px-2 py-1 focus:outline-none focus:border-emerald-500 shrink-0">
+                <option value="0">Direct (No stop)</option>
+                <option value="1.0">1.0 hr Stop</option>
+                <option value="2.0">2.0 hr Stop</option>
+                <option value="overnight">Overnight (100% full)</option>
               </select>
             </div>
           </div>
-          <div>
-            <div class="flex justify-between text-slate-400 mb-1">
-              <span>Starting Charge (Home departure)</span>
-              <span id="startSocDisplay" class="font-mono text-emerald-400">100% (85.0 kWh)</span>
-            </div>
-            <input type="range" id="startSocSlider" min="15" max="100" value="100" step="5" oninput="document.getElementById('startSocDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)';" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-          </div>
-          <div>
-            <div class="flex justify-between text-slate-400 mb-1">
-              <span>Min Safety Buffer (En-route reserve)</span>
-              <span id="bufferDisplay" class="font-mono text-amber-400">10% (8.5 kWh)</span>
-            </div>
-            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)';" class="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-          </div>
-          <div>
-            <div class="flex justify-between text-slate-400 mb-1">
-              <span>Ideal Ending Charge (Target Arrival SoC)</span>
-              <span id="targetArrivalDisplay" class="font-mono text-cyan-400">20% (17.0 kWh)</span>
-            </div>
-            <input type="range" id="targetArrivalSlider" min="5" max="80" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value*0.85).toFixed(1) + ' kWh)';" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-          </div>
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <div>
-              <label class="text-slate-400 block mb-1">Speed Limit Offset</label>
-              <select id="speedOffset" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
-                <option value="0">+0 mph (Speed Limit)</option>
-                <option value="5">+5 mph</option>
-                <option value="10" selected>+10 mph</option>
-                <option value="15">+15 mph</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-slate-400 block mb-1">Max Speed Cap</label>
-              <select id="maxSpeedCap" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-slate-200">
-                <option value="70">70 mph</option>
-                <option value="75" selected>75 mph</option>
-                <option value="80">80 mph</option>
-                <option value="85">85 mph</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Time Between Charging Stops (Leg Gap Controls) -->
-          <div class="border-t border-slate-800/80 pt-3 space-y-3">
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-slate-300 font-medium">Driving Time Between Stops</span>
-              <span id="idealWindowBadge" class="font-mono text-[11px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">75 – 120 mins</span>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-slate-400 mb-1">
-                <span>Min Time Between Stops</span>
-                <span id="minTimeDisplay" class="font-mono text-emerald-400">75 mins (~94 mi)</span>
-              </div>
-              <input type="range" id="minTimeSlider" min="30" max="120" value="75" step="5" autocomplete="off" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-              <span class="text-[10px] text-slate-500 block mt-0.5">Lowering allows shorter legs to take advantage of cheaper charging stations.</span>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-slate-400 mb-1">
-                <span>Max Time Between Stops</span>
-                <span id="maxTimeDisplay" class="font-mono text-cyan-400">120 mins (~150 mi)</span>
-              </div>
-              <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" autocomplete="off" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-              <span class="text-[10px] text-slate-500 block mt-0.5">Maximum continuous driving stretch before requiring a rest/charge break.</span>
-            </div>
-            <script>
-              try {
-                const _ms = document.getElementById('minTimeSlider');
-                if (_ms) { _ms.value = "75"; _ms.defaultValue = "75"; }
-                const _xs = document.getElementById('maxTimeSlider');
-                if (_xs) { _xs.value = "120"; _xs.defaultValue = "120"; }
-              } catch(e) {}
-            </script>
-
-            <div>
-              <div class="flex justify-between text-slate-400 mb-1">
-                <span>Minimum Charge Added Per Stop</span>
-                <span id="minChargePctDisplay" class="font-mono text-emerald-400">15% (~12.8 kWh / ~12 min)</span>
-              </div>
-              <input type="range" id="minChargePctSlider" min="5" max="40" value="15" step="5" oninput="handleMinChargePctChange(this.value)" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-              <span class="text-[10px] text-slate-500 block mt-0.5">Minimum battery % added at any stop. Prevents brief 4-min micro-stops so every break is meaningful for bathroom/stretching.</span>
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- Advanced Settings & Diagnostics (Collapsible / Hidden by default) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm transition-all duration-200">
-        
-        <!-- Collapsible Toggle Header Button -->
-        <button type="button" onclick="toggleAdvancedSettings()" class="w-full p-4 flex items-center justify-between text-left hover:bg-slate-800/40 transition">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0">
-              <i data-lucide="sliders-horizontal" class="w-4 h-4 text-blue-400"></i>
-            </div>
-            <div>
-              <div class="text-sm font-semibold text-white flex items-center gap-2">
-                <span>Advanced Settings</span>
-                <span id="advancedBadge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">Hidden</span>
-              </div>
-              <div class="text-[11px] text-slate-400">Physics HUD, Tolls, Weather & Station Scraper</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 text-slate-400">
-            <span class="text-xs hidden sm:inline" id="advancedToggleText">Expand</span>
-            <i id="advancedChevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
-          </div>
-        </button>
-
-        <!-- Hidden by default collapsible body -->
-        <div id="advancedContent" class="hidden border-t border-slate-800/80 p-4 space-y-4 bg-slate-950/30">
-          
-          <!-- 1. Physical Highway Consumption Metrics -->
-          <!-- Real-Time Efficiency & Physics Monitor -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-2 flex items-center justify-between">
-          <span class="flex items-center gap-2">
-            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
-            Physical Highway Consumption
-          </span>
-          <span id="efficiencyBadge" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">2.95 mi/kWh</span>
-        </h2>
-        <div class="grid grid-cols-3 gap-2 text-center text-xs mt-2">
-          <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">Energy Rate</span>
-            <span id="whPerMile" class="font-mono font-bold text-white text-xs">339 Wh/mi</span>
-          </div>
-          <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">Aux + HVAC Draw</span>
-            <span id="hvacDraw" class="font-mono font-bold text-cyan-400 text-xs">0.35 kW</span>
-          </div>
-          <div class="p-2 rounded bg-slate-950 border border-slate-800">
-            <span class="text-[10px] text-slate-400 block">Battery Usable</span>
-            <span id="batteryTempFactor" class="font-mono font-bold text-emerald-400 text-xs">85.0 kWh</span>
-          </div>
-        </div>
-      </div>
-
-          <!-- 2. Tolls & OEM Perks -->
-          <!-- Toll Pass & Perks -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-          <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
-          Tolls & OEM Perks
-        </h2>
-        <div class="space-y-2 text-xs">
-          <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="hasEzPass" checked class="accent-emerald-500 rounded">
-            <span>E-ZPass Equipped (PA/NJ/WV preferred rates)</span>
-          </label>
-          <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="hasNjGreenPass" checked class="accent-emerald-500 rounded">
-            <span>NJ Turnpike EV Green Pass (10% off off-peak)</span>
-          </label>
-          <div class="p-2 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-            <div class="flex items-center gap-1.5 text-emerald-300 font-medium">
-              <i data-lucide="check" class="w-3.5 h-3.5"></i>
-              <span>GM Ultium Perks Active:</span>
-            </div>
-            <div>• 10% discount at IONNA stations (e.g. Cambridge, OH; Chester Springs, PA)</div>
-            <div>• 10% discount at EVgo ($0 session fees; excludes Pilot / Flying J travel centers)</div>
-          </div>
-          <div class="border-t border-slate-800/80 pt-2.5 mt-2 space-y-1.5">
-            <span class="text-slate-300 font-medium block text-[11px]">Charging Memberships (Pre-Owned):</span>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" id="hasEaPass" class="accent-emerald-500 rounded">
-              <span>Already have EA Pass+ ($0.45/kWh rate, $0 fee)</span>
-            </label>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" id="hasTeslaMember" class="accent-emerald-500 rounded">
-              <span>Already have Tesla Member ($0.46/kWh rate, $0 fee)</span>
-            </label>
-            <div class="text-[10px] text-slate-500 italic leading-snug">When unchecked, optimizer automatically checks if adding a pass saves money on this trip, discounts rates, and adds the $3.50/$6.50 fee.</div>
-          </div>
-        </div>
-      </div>
-
-          <!-- Scheduled Departure & Wall Preconditioning -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-              <h2 class="text-sm font-semibold text-white flex items-center gap-2">
-                <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
-                <span>Scheduled Departure</span>
-              </h2>
-              <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                L2 "Charge Later"
-              </span>
-            </div>
-            <div class="space-y-2 text-xs">
-              <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="checkbox" id="scheduledDeparturePreheat" checked onchange="updatePhysicsHUD(); if (typeof recomputeCurrentRoute === 'function') recomputeCurrentRoute();" class="accent-emerald-500 rounded">
-                <span class="font-medium text-slate-200">Preheated on Wall Power (Scheduled Departure / "Charge Later")</span>
-              </label>
-              <div class="p-2.5 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 space-y-1">
-                <div class="text-emerald-300 font-medium flex items-center gap-1.5">
-                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                  <span>Equinox EV Departure Conditioning:</span>
-                </div>
-                <div>• <b>Cabin &amp; Seats:</b> Preheated to 70°F setpoint with active seat warmers on AC grid power ($0 battery draw for initial warmup).</div>
-                <div>• <b>Battery Readiness:</b> Coolant loop warms pack to ~48°F–50°F "take-off readiness" floor, preventing sub-freezing cold-soak kinetics on Leg 1.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. Weather & Environmental Modifiers -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
-            <i data-lucide="cloud-sun" class="w-4 h-4 text-emerald-400"></i>
-            Weather & Environment
+      <!-- Passengers & Cargo (Payload Weight) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="users" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Passengers &amp; Cargo</span>
           </h2>
-          <span id="weatherEngineModeBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-            Smart Weather Active
-          </span>
+          <span class="text-[10px] text-slate-400 font-mono">Payload</span>
         </div>
-
-        <!-- Manual Weather Override Checkbox -->
-        <div class="mb-3 p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1.5">
-          <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="manualWeatherOverride" onchange="toggleManualWeatherOverride()" class="accent-emerald-500 rounded">
-            <span class="text-xs font-semibold text-slate-200">Use Manual Weather Overrides</span>
-          </label>
-          <div id="weatherOverrideHint" class="text-[10px] text-slate-400 leading-snug">
-            Default unchecked: optimizer automatically pulls smart along-route weather (hourly forecast or historical reanalysis) matching departure date/time. Check to force manual sliders below.
-          </div>
-        </div>
-
-        <div id="manualWeatherControls" class="space-y-3 text-xs opacity-60 pointer-events-none transition-all duration-200">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <div class="flex justify-between text-slate-400 mb-1">
-                <span>Ambient Temp</span>
-                <span id="tempValDisplay" class="font-mono text-emerald-400">68°F</span>
-              </div>
-              <input type="range" id="tempF" min="0" max="105" value="68" step="1" oninput="document.getElementById('tempValDisplay').innerText = this.value + '°F'; updatePhysicsHUD();" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-            </div>
-            <div>
-              <label class="text-slate-400 block mb-1">Road Condition</label>
-              <select id="roadCond" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
-                <option value="dry" selected>Dry Asphalt (Crr 0.0095)</option>
-                <option value="wet">Wet / Rain (Crr 0.0135)</option>
-                <option value="snow_ice">Snow / Ice (Crr 0.0210)</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-slate-400 block mb-1">Traffic Profile</label>
-              <select id="trafficProfile" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
-                <option value="off_peak">Off-Peak / Free Flow</option>
-                <option value="typical" selected>Typical Daytime (Urban Bottlenecks)</option>
-                <option value="rush_hour">Rush Hour (Heavy Congestion)</option>
-              </select>
-            </div>
-            <div>
-              <div class="flex justify-between text-slate-400 mb-1">
-                <span>Wind Speed</span>
-                <span id="windValDisplay" class="font-mono text-blue-400">8 mph</span>
-              </div>
-              <input type="range" id="windSpeed" min="0" max="40" value="8" step="1" oninput="document.getElementById('windValDisplay').innerText = this.value + ' mph'; updatePhysicsHUD();" class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-            </div>
-            <div>
-              <label class="text-slate-400 block mb-1">Wind Direction</label>
-              <select id="windDir" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200">
-                <option value="270" selected>West (Tailwind)</option>
-                <option value="90">East (Headwind)</option>
-                <option value="0">North (Crosswind)</option>
-                <option value="180">South (Crosswind)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-          <!-- 4. Station & Price Scraper -->
-          <!-- Station & Price Scraper Manager Card -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
-            <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
-            <span>Station & Price Scraper</span>
-          </h2>
-          <span id="stationCountBadge" class="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">22 active</span>
-        </div>
-        <p class="text-[11px] text-slate-400 leading-snug">
-          Discover CCS1 &ge;100 kW chargers on target networks in OH, PA, NJ, WV, MD via OCM and refresh live pricing.
-        </p>
-
-        <!-- Dedicated Scraper & Station Management Buttons -->
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" id="btnPullOcm" onclick="handlePullOcmStations()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 rounded-lg px-2 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition" title="Discover CCS1 chargers from Open Charge Map and Magic Dock Superchargers from Tesla">
-            <i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i>
-            <span>Pull Stations</span>
-          </button>
-          <button type="button" id="btnRefreshPrices" onclick="handleRefreshPrices()" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-2 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            <span>Refresh Prices</span>
-          </button>
-        </div>
-        <button type="button" id="btnClearStations" onclick="handleClearAddedStations()" class="w-full bg-slate-800/80 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700/80 hover:border-rose-800/60 rounded-lg px-2 py-1.5 text-xs font-medium flex items-center justify-center gap-1.5 transition">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span>Clear Added Stations (Reset Baseline)</span>
-        </button>
-
-        <!-- Network Exclusion Filters -->
-        <div class="border-t border-slate-800 pt-3 space-y-2">
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-300">
+        <!-- Passenger Toggle Chips -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
             <span class="flex items-center gap-1.5">
-              <i data-lucide="filter" class="w-3.5 h-3.5 text-cyan-400"></i>
-              <span>Network Filters</span>
+              <input type="checkbox" id="josh" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+              <span class="text-slate-200 text-[11px]">Josh</span>
             </span>
-            <div class="flex items-center gap-2 text-[10px]">
-              <button type="button" onclick="setAllNetworks(true)" class="text-cyan-400 hover:underline cursor-pointer">Select All</button>
-              <span class="text-slate-600">&bull;</span>
-              <button type="button" onclick="setAllNetworks(false)" class="text-slate-400 hover:underline cursor-pointer">Deselect All</button>
-            </div>
-          </div>
-          <div class="text-[10px] text-slate-400 leading-tight">Uncheck any network to exclude from map & route calculations (station info is retained):</div>
-          <div id="networkFilterContainer" class="grid grid-cols-2 gap-1.5 text-xs">
-            <!-- Dynamically populated network checkboxes -->
-          </div>
+            <span class="text-[10px] text-slate-500 font-mono">190</span>
+          </label>
+          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
+            <span class="flex items-center gap-1.5">
+              <input type="checkbox" id="courtney" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+              <span class="text-slate-200 text-[11px]">Courtney</span>
+            </span>
+            <span class="text-[10px] text-slate-500 font-mono">140</span>
+          </label>
+          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
+            <span class="flex items-center gap-1.5">
+              <input type="checkbox" id="asher" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+              <span class="text-slate-200 text-[11px]">Asher</span>
+            </span>
+            <span class="text-[10px] text-slate-500 font-mono">45</span>
+          </label>
+          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
+            <span class="flex items-center gap-1.5">
+              <input type="checkbox" id="arno" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+              <span class="text-slate-200 text-[11px]">Arno</span>
+            </span>
+            <span class="text-[10px] text-slate-500 font-mono">15</span>
+          </label>
         </div>
-
-        <!-- Scraper Notification / Status Alert -->
-        <div id="scraperStatusBox" class="hidden text-xs rounded-lg p-2.5 bg-slate-950 border border-slate-800 space-y-2">
-          <!-- Populated dynamically with alerts & unverified station inputs -->
+        <!-- Cargo Slider -->
+        <div class="mt-2 pt-1 border-t border-slate-800/80">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-0.5">
+            <span class="text-[11px]">Cargo &amp; Luggage</span>
+            <span id="gearDisplay" class="font-mono text-emerald-400 font-semibold text-xs">100 lbs</span>
+          </div>
+          <input type="range" id="gearSlider" min="0" max="250" value="100" step="5" oninput="updateMass()" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
         </div>
       </div>
 
-        </div>
-      </div>
+      <!-- Departure, Battery & Stint Limits -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm space-y-3">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+          <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Departure, Battery &amp; Stints</span>
+        </h2>
 
-    </div>
-
-    <!-- RIGHT MAIN CONTENT: Pareto Itineraries & Map -->
-    <div class="lg:col-span-8 space-y-6">
-      
-      <!-- Direct Non-Stop Baseline & Max Duration Tolerance Filter Bar -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        
-        <!-- Left: Quickest Non-Stop Driving Baseline -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <i data-lucide="gauge" class="w-5 h-5 text-emerald-400"></i>
+        <!-- Departure Date & Time Grid -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">Departure Date</label>
+            <input type="date" id="departureDate" onchange="onDepartureDateTimeChanged()" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
           </div>
           <div>
-            <div class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
-              <span>Quickest Non-Stop Driving Baseline</span>
-              <span class="text-[10px] text-slate-500 font-normal hidden sm:inline">(Pure road travel without charging)</span>
+            <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
+              <span>Time</span>
+              <span id="departureTimeDisplay" class="font-mono text-emerald-400 text-[10px]">08:00 AM</span>
             </div>
-            <div class="flex items-center gap-2.5 mt-0.5">
-              <span id="nonStopDuration" class="text-xl font-black text-white font-mono">--</span>
-              <span class="text-slate-600">|</span>
-              <span id="nonStopDistance" class="text-xs text-slate-300 font-mono">-- mi</span>
-              <span id="nonStopSpeed" class="text-[11px] text-emerald-400 font-mono bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-800/40">-- mph avg</span>
-            </div>
+            <select id="departureTime" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
+              <!-- Populated dynamically with 48 half-hour slots -->
+              <option value="08:00" selected>08:00 AM</option>
+            </select>
           </div>
         </div>
 
-        <!-- Right: Max Duration Route Comparison Tolerance Slider -->
-        <div class="bg-slate-950/70 border border-slate-800/80 px-4 py-2.5 rounded-lg flex-1 md:max-w-md">
-          <div class="flex items-center justify-between text-xs mb-1.5">
-            <span class="text-slate-300 font-semibold flex items-center gap-1.5">
-              <i data-lucide="timer" class="w-3.5 h-3.5 text-blue-400"></i>
-              <span>Max Route Duration Cap:</span>
+        <!-- Battery SoC Sliders (Clean with Tooltips) -->
+        <div class="space-y-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+              <span class="flex items-center gap-1">
+                <span>Start State of Charge</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-48 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                    Charge level when unplugging from home L2 charger at departure.
+                  </span>
+                </span>
+              </span>
+              <span id="startSocDisplay" class="font-mono text-emerald-400 font-semibold text-xs">100% (85.0 kWh)</span>
+            </div>
+            <input type="range" id="startSocSlider" min="15" max="100" value="100" step="5" oninput="document.getElementById('startSocDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+              <span class="flex items-center gap-1">
+                <span>Minimum Buffer SoC</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-amber-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                    Target minimum safe battery percentage before reaching any fast charger.
+                  </span>
+                </span>
+              </span>
+              <span id="bufferDisplay" class="font-mono text-amber-400 font-semibold text-xs">10% (8.5 kWh)</span>
+            </div>
+            <input type="range" id="bufferSlider" min="5" max="25" value="10" step="1" oninput="document.getElementById('bufferDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-amber-500 h-1 bg-slate-800 rounded cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+              <span class="flex items-center gap-1">
+                <span>Target Arrival SoC</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                    Desired battery level remaining upon reaching final trip destination.
+                  </span>
+                </span>
+              </span>
+              <span id="targetArrivalDisplay" class="font-mono text-cyan-400 font-semibold text-xs">20% (17.0 kWh)</span>
+            </div>
+            <input type="range" id="targetArrivalSlider" min="5" max="80" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Driving Speed & Cap (2-Column Grid) -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">Speed vs Limit</label>
+            <select id="speedOffset" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="0">Limit (+0 mph)</option>
+              <option value="5">+5 mph</option>
+              <option value="9" selected>+9 mph (Flow)</option>
+              <option value="15">+15 mph</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">Max Speed Cap</label>
+            <select id="maxSpeedCap" onchange="updateSpeedAndGaps(); updatePhysicsHUD();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="70">70 mph</option>
+              <option value="75" selected>75 mph (Sweet Spot)</option>
+              <option value="80">80 mph</option>
+              <option value="85">85 mph (No Cap)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Driving Stints Window (Min default 70 mins) -->
+        <div class="space-y-2 pt-1 border-t border-slate-800/80">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-300">Driving Stint Window</span>
+            <span id="idealWindowBadge" class="font-mono text-[10px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">70 – 120 mins</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+              <span class="flex items-center gap-1">
+                <span>Min Time Between Stops</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                    Lowering allows shorter legs to take advantage of cheaper charging stations. Default 70 min.
+                  </span>
+                </span>
+              </span>
+              <span id="minTimeDisplay" class="font-mono text-emerald-400 font-semibold text-xs">70 mins (~88 mi)</span>
+            </div>
+            <input type="range" id="minTimeSlider" min="30" max="120" value="70" step="5" autocomplete="off" oninput="handleMinTimeChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+              <span class="flex items-center gap-1">
+                <span>Max Time Between Stops</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                    Maximum continuous driving stretch before requiring a rest/charge break.
+                  </span>
+                </span>
+              </span>
+              <span id="maxTimeDisplay" class="font-mono text-cyan-400 font-semibold text-xs">120 mins (~150 mi)</span>
+            </div>
+            <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" autocomplete="off" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-0.5">
+              <span class="flex items-center gap-1">
+                <span>Min Charge Added</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-56 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50">
+                    Minimum battery % added per stop. Prevents brief 4-min micro-stops so breaks are meaningful.
+                  </span>
+                </span>
+              </span>
+              <span id="minChargePctDisplay" class="font-mono text-emerald-400 font-semibold text-xs">15% (~12.8 kWh / ~12 min)</span>
+            </div>
+            <input type="range" id="minChargePctSlider" min="5" max="40" value="15" step="5" oninput="handleMinChargePctChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Max Duration Tolerance Cap (Relocated into Settings) -->
+        <div class="pt-2 border-t border-slate-800/80">
+          <div class="flex justify-between items-center text-xs text-slate-300 mb-1">
+            <span class="flex items-center gap-1">
+              <span>Max Duration Penalty Cap</span>
+              <span class="relative group cursor-pointer inline-flex items-center">
+                <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
+                <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-60 p-2.5 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
+                  Excludes charging routes taking &gt; this % longer than the fastest route (e.g. +8% allows up to ~45 min detour for lower charging cost).
+                </span>
+              </span>
             </span>
-            <span id="maxTimePenaltyBadge" class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950/70 border border-cyan-800/60 px-2 py-0.5 rounded">+8% (max --)</span>
+            <span id="maxTimePenaltyBadge" class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950/70 border border-cyan-800/60 px-1.5 py-0.5 rounded">+8% max</span>
           </div>
-          <div class="flex items-center gap-2.5">
-            <span class="text-[10px] text-slate-500 font-mono">0%</span>
-            <input type="range" id="maxDurationToleranceSlider" min="0" max="30" step="1" value="8" 
-              class="w-full accent-blue-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
-              oninput="onDurationToleranceChange(this.value)">
-            <span class="text-[10px] text-slate-500 font-mono">+30%</span>
-          </div>
-          <div class="text-[10px] text-slate-400 mt-1 flex justify-between">
-            <span>Excludes routes taking &gt; <b id="maxTolerancePctText" class="text-cyan-300 font-semibold">+8%</b> over fastest</span>
-            <span class="text-slate-500">Default: 8%</span>
-          </div>
-          
-          <!-- Checkbox: Exclude Cheapest route from duration cap -->
-          <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-            <label for="excludeCheapestFromCap" class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="range" id="maxDurationToleranceSlider" min="0" max="30" step="1" value="8" 
+            class="w-full accent-blue-500 h-1 bg-slate-800 rounded cursor-pointer"
+            oninput="onDurationToleranceChange(this.value)">
+          <span id="maxTolerancePctText" class="hidden">+8%</span>
+          <div class="mt-1.5 flex items-center justify-between text-[11px]">
+            <label for="excludeCheapestFromCap" class="flex items-center gap-1.5 cursor-pointer select-none text-slate-300 hover:text-white">
               <input type="checkbox" id="excludeCheapestFromCap" 
-                class="w-3.5 h-3.5 rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                class="w-3.5 h-3.5 rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer accent-amber-500"
                 onchange="onExcludeCheapestToggle(this.checked)">
-              <span class="text-[11px] text-slate-300 font-medium">Exclude Cheapest route from duration cap</span>
+              <span>Exclude cheapest route from cap</span>
             </label>
             <span class="text-[10px] text-amber-400/90 font-mono" id="cheapestCapStatus">Cap applies</span>
           </div>
@@ -618,226 +387,438 @@
 
       </div>
 
-      <!-- Optimization Audit<!-- Optimization Audit & Progress Bar (Sticks around after calculation) -->
-      <div id="optimizationAudit" class="p-4 bg-slate-900 border-2 border-slate-800 rounded-xl mb-4 transition-all duration-300">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <span id="auditPulseDot" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Route Optimization Audit</span>
-          </div>
-          <span id="auditStatusText" class="text-xs text-emerald-400 font-mono font-semibold">Ready</span>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
-          <!-- Metric 1: Stop Combinations (Different Routes) -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center shrink-0">
-              <i data-lucide="milestone" class="w-4 h-4 text-emerald-400"></i>
+      <!-- Advanced Settings & Diagnostics (Collapsible Tray) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+        
+        <!-- Toggle Header Button -->
+        <button type="button" onclick="toggleAdvancedSettings()" class="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-800/40 transition cursor-pointer">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0">
+              <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-blue-400"></i>
             </div>
             <div>
-              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">Stop Combos</div>
-              <div id="auditSequencesCount" class="font-mono text-emerald-400 font-bold text-base">--</div>
+              <div class="text-xs font-semibold text-white flex items-center gap-2">
+                <span>Advanced Settings</span>
+                <span id="advancedBadge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">Hidden</span>
+              </div>
+              <div class="text-[10px] text-slate-400">Networks, Preheating, Tolls, Scraper &amp; Weather</div>
             </div>
           </div>
-          <!-- Metric 2: SoC Combinations (Itineraries) -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-teal-950/60 border border-teal-800/40 flex items-center justify-center shrink-0">
-              <i data-lucide="git-branch" class="w-4 h-4 text-teal-400"></i>
-            </div>
-            <div>
-              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">SoC Combos</div>
-              <div id="auditGeneratedCount" class="font-mono text-teal-400 font-bold text-base">--</div>
+          <div class="flex items-center gap-1.5 text-slate-400">
+            <span class="text-xs hidden sm:inline" id="advancedToggleText">Expand</span>
+            <i id="advancedChevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
+          </div>
+        </button>
+
+        <!-- Hidden by default collapsible body -->
+        <div id="advancedContent" class="hidden border-t border-slate-800/80 p-3.5 space-y-3 bg-slate-950/30">
+          
+          <!-- 1. Network Exclusion Filters (Dropdown at Top) -->
+          <div class="relative" id="networkDropdownContainer">
+            <button type="button" onclick="toggleNetworkDropdown()" class="w-full flex items-center justify-between bg-slate-900 hover:bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white transition shadow-sm cursor-pointer">
+              <div class="flex items-center gap-2">
+                <i data-lucide="filter" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span class="font-semibold text-slate-200">Charging Networks Filter</span>
+                <span id="networkCountBadge" class="text-[10px] font-mono text-cyan-400 bg-cyan-950/80 border border-cyan-800/60 px-1.5 py-0.5 rounded">All Active</span>
+              </div>
+              <div class="flex items-center gap-1 text-slate-400 text-[11px]">
+                <span id="networkDropdownStatusText">Configure</span>
+                <i id="networkDropdownChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+              </div>
+            </button>
+            <div id="networkDropdownMenu" class="hidden mt-1.5 bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-2xl space-y-2 z-30">
+              <div class="flex items-center justify-between pb-1.5 border-b border-slate-800 text-xs">
+                <span class="text-slate-400 text-[11px]">Toggle networks to include/exclude:</span>
+                <div class="flex items-center gap-2 text-[10px]">
+                  <button type="button" onclick="setAllNetworks(true)" class="text-cyan-400 hover:underline cursor-pointer">Select All</button>
+                  <span class="text-slate-600">&bull;</span>
+                  <button type="button" onclick="setAllNetworks(false)" class="text-slate-400 hover:underline cursor-pointer">Deselect All</button>
+                </div>
+              </div>
+              <div id="networkFilterContainer" class="grid grid-cols-2 gap-1.5 text-xs max-h-56 overflow-y-auto pr-1">
+                <!-- Dynamically populated network checkboxes -->
+              </div>
             </div>
           </div>
-          <!-- Metric 3: Analyzed Best Routes (Top 20 Fast, Cheap, Pareto deduplicated) -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-cyan-950/60 border border-cyan-800/40 flex items-center justify-center shrink-0">
-              <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+
+          <!-- 2. Scheduled Departure Preheat (Compact Single Row with Tooltip) -->
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="zap" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-semibold text-slate-200">Scheduled Departure Preheat</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-64 p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
+                    Equinox EV "Charge Later" mode: preheats cabin to 70°F and activates seat warmers on L2 wall power before unplugging. Pre-conditions battery to takeoff readiness (65°F–68°F), preserving full 85 kWh usable battery for driving.
+                  </span>
+                </span>
+              </div>
             </div>
-            <div>
-              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">Best Analyzed</div>
-              <div id="auditAnalyzedCount" class="font-mono text-cyan-400 font-bold text-base">--</div>
+            <label class="cursor-pointer">
+              <input type="checkbox" id="scheduledDeparturePreheat" checked onchange="updatePhysicsHUD(); if (typeof recomputeCurrentRoute === 'function') recomputeCurrentRoute();" class="accent-emerald-500 rounded w-4 h-4 cursor-pointer">
+            </label>
+          </div>
+
+          <!-- 3. Toll Passes & Pre-Owned Memberships (Compact 2x2 Grid with Tooltip) -->
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                <i data-lucide="tag" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Tolls &amp; Memberships</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400 hover:text-emerald-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-64 p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
+                    GM Ultium Perks: 10% discount automatically applied at IONNA and EVgo ($0 session fees). If EA Pass+ or Tesla Member is unchecked, optimizer calculates whether adding the pass saves money on this trip ($3.50/$6.50 one-way fee).
+                  </span>
+                </span>
+              </span>
+              <span class="text-[10px] text-emerald-400 font-mono">GM Perks Active</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                <input type="checkbox" id="hasEzPass" checked class="accent-emerald-500 rounded">
+                <span class="text-[11px] truncate">E-ZPass Equipped</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                <input type="checkbox" id="hasNjGreenPass" checked class="accent-emerald-500 rounded">
+                <span class="text-[11px] truncate">NJ Green Pass (10%)</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                <input type="checkbox" id="hasEaPass" class="accent-emerald-500 rounded">
+                <span class="text-[11px] truncate">EA Pass+ Pre-Owned</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                <input type="checkbox" id="hasTeslaMember" class="accent-emerald-500 rounded">
+                <span class="text-[11px] truncate">Tesla Member Pre-Owned</span>
+              </label>
             </div>
           </div>
-          <!-- Metric 4: OSRM Verified Routes -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center shrink-0">
-              <i data-lucide="navigation" class="w-4 h-4 text-indigo-400"></i>
+
+          <!-- 4. Physical Highway Consumption HUD -->
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Physical Highway Consumption</span>
+              </span>
+              <span id="efficiencyBadge" class="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">2.95 mi/kWh</span>
             </div>
-            <div>
-              <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider">OSRM Verified</div>
-              <div id="auditOsrmCount" class="font-mono text-indigo-400 font-bold text-base">--</div>
+            <div class="grid grid-cols-3 gap-1.5 text-center text-xs">
+              <div class="p-1.5 rounded bg-slate-950 border border-slate-800">
+                <span class="text-[9px] text-slate-400 block">Energy Rate</span>
+                <span id="whPerMile" class="font-mono font-bold text-white text-xs">339 Wh/mi</span>
+              </div>
+              <div class="p-1.5 rounded bg-slate-950 border border-slate-800">
+                <span class="text-[9px] text-slate-400 block">Aux + HVAC</span>
+                <span id="hvacDraw" class="font-mono font-bold text-cyan-400 text-xs">0.35 kW</span>
+              </div>
+              <div class="p-1.5 rounded bg-slate-950 border border-slate-800">
+                <span class="text-[9px] text-slate-400 block">Battery Usable</span>
+                <span id="batteryTempFactor" class="font-mono font-bold text-emerald-400 text-xs">85.0 kWh</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div id="auditLogSummary" class="text-xs text-slate-300">
-            Configure vehicle payload and settings, then click <b class="text-emerald-400">Calculate Route</b> to begin.
+
+          <!-- 5. Station Database & Price Scraper -->
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Station Database &amp; Pricing</span>
+              </span>
+              <span id="stationCountBadge" class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">249 verified</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button type="button" id="btnPullOcm" onclick="handlePullOcmStations()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer" title="Discover CCS1 and Tesla Superchargers">
+                <i data-lucide="cloud-download" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span>Pull Stations</span>
+              </button>
+              <button type="button" id="btnRefreshPrices" onclick="handleRefreshPrices()" class="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-2 py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Refresh Prices</span>
+              </button>
+            </div>
+            <button type="button" id="btnClearStations" onclick="handleClearAddedStations()" class="w-full bg-slate-800/80 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-700/80 hover:border-rose-800/60 rounded-lg px-2 py-1 text-[11px] font-medium flex items-center justify-center gap-1.5 transition cursor-pointer">
+              <i data-lucide="trash-2" class="w-3 h-3 text-rose-400"></i>
+              <span>Clear Added Stations (Reset Baseline)</span>
+            </button>
+            <div id="scraperStatusBox" class="hidden text-xs rounded-lg p-2.5 bg-slate-950 border border-slate-800 space-y-2"></div>
           </div>
-          <span id="auditTimestamp" class="text-[11px] text-slate-500 font-mono shrink-0"></span>
+
+          <!-- 6. Weather & Environmental Modifiers (Collapsed at Bottom of Advanced Settings) -->
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-2">
+            <button type="button" onclick="toggleWeatherSection()" class="w-full flex items-center justify-between text-left cursor-pointer">
+              <div class="flex items-center gap-2">
+                <i data-lucide="cloud-sun" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span class="text-xs font-semibold text-slate-200">Weather &amp; Road Overrides</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="weatherEngineModeBadge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                  Smart Weather Active
+                </span>
+                <i id="weatherSectionChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200"></i>
+              </div>
+            </button>
+
+            <!-- Collapsible Weather Controls Body (Collapsed by Default) -->
+            <div id="weatherCollapsibleBody" class="hidden pt-2 border-t border-slate-800/80 space-y-2.5">
+              <div class="p-2 rounded bg-slate-950/70 border border-slate-800 space-y-1">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input type="checkbox" id="manualWeatherOverride" onchange="toggleManualWeatherOverride()" class="accent-emerald-500 rounded">
+                  <span class="text-xs font-semibold text-slate-200">Force Manual Weather Overrides</span>
+                </label>
+                <div id="weatherOverrideHint" class="text-[10px] text-slate-400 leading-snug">
+                  Unchecked: pulls smart along-route weather for departure time. Check to override manually below.
+                </div>
+              </div>
+
+              <div id="manualWeatherControls" class="space-y-2 text-xs opacity-60 pointer-events-none transition-all duration-200">
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <div class="flex justify-between text-slate-400 mb-0.5 text-[11px]">
+                      <span>Ambient Temp</span>
+                      <span id="tempValDisplay" class="font-mono text-emerald-400">68°F</span>
+                    </div>
+                    <input type="range" id="tempF" min="0" max="105" value="68" step="1" oninput="document.getElementById('tempValDisplay').innerText = this.value + '°F'; updatePhysicsHUD();" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+                  </div>
+                  <div>
+                    <label class="text-slate-400 block mb-0.5 text-[11px]">Road Surface</label>
+                    <select id="roadCond" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+                      <option value="dry" selected>Dry Asphalt</option>
+                      <option value="wet">Wet / Rain</option>
+                      <option value="snow_ice">Snow / Ice</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-slate-400 block mb-0.5 text-[11px]">Traffic Profile</label>
+                    <select id="trafficProfile" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+                      <option value="off_peak">Off-Peak Free Flow</option>
+                      <option value="typical" selected>Typical Daytime</option>
+                      <option value="rush_hour">Rush Hour Congestion</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div class="flex justify-between text-slate-400 mb-0.5 text-[11px]">
+                      <span>Wind Speed</span>
+                      <span id="windValDisplay" class="font-mono text-blue-400">8 mph</span>
+                    </div>
+                    <input type="range" id="windSpeed" min="0" max="40" value="8" step="1" oninput="document.getElementById('windValDisplay').innerText = this.value + ' mph'; updatePhysicsHUD();" class="w-full accent-blue-500 h-1 bg-slate-800 rounded cursor-pointer">
+                  </div>
+                  <div class="col-span-2">
+                    <label class="text-slate-400 block mb-0.5 text-[11px]">Wind Direction</label>
+                    <select id="windDir" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
+                      <option value="270" selected>West (Tailwind Assist)</option>
+                      <option value="90">East (Headwind Resistance)</option>
+                      <option value="0">North (Crosswind)</option>
+                      <option value="180">South (Crosswind)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- Route Weather & Environmental Conditions Card -->
-      <div id="routeWeatherCard" class="p-4 bg-slate-900 border border-slate-800 rounded-xl mb-4 shadow-sm transition-all">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+    </div>
+
+    <!-- RIGHT MAIN CONTENT: Pareto Itineraries & Map -->
+    <div class="lg:col-span-8 space-y-4">
+      
+      <!-- Streamlined Header Bar with Direct Non-Stop Baseline -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="compass" class="w-5 h-5 text-emerald-400"></i>
+            <span>Optimal Charging Itineraries</span>
+            <span class="text-xs text-slate-400 font-normal font-sans">(6 Route Options)</span>
+          </h2>
+        </div>
+        <!-- Compact Non-Stop Baseline Chip -->
+        <div class="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-300 shadow-sm self-start sm:self-auto">
+          <span class="text-slate-400 font-sans text-[11px] flex items-center gap-1">
+            <i data-lucide="gauge" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>Direct Non-Stop:</span>
+          </span>
+          <span id="nonStopDuration" class="font-bold text-white">--</span>
+          <span class="text-slate-600">&bull;</span>
+          <span id="nonStopDistance" class="text-slate-300">-- mi</span>
+          <span id="nonStopSpeed" class="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded text-[10px] border border-emerald-800/40 font-semibold">-- mph avg</span>
+        </div>
+      </div>
+
+      <!-- Unified Route Telemetry Bar (Slim + Collapsible Diagnostics) -->
+      <div id="optimizationAudit" class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+        <div class="p-3 flex items-center justify-between flex-wrap gap-2 cursor-pointer hover:bg-slate-800/40 transition select-none" onclick="toggleTelemetryDetails()">
           <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-              <i data-lucide="cloud-sun" class="w-4 h-4 text-emerald-400"></i>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-white uppercase tracking-wider">Route Weather & Atmospheric Conditions</span>
-                <span id="routeWeatherModeBadge" class="text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-semibold">
-                  Smart Weather Active
-                </span>
-              </div>
-              <div id="routeWeatherSubtext" class="text-[11px] text-slate-400 font-mono">
-                Click Calculate Route to pull along-route forecasts &amp; atmospheric density
-              </div>
-            </div>
+            <span id="auditPulseDot" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+            <span id="auditStatusText" class="text-xs text-emerald-400 font-mono font-semibold">Ready</span>
+            <span class="text-slate-600 hidden sm:inline">&bull;</span>
+            <span id="telemetryQuickSummary" class="text-xs text-slate-300 font-mono hidden sm:inline">Ready to optimize routes</span>
           </div>
-          <div class="flex items-center gap-2">
-            <a href="/weather-preview" target="_blank" class="px-2.5 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 hover:border-slate-600 rounded-lg flex items-center gap-1.5 transition font-medium shadow-sm" title="Open full-screen interactive weather preview with Mol* and Leaflet map">
-              <i data-lucide="external-link" class="w-3.5 h-3.5 text-cyan-400"></i>
-              <span>Launch Weather Preview</span>
-            </a>
+          
+          <div class="flex items-center gap-3">
+            <!-- Route Weather Quick Badge -->
+            <div class="flex items-center gap-1.5 text-xs font-mono text-slate-300 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800">
+              <i data-lucide="cloud-sun" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span id="rwQuickWeatherText">Smart Weather Ready</span>
+            </div>
+            
+            <button type="button" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 cursor-pointer">
+              <span id="telemetryToggleText" class="text-[11px]">Diagnostics</span>
+              <i id="telemetryChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+            </button>
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
-          <!-- Metric 1: Temp Range -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
-              <i data-lucide="thermometer" class="w-3 h-3 text-emerald-400"></i>
-              <span>Ambient Temp</span>
+        <!-- Collapsible Details Body (Hidden by default once finished, expandable) -->
+        <div id="telemetryDetailsBody" class="hidden border-t border-slate-800 p-4 space-y-3 bg-slate-950/50">
+          <!-- Audit Metrics Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <div class="text-[10px] text-slate-400">Stop Combos</div>
+              <div id="auditSequencesCount" class="font-mono text-emerald-400 font-bold text-base">--</div>
             </div>
-            <div id="rwTempDisplay" class="font-mono text-emerald-400 font-bold text-sm mt-0.5">--°F</div>
-            <div id="rwTempSub" class="text-[10px] text-slate-500 font-mono">Range: --</div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <div class="text-[10px] text-slate-400">SoC Combos</div>
+              <div id="auditGeneratedCount" class="font-mono text-teal-400 font-bold text-base">--</div>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <div class="text-[10px] text-slate-400">Top Candidates</div>
+              <div id="auditAnalyzedCount" class="font-mono text-cyan-400 font-bold text-base">--</div>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <div class="text-[10px] text-slate-400">Turn-by-Turn OSRM</div>
+              <div id="auditOsrmCount" class="font-mono text-indigo-400 font-bold text-base">--</div>
+            </div>
           </div>
+          <div id="auditLogSummary" class="text-xs text-slate-300 font-mono"></div>
+          <div id="auditTimestamp" class="text-[10px] text-slate-500 font-mono"></div>
 
-          <!-- Metric 2: Road Surface -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
-              <i data-lucide="droplets" class="w-3 h-3 text-blue-400"></i>
-              <span>Road Surface</span>
+          <!-- Weather Details Grid -->
+          <div id="routeWeatherCard" class="border-t border-slate-800/80 pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-white flex items-center gap-1.5">
+                <i data-lucide="cloud-sun" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Along-Route Weather Conditions</span>
+              </span>
+              <span id="routeWeatherModeBadge" class="text-[10px] font-mono px-2 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">Automated</span>
             </div>
-            <div id="rwRoadDisplay" class="font-mono text-blue-400 font-bold text-sm mt-0.5">Dry Asphalt</div>
-            <div id="rwRoadSub" class="text-[10px] text-slate-500 font-mono">Crr 0.0095</div>
-          </div>
-
-          <!-- Metric 3: Vector Wind -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
-              <i data-lucide="wind" class="w-3 h-3 text-cyan-400"></i>
-              <span>Vector Wind</span>
+            <div id="routeWeatherSubtext" class="text-[10px] text-slate-400 font-mono mb-2"></div>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+              <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Temperature</span>
+                <div id="rwTempDisplay" class="font-mono text-emerald-400 font-bold text-sm mt-0.5">--°F</div>
+                <div id="rwTempSub" class="text-[9px] text-slate-500 font-mono">Range: --</div>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Road Surface</span>
+                <div id="rwRoadDisplay" class="font-mono text-blue-400 font-bold text-sm mt-0.5">Dry Asphalt</div>
+                <div id="rwRoadSub" class="text-[9px] text-slate-500 font-mono">Crr 0.0095</div>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Wind Vector</span>
+                <div id="rwWindDisplay" class="font-mono text-cyan-400 font-bold text-sm mt-0.5">-- mph</div>
+                <div id="rwWindSub" class="text-[9px] text-slate-500 font-mono">Tailwind: --</div>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Air Density</span>
+                <div id="rwAirDensityDisplay" class="font-mono text-indigo-400 font-bold text-sm mt-0.5">1.225 kg/m³</div>
+                <div id="rwAirDensitySub" class="text-[9px] text-slate-500 font-mono">Adjusted</div>
+              </div>
+              <div class="p-2 rounded bg-slate-900 border border-slate-800">
+                <span class="text-[10px] text-slate-400 block">Thermal Status</span>
+                <div id="rwPrecondDisplay" class="font-mono text-amber-400 font-bold text-sm mt-0.5">Ready</div>
+                <div id="rwPrecondSub" class="text-[9px] text-slate-500 font-mono">Preheated</div>
+              </div>
             </div>
-            <div id="rwWindDisplay" class="font-mono text-cyan-400 font-bold text-sm mt-0.5">-- mph</div>
-            <div id="rwWindSub" class="text-[10px] text-slate-500 font-mono">Tailwind Assist: --</div>
-          </div>
-
-          <!-- Metric 4: Air Density & Elevation -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
-              <i data-lucide="mountain" class="w-3 h-3 text-indigo-400"></i>
-              <span>Moist Air Density</span>
-            </div>
-            <div id="rwAirDensityDisplay" class="font-mono text-indigo-400 font-bold text-sm mt-0.5">1.225 kg/m³</div>
-            <div id="rwAirDensitySub" class="text-[10px] text-slate-500 font-mono">Appalachian Adjusted</div>
-          </div>
-
-          <!-- Metric 5: Preconditioning / HVAC -->
-          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
-            <div class="text-[10px] uppercase text-slate-400 font-semibold tracking-wider flex items-center gap-1">
-              <i data-lucide="battery-charging" class="w-3 h-3 text-amber-400"></i>
-              <span>Preconditioning</span>
-            </div>
-            <div id="rwPrecondDisplay" class="font-mono text-amber-400 font-bold text-sm mt-0.5">Ready</div>
-            <div id="rwPrecondSub" class="text-[10px] text-slate-500 font-mono">Ultium Thermal Auto</div>
           </div>
         </div>
       </div>
 
       <!-- 2 Rows of Best Route Cards: Row 1 (X Stops) and Row 2 (Y Stops) -->
-      <div id="routeCardsContainer" class="space-y-5">
+      <div id="routeCardsContainer" class="space-y-4">
         
         <!-- ROW 1: Minimal Stops (X Stops) -->
         <div id="rowXContainer" class="space-y-2">
-          <div class="flex items-center justify-between px-1">
+          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80">
             <div class="flex items-center gap-2">
-              <span id="rowXBadge" class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
-                <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span id="rowXBadge" class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 px-2.5 py-0.5 rounded-md font-mono">
                 <span id="rowXTitle">X Stops (Minimal Stops)</span>
               </span>
-              <span id="rowXSubtitle" class="text-[11px] text-slate-400">Longer driving stints &bull; Fewer highway exits</span>
+              <span id="rowXSubtitle" class="text-[11px] text-slate-400 hidden sm:inline">Longer driving stints &bull; Fewer highway exits</span>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <!-- Fastest Route Card (X Stops) -->
-            <div id="cardFastestX" onclick="selectItinerary('fastest_x')" class="bg-slate-900 border-2 border-emerald-500/60 rounded-xl p-4 cursor-pointer hover:border-emerald-400 transition relative overflow-hidden shadow-lg">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <i data-lucide="zap" class="w-3.5 h-3.5"></i> Fastest Route
-                </span>
-                <div class="flex items-center gap-1.5">
-                  <span id="fastestArrivalBadge_x" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
-                  <span id="fastestStopsBadge_x" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+            <div id="cardFastestX" onclick="selectItinerary('fastest_x')" class="bg-slate-900 border-2 border-emerald-500 rounded-xl p-3.5 cursor-pointer shadow-lg hover:border-emerald-400 transition flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Fastest</span>
+                  <div class="flex items-center gap-1.5">
+                    <span id="fastestArrivalBadge_x" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
+                    <span id="fastestStopsBadge_x" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+                  </div>
                 </div>
+                <div class="text-2xl font-black text-white" id="fastestTime_x">--</div>
+                <!-- Hidden compatibility nodes for existing automated test suites -->
+                <span id="fastestTime" class="hidden">--</span>
+                <span id="fastestCost" class="hidden">--</span>
+                <span id="fastestMiles" class="hidden">--</span>
+                <span id="fastestStopsBadge" class="hidden">--</span>
+                <span id="fastestArrivalBadge" class="hidden">--</span>
+                <span id="fastestStopsCount" class="hidden">--</span>
               </div>
-              <div class="text-2xl font-black text-white" id="fastestTime_x">--</div>
-              <!-- Hidden compatibility nodes for existing automated test suites -->
-              <span id="fastestTime" class="hidden">--</span>
-              <span id="fastestCost" class="hidden">--</span>
-              <span id="fastestMiles" class="hidden">--</span>
-              <span id="fastestStopsBadge" class="hidden">--</span>
-              <span id="fastestArrivalBadge" class="hidden">--</span>
-              <div class="text-xs text-slate-400 mt-1 flex justify-between">
+              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="fastestCost_x" class="text-slate-200">--</b></span>
                 <span id="fastestMiles_x" class="text-slate-400">--</span>
               </div>
             </div>
 
             <!-- Cheapest Route Card (X Stops) -->
-            <div id="cardCheapestX" onclick="selectItinerary('cheapest_x')" class="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-slate-700 transition relative overflow-hidden">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                  <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> Cheapest Route
-                </span>
-                <div class="flex items-center gap-1.5">
-                  <span id="cheapestArrivalBadge_x" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
-                  <span id="cheapestStopsBadge_x" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+            <div id="cardCheapestX" onclick="selectItinerary('cheapest_x')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-amber-500/50 transition flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Cheapest</span>
+                  <div class="flex items-center gap-1.5">
+                    <span id="cheapestArrivalBadge_x" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
+                    <span id="cheapestStopsBadge_x" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+                  </div>
                 </div>
+                <div class="text-2xl font-black text-white" id="cheapestTime_x">--</div>
+                <span id="cheapestTime" class="hidden">--</span>
+                <span id="cheapestCost" class="hidden">--</span>
+                <span id="cheapestMiles" class="hidden">--</span>
+                <span id="cheapestStopsBadge" class="hidden">--</span>
+                <span id="cheapestArrivalBadge" class="hidden">--</span>
               </div>
-              <div class="text-2xl font-black text-white" id="cheapestTime_x">--</div>
-              <span id="cheapestTime" class="hidden">--</span>
-              <span id="cheapestCost" class="hidden">--</span>
-              <span id="cheapestMiles" class="hidden">--</span>
-              <span id="cheapestStopsBadge" class="hidden">--</span>
-              <span id="cheapestArrivalBadge" class="hidden">--</span>
-              <div class="text-xs text-slate-400 mt-1 flex justify-between">
+              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="cheapestCost_x" class="text-emerald-400">--</b></span>
                 <span id="cheapestMiles_x" class="text-slate-400">--</span>
               </div>
             </div>
 
             <!-- Balanced Route Card (X Stops) -->
-            <div id="cardBalancedX" onclick="selectItinerary('balanced_x')" class="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-slate-700 transition relative overflow-hidden">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                  <i data-lucide="scale" class="w-3.5 h-3.5"></i> Balanced (Pareto Knee)
-                </span>
-                <div class="flex items-center gap-1.5">
-                  <span id="balancedArrivalBadge_x" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
-                  <span id="balancedStopsBadge_x" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+            <div id="cardBalancedX" onclick="selectItinerary('balanced_x')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-blue-500/50 transition flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Balanced (Pareto)</span>
+                  <div class="flex items-center gap-1.5">
+                    <span id="balancedArrivalBadge_x" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
+                    <span id="balancedStopsBadge_x" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+                  </div>
                 </div>
+                <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
+                <span id="balancedTime" class="hidden">--</span>
+                <span id="balancedCost" class="hidden">--</span>
+                <span id="balancedMiles" class="hidden">--</span>
+                <span id="balancedStopsBadge" class="hidden">--</span>
+                <span id="balancedArrivalBadge" class="hidden">--</span>
               </div>
-              <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
-              <span id="balancedTime" class="hidden">--</span>
-              <span id="balancedCost" class="hidden">--</span>
-              <span id="balancedMiles" class="hidden">--</span>
-              <span id="balancedStopsBadge" class="hidden">--</span>
-              <span id="balancedArrivalBadge" class="hidden">--</span>
-              <div class="text-xs text-slate-400 mt-1 flex justify-between">
+              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="balancedCost_x" class="text-blue-300">--</b></span>
                 <span id="balancedMiles_x" class="text-slate-400">--</span>
               </div>
@@ -845,68 +826,67 @@
           </div>
         </div>
 
-        <!-- ROW 2: Extra Stop (Y Stops) -->
+        <!-- ROW 2: Extra Stop (Y Stops = X + 1) -->
         <div id="rowYContainer" class="space-y-2">
-          <div class="flex items-center justify-between px-1">
+          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80">
             <div class="flex items-center gap-2">
-              <span id="rowYBadge" class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/60 border border-purple-800/80 px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-sm">
-                <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-purple-400"></i>
+              <span id="rowYBadge" class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/70 border border-purple-800/60 px-2.5 py-0.5 rounded-md font-mono">
                 <span id="rowYTitle">Y Stops (Extra Stop)</span>
               </span>
-              <span id="rowYSubtitle" class="text-[11px] text-slate-400">Shorter driving stints &bull; Higher charging curve speeds</span>
+              <span id="rowYSubtitle" class="text-[11px] text-slate-400 hidden sm:inline">Shorter driving stints &bull; Higher charging speeds</span>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <!-- Fastest Route Card (Y Stops) -->
-            <div id="cardFastestY" onclick="selectItinerary('fastest_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-slate-700 transition relative overflow-hidden">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <i data-lucide="zap" class="w-3.5 h-3.5"></i> Fastest Route
-                </span>
-                <div class="flex items-center gap-1.5">
-                  <span id="fastestArrivalBadge_y" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
-                  <span id="fastestStopsBadge_y" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+            <div id="cardFastestY" onclick="selectItinerary('fastest_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-emerald-500/50 transition flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Fastest (Extra Stop)</span>
+                  <div class="flex items-center gap-1.5">
+                    <span id="fastestArrivalBadge_y" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
+                    <span id="fastestStopsBadge_y" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+                  </div>
                 </div>
+                <div class="text-2xl font-black text-white" id="fastestTime_y">--</div>
               </div>
-              <div class="text-2xl font-black text-white" id="fastestTime_y">--</div>
-              <div class="text-xs text-slate-400 mt-1 flex justify-between">
+              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="fastestCost_y" class="text-slate-200">--</b></span>
                 <span id="fastestMiles_y" class="text-slate-400">--</span>
               </div>
             </div>
 
             <!-- Cheapest Route Card (Y Stops) -->
-            <div id="cardCheapestY" onclick="selectItinerary('cheapest_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-slate-700 transition relative overflow-hidden">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                  <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> Cheapest Route
-                </span>
-                <div class="flex items-center gap-1.5">
-                  <span id="cheapestArrivalBadge_y" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
-                  <span id="cheapestStopsBadge_y" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+            <div id="cardCheapestY" onclick="selectItinerary('cheapest_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-amber-500/50 transition flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Cheapest (Extra Stop)</span>
+                  <div class="flex items-center gap-1.5">
+                    <span id="cheapestArrivalBadge_y" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
+                    <span id="cheapestStopsBadge_y" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+                  </div>
                 </div>
+                <div class="text-2xl font-black text-white" id="cheapestTime_y">--</div>
               </div>
-              <div class="text-2xl font-black text-white" id="cheapestTime_y">--</div>
-              <div class="text-xs text-slate-400 mt-1 flex justify-between">
+              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="cheapestCost_y" class="text-emerald-400">--</b></span>
                 <span id="cheapestMiles_y" class="text-slate-400">--</span>
               </div>
             </div>
 
             <!-- Balanced Route Card (Y Stops) -->
-            <div id="cardBalancedY" onclick="selectItinerary('balanced_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-4 cursor-pointer hover:border-slate-700 transition relative overflow-hidden">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                  <i data-lucide="scale" class="w-3.5 h-3.5"></i> Balanced (Pareto Knee)
-                </span>
-                <div class="flex items-center gap-1.5">
-                  <span id="balancedArrivalBadge_y" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
-                  <span id="balancedStopsBadge_y" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+            <div id="cardBalancedY" onclick="selectItinerary('balanced_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-blue-500/50 transition flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Balanced (Extra Stop)</span>
+                  <div class="flex items-center gap-1.5">
+                    <span id="balancedArrivalBadge_y" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
+                    <span id="balancedStopsBadge_y" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
+                  </div>
                 </div>
+                <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
               </div>
-              <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
-              <div class="text-xs text-slate-400 mt-1 flex justify-between">
+              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="balancedCost_y" class="text-blue-300">--</b></span>
                 <span id="balancedMiles_y" class="text-slate-400">--</span>
               </div>
@@ -917,69 +897,52 @@
       </div>
 
       <!-- Interactive Map -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm relative">
-        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div class="flex items-center gap-2">
-            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
-              <i data-lucide="navigation" class="w-4 h-4 text-emerald-400"></i>
-              Interactive Route Map & Corridor Stations
-            </h2>
-          </div>
-          <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> Active Route</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> IONNA (10% GM)</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> EA</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Tesla CCS1</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> Tesla NACS</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Applegreen</span>
-          </div>
-        </div>
-        <div id="map" class="border border-slate-700/80 shadow-md"></div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
+          <i data-lucide="map" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Route Polyline &amp; Verified Highway Chargers</span>
+        </h2>
+        <div id="map" class="border border-slate-700/80 shadow-md rounded-lg"></div>
       </div>
 
       <!-- Itinerary Detail & Membership Banners -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm space-y-3">
         
-        <!-- Membership Analysis Banners (50% Round-Trip Allocation) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div id="eaBanner" class="p-3 rounded-lg bg-blue-950/40 border border-blue-800/60 flex items-start gap-3">
-            <i data-lucide="shield-check" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
-            <div class="text-xs space-y-0.5">
+        <!-- Membership Evaluation Banners (Compact 2-Column Grid) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div id="eaBanner" class="p-2.5 rounded-lg bg-blue-950/40 border border-blue-800/60 flex items-start gap-2 text-xs hidden">
+            <i data-lucide="zap" class="w-4 h-4 text-blue-400 shrink-0 mt-0.5"></i>
+            <div>
               <div class="font-semibold text-blue-200" id="eaTitle">Electrify America Pass+</div>
-              <div class="text-slate-300" id="eaText">Evaluating $3.50 one-way allocated fee ($7/mo)...</div>
+              <div class="text-slate-300 text-[11px]" id="eaText">Evaluating...</div>
             </div>
           </div>
-          <div id="teslaBanner" class="p-3 rounded-lg bg-red-950/40 border border-red-800/60 flex items-start gap-3">
-            <i data-lucide="zap" class="w-5 h-5 text-red-400 shrink-0 mt-0.5"></i>
-            <div class="text-xs space-y-0.5">
+          <div id="teslaBanner" class="p-2.5 rounded-lg bg-red-950/40 border border-red-800/60 flex items-start gap-2 text-xs hidden">
+            <i data-lucide="zap" class="w-4 h-4 text-red-400 shrink-0 mt-0.5"></i>
+            <div>
               <div class="font-semibold text-red-200" id="teslaTitle">Tesla Supercharger Membership</div>
-              <div class="text-slate-300" id="teslaText">Evaluating $6.50 one-way allocated fee ($12.99/mo)...</div>
+              <div class="text-slate-300 text-[11px]" id="teslaText">Evaluating...</div>
             </div>
           </div>
         </div>
 
-        <!-- Charging Stops Table -->
+        <!-- Charging Stops Table (7 Consolidated Columns) -->
         <div>
           <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400" id="timelineTitle">Planned Charging Stops & Timeline</h3>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300" id="timelineTitle">Planned Charging Stops &amp; Timeline</h3>
             <span class="text-[11px] text-slate-500">Click any stop to center on map</span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-slate-300 border-collapse">
               <thead>
                 <tr class="border-b border-slate-800 text-slate-400 font-medium">
-                  <th class="py-2 px-3">Stop # & Station</th>
-                  <th class="py-2 px-3">Drive Time</th>
-                  <th class="py-2 px-3">Mile Marker</th>
-                  <th class="py-2 px-3">Highway Detour</th>
-                  <th class="py-2 px-3">Power</th>
-                  <th class="py-2 px-3">Arrival SoC</th>
-                  <th class="py-2 px-3">Target SoC</th>
-                  <th class="py-2 px-3">Energy</th>
+                  <th class="py-2 px-3">Stop # &amp; Station</th>
+                  <th class="py-2 px-3">Drive Leg</th>
+                  <th class="py-2 px-3">Detour</th>
+                  <th class="py-2 px-3">Battery SoC</th>
                   <th class="py-2 px-3">Charge Time</th>
-                  <th class="py-2 px-3">Tariff Rate</th>
-                  <th class="py-2 px-3">Cost</th>
-                  <th class="py-2 px-3">Station / Link</th>
+                  <th class="py-2 px-3">Rate &amp; Cost</th>
+                  <th class="py-2 px-3">Station Link</th>
                 </tr>
               </thead>
               <tbody id="stopsTableBody" class="divide-y divide-slate-800/60 font-mono">
@@ -1181,7 +1144,7 @@
     }
 
     function updateSpeedAndGaps() {
-      const minVal = parseInt(document.getElementById('minTimeSlider').value) || 75;
+      const minVal = parseInt(document.getElementById('minTimeSlider').value) || 70;
       const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 120;
       updateTimeGapDisplays(minVal, maxVal);
     }
@@ -1510,6 +1473,22 @@
       });
 
       container.innerHTML = html;
+      const totalNets = sortedNets.length;
+      const activeCount = sortedNets.filter(n => enabled.has(n)).length;
+      const netBadge = document.getElementById('networkCountBadge');
+      if (netBadge) {
+        if (activeCount === totalNets) {
+          netBadge.innerText = 'All Active';
+          netBadge.className = 'text-[10px] font-mono text-cyan-400 bg-cyan-950/80 border border-cyan-800/60 px-1.5 py-0.5 rounded';
+        } else if (activeCount === 0) {
+          netBadge.innerText = 'None Active';
+          netBadge.className = 'text-[10px] font-mono text-rose-400 bg-rose-950/80 border border-rose-800/60 px-1.5 py-0.5 rounded';
+        } else {
+          netBadge.innerText = `${activeCount}/${totalNets} Active`;
+          netBadge.className = 'text-[10px] font-mono text-amber-400 bg-amber-950/80 border border-amber-800/60 px-1.5 py-0.5 rounded';
+        }
+      }
+
       if (window.lucide) lucide.createIcons();
     }
 
@@ -2877,6 +2856,14 @@
         }
       }
 
+      
+      const quickWeather = document.getElementById('rwQuickWeatherText');
+      if (quickWeather && report && report.summary) {
+        const tStr = `${Math.round(report.summary.min_temp_f)}–${Math.round(report.summary.max_temp_f)}°F`;
+        const rStr = report.summary.wet_miles > 10 ? 'Wet' : 'Dry';
+        quickWeather.innerText = `${tStr} · ${rStr} Asphalt`;
+      }
+
       if (window.lucide) lucide.createIcons();
     }
 
@@ -3740,7 +3727,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const target_arrival_soc = parseFloat(document.getElementById('targetArrivalSlider').value) / 100.0;
       const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
-      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 75);
+      const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 70);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 120);
       const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 15) / 100.0;
       const departure_hours = getDepartureHoursDecimal();
@@ -4950,6 +4937,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Persistent Audit Bar Completion Update
       if (auditStatusText) auditStatusText.innerText = "Optimization Complete";
+      const qSummary = document.getElementById("telemetryQuickSummary");
+      if (qSummary) qSummary.innerText = `${uniqueSequencesCount} routes · ${totalItinerariesCount.toLocaleString()} combinations evaluated (${uniqueSequencesMap.size} verified via OSRM)`;
       if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-400";
       if (auditSequencesCount) auditSequencesCount.innerText = uniqueSequencesCount.toLocaleString();
       if (auditGeneratedCount) auditGeneratedCount.innerText = totalItinerariesCount.toLocaleString();
@@ -5345,6 +5334,64 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
     }
 
+    
+    // --- UI SIMPLIFICATION TOGGLES & HELPERS ---
+    function toggleNetworkDropdown() {
+      const menu = document.getElementById('networkDropdownMenu');
+      const chevron = document.getElementById('networkDropdownChevron');
+      if (!menu) return;
+      const isHidden = menu.classList.contains('hidden');
+      if (isHidden) {
+        menu.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+      } else {
+        menu.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+      }
+    }
+
+    function toggleWeatherSection() {
+      const body = document.getElementById('weatherCollapsibleBody');
+      const chevron = document.getElementById('weatherSectionChevron');
+      if (!body) return;
+      const isHidden = body.classList.contains('hidden');
+      if (isHidden) {
+        body.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+      } else {
+        body.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+      }
+    }
+
+    function toggleTelemetryDetails() {
+      const body = document.getElementById('telemetryDetailsBody');
+      const chevron = document.getElementById('telemetryChevron');
+      const txt = document.getElementById('telemetryToggleText');
+      if (!body) return;
+      const isHidden = body.classList.contains('hidden');
+      if (isHidden) {
+        body.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+        if (txt) txt.innerText = 'Hide Details';
+      } else {
+        body.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+        if (txt) txt.innerText = 'Diagnostics';
+      }
+    }
+
+    // Dismiss network dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('networkDropdownContainer');
+      const menu = document.getElementById('networkDropdownMenu');
+      const chevron = document.getElementById('networkDropdownChevron');
+      if (container && menu && !container.contains(e.target) && !menu.classList.contains('hidden')) {
+        menu.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+      }
+    });
+
     function renderTable(itin) {
       const tbody = document.getElementById('stopsTableBody');
       tbody.innerHTML = '';
@@ -5352,8 +5399,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (itin.stops.length === 0) {
         const row = document.createElement('tr');
         const driveStr = formatDriveDuration(itin.drive_hours);
-        row.innerHTML = `<td colspan="12" class="py-4 text-center text-slate-300 font-sans italic">
-          <span class="inline-flex items-center gap-1.5 text-cyan-400 font-semibold"><i data-lucide="check-circle" class="w-4 h-4"></i> Direct Route</span> — No charging stops required! Non-stop drive time: <b>${driveStr}</b> (${Math.round(itin.total_actual_miles)} mi), arriving with <b>${itin.final_soc}% SoC</b>.
+        row.innerHTML = `<td colspan="7" class="py-4 text-center text-slate-300 font-sans italic">
+          <span class="inline-flex items-center gap-1.5 text-cyan-400 font-semibold"><i data-lucide="check-circle" class="w-4 h-4"></i> Direct Route</span> &mdash; No charging stops required! Non-stop drive time: <b>${driveStr}</b> (${Math.round(itin.total_actual_miles)} mi), arriving with <b>${itin.final_soc}% SoC</b>.
         </td>`;
         tbody.appendChild(row);
         if (window.lucide) lucide.createIcons();
@@ -5381,13 +5428,31 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const fromLabel = s.from_label || (idx === 0 ? "from Start" : `from Stop ${idx}`);
         const legMiles = s.leg_miles || fallbackLegMiles;
 
+        const rateCents = Math.round(s.rate * 100);
+        const kwStr = s.is_decamilla ? '7.7 kW' : `${s.station.kw} kW`;
+        const rateSub = s.is_decamilla ? 'Free L2 (7.7 kW)' : `${rateCents}¢/kWh · ${kwStr}`;
+
         row.innerHTML = `
-          <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-1.5">
-            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-mono font-bold">${idx+1}</span>
-            <span>${s.station.name}</span>
+          <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-mono font-bold shrink-0">${idx+1}</span>
+            <div class="truncate">
+              <div class="font-semibold text-slate-100 flex items-center gap-1.5">
+                <span>${s.station.name}</span>
+                <span class="relative group cursor-pointer inline-flex items-center text-slate-400 hover:text-cyan-400">
+                  <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-48 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 font-mono">
+                    Trip Mile ${Math.round(s.mile)} from Start<br>
+                    ${s.station.kw} kW ${s.station.network || ''}
+                  </span>
+                </span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono font-normal">
+                Trip Mile ${Math.round(s.mile)} &bull; ${s.station.network || ''}
+              </div>
+            </div>
           </td>
           <td class="py-2.5 px-3 text-slate-200 font-semibold font-mono">
-            <div class="flex items-center gap-1.5 text-cyan-300">
+            <div class="flex items-center gap-1 text-cyan-300">
               <i data-lucide="car" class="w-3.5 h-3.5 text-cyan-400"></i>
               <span>${formatDriveDuration(legDriveHrs)}</span>
             </div>
@@ -5395,24 +5460,51 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               ${fromLabel} (${Math.round(legMiles)} mi)
             </div>
           </td>
-          <td class="py-2.5 px-3 text-slate-300 font-mono">Mile ${Math.round(s.mile)}</td>
           <td class="py-2.5 px-3 text-xs">${detourBadge}</td>
-          <td class="py-2.5 px-3 text-slate-300">${s.is_decamilla ? '7.7 kW L2' : `${s.station.kw} kW`}</td>
-          <td class="py-2.5 px-3 text-amber-400 font-semibold">${s.arr_soc}%</td>
-          <td class="py-2.5 px-3 text-emerald-400 font-semibold">${s.tgt_soc}%</td>
-          <td class="py-2.5 px-3 text-slate-300">${s.added_kwh} kWh</td>
-          <td class="py-2.5 px-3 text-slate-200 font-semibold font-mono">
-            <div class="text-white text-[11px] font-bold">${s.arr_clock ? `${s.arr_clock} &ndash; ${s.dep_clock}` : ''}</div>
-            <div class="text-[11px] text-slate-300 font-medium">${s.mins} min total</div>
-            <div class="text-[10px] text-slate-400 font-normal font-mono">
-              ${s.is_decamilla ? '<span class="text-emerald-400 font-semibold font-sans">Free L2 Charging</span>' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_go ? '<span class="text-cyan-400 font-sans font-semibold">Plug &amp; Go</span>' : 'setup'}`}
+          <td class="py-2.5 px-3 font-mono">
+            <div class="flex items-center gap-1.5 font-bold">
+              <span class="text-amber-400">${s.arr_soc}%</span>
+              <span class="text-slate-500 font-sans font-normal">&rarr;</span>
+              <span class="text-emerald-400">${s.tgt_soc}%</span>
+            </div>
+            <div class="text-[10px] text-slate-400 font-normal">
+              +${s.tgt_soc - s.arr_soc}% (${s.added_kwh} kWh)
             </div>
           </td>
           <td class="py-2.5 px-3 font-mono">
-            <div>${s.is_decamilla ? 'Free ($0.00)' : `$${s.rate.toFixed(2)}/kWh`}</div>
-            ${s.badge ? `<div class="text-[10px] font-sans font-bold text-emerald-400">${s.badge}</div>` : ''}
+            <div class="relative group cursor-pointer inline-flex flex-col">
+              <div class="text-white text-xs font-bold flex items-center gap-1">
+                <span>${s.mins} min</span>
+                <i data-lucide="clock" class="w-3 h-3 text-slate-400 group-hover:text-emerald-400 transition"></i>
+              </div>
+              <div class="text-[10px] text-slate-400">
+                ${s.arr_clock ? `${s.arr_clock} &ndash; ${s.dep_clock}` : ''}
+              </div>
+              <div class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 font-sans leading-snug">
+                <div class="font-semibold text-emerald-400 mb-0.5">${s.mins} min total break</div>
+                <div>Clock: ${s.arr_clock ? `${s.arr_clock} &ndash; ${s.dep_clock}` : 'N/A'}</div>
+                <div>${s.is_decamilla ? 'Free L2 Overnight Charging' : `${s.charge_mins}m charging + ${s.setup_mins}m ${s.has_plug_and_go ? 'Plug & Go' : 'setup'}`}</div>
+              </div>
+            </div>
           </td>
-          <td class="py-2.5 px-3 text-emerald-400 font-semibold font-mono">$${s.cost.toFixed(2)}</td>
+          <td class="py-2.5 px-3 font-mono">
+            <div class="relative group cursor-pointer inline-flex flex-col">
+              <div class="text-emerald-400 font-bold text-xs">
+                $${s.cost.toFixed(2)}
+              </div>
+              <div class="text-[10px] text-slate-400">
+                ${rateSub}
+              </div>
+              ${s.badge ? `<div class="text-[10px] font-sans font-bold text-emerald-400 mt-0.5">${s.badge}</div>` : ''}
+              <div class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 font-sans leading-snug">
+                <div class="font-semibold text-white mb-0.5">Session Cost: $${s.cost.toFixed(2)}</div>
+                <div>Energy: ${s.added_kwh} kWh added</div>
+                <div>Tariff Rate: $${s.rate.toFixed(2)}/kWh (${Math.round(s.rate*100)}¢)</div>
+                <div>Dispenser: ${s.station.kw} kW (${s.station.network || 'DCFC'})</div>
+                ${s.badge ? `<div class="text-emerald-400 font-medium mt-1">Perk: ${s.badge}</div>` : ''}
+              </div>
+            </div>
+          </td>
           <td class="py-2.5 px-3">
             ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" onclick="event.stopPropagation()" class="text-cyan-400 hover:text-cyan-300 underline font-sans text-[11px] font-medium inline-flex items-center gap-1">${getStationLinkText(s.station.plug)} &nearr;</a>` : '-'}
           </td>
@@ -5430,8 +5522,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const finalLegHrs = itin.final_leg_hrs || (finalLegMiles / Math.max(30, itin.route.speed_mph || 65));
 
         destRow.innerHTML = `
-          <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-1.5">
-            <span class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center text-[10px] font-mono font-bold">🏁</span>
+          <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center text-[10px] font-mono font-bold shrink-0">🏁</span>
             <span class="text-cyan-300 font-semibold">${destName} (Arrival)</span>
           </td>
           <td class="py-2.5 px-3 text-slate-200 font-semibold font-mono">
@@ -5443,24 +5535,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               from Stop ${itin.stops.length} (${Math.round(finalLegMiles)} mi)
             </div>
           </td>
-          <td class="py-2.5 px-3 text-slate-300 font-mono">Mile ${Math.round(itin.total_actual_miles)}</td>
           <td class="py-2.5 px-3 text-xs text-slate-500">—</td>
-          <td class="py-2.5 px-3 text-slate-500">—</td>
-          <td class="py-2.5 px-3 text-emerald-400 font-semibold">${itin.final_soc}%</td>
-          <td class="py-2.5 px-3 text-slate-500">—</td>
-          <td class="py-2.5 px-3 text-slate-500">—</td>
+          <td class="py-2.5 px-3 font-mono">
+            <div class="text-emerald-400 font-bold">${itin.final_soc}% SoC</div>
+            <div class="text-[10px] text-slate-400">Arrival Level</div>
+          </td>
           <td class="py-2.5 px-3 text-cyan-300 font-mono text-xs font-semibold">
             <div>Arrive ${itin.dest_arr_clock || '--'}</div>
             <div class="text-[10px] text-slate-400 font-normal">Destination</div>
           </td>
           <td class="py-2.5 px-3 text-slate-500">—</td>
           <td class="py-2.5 px-3 text-slate-500">—</td>
-          <td class="py-2.5 px-3 text-slate-500">—</td>
         `;
         tbody.appendChild(destRow);
       }
 
-      // Render Cost Summary Footer
+      // Render Cost Summary Footer (7 columns total)
       const tfoot = document.getElementById('stopsTableFoot');
       if (tfoot) {
         let feeLabels = [];
@@ -5469,16 +5559,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         tfoot.innerHTML = `
           <tr class="border-t border-slate-700 bg-slate-950/60 font-mono text-xs">
-            <td colspan="8" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
-            <td colspan="4" class="py-2.5 px-3 text-white font-semibold">$${itin.ch_cost.toFixed(2)}</td>
+            <td colspan="5" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
+            <td colspan="2" class="py-2.5 px-3 text-white font-semibold">$${itin.ch_cost.toFixed(2)}</td>
           </tr>
           ${itin.membership_fees > 0 ? `
           <tr class="bg-slate-950/60 font-mono text-xs">
-            <td colspan="8" class="py-1.5 px-3 text-right text-amber-400/90 font-sans">+ One-Way Membership Fees (${feeLabels.join(', ')}):</td>
-            <td colspan="4" class="py-1.5 px-3 text-amber-400 font-semibold">+$${itin.membership_fees.toFixed(2)}</td>
+            <td colspan="5" class="py-1.5 px-3 text-right text-amber-400/90 font-sans">+ One-Way Membership Fees (${feeLabels.join(', ')}):</td>
+            <td colspan="2" class="py-1.5 px-3 text-amber-400 font-semibold">+$${itin.membership_fees.toFixed(2)}</td>
           </tr>` : ''}
           <tr class="bg-slate-950/60 font-mono text-xs">
-            <td colspan="8" class="py-1.5 px-3 text-right text-slate-400 font-sans">
+            <td colspan="5" class="py-1.5 px-3 text-right text-slate-400 font-sans">
               ${(() => {
                 let tollTitle = "Highway Tolls (2026 PA Turnpike E-ZPass):";
                 let tollSubtitle = "Class 1 (2L) &bull; New Stanton #75 to Valley Forge #326 per Jan 4, 2026 Schedule";
@@ -5501,11 +5591,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 return `<div>${tollTitle}</div><div class="text-[10px] text-slate-500 font-normal">${tollSubtitle}</div>`;
               })()}
             </td>
-            <td colspan="4" class="py-1.5 px-3 text-slate-300 font-semibold align-top">$${itin.toll_cost.toFixed(2)}</td>
+            <td colspan="2" class="py-1.5 px-3 text-slate-300 font-semibold align-top">$${itin.toll_cost.toFixed(2)}</td>
           </tr>
           <tr class="text-sm font-bold border-t border-slate-800 bg-slate-900/80">
-            <td colspan="8" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
-            <td colspan="4" class="py-2.5 px-3 text-emerald-400 text-base font-mono">
+            <td colspan="5" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
+            <td colspan="2" class="py-2.5 px-3 text-emerald-400 text-base font-mono">
               $${itin.total_cost.toFixed(2)}
               ${itin.memberships.ea.active && !itin.memberships.ea.pre_owned && itin.memberships.ea.net > 0 ? `<span class="block text-[11px] text-emerald-300 font-sans font-normal">(Net Pass+ Savings: $${itin.memberships.ea.net.toFixed(2)})</span>` : ''}
             </td>
@@ -5515,7 +5605,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       if (window.lucide) lucide.createIcons();
     }
-
+    
     function renderBanners(itin) {
       const ea = itin.memberships.ea;
       const tesla = itin.memberships.tesla;
@@ -6714,15 +6804,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const minSlider = document.getElementById('minTimeSlider');
       const maxSlider = document.getElementById('maxTimeSlider');
       // If uninitialized or lingering at legacy 45 from browser session cache, reset to default 75
-      if (minSlider && (!minSlider.value || parseInt(minSlider.value) === 45 || minSlider.value === "45")) {
-        minSlider.value = "75";
-        minSlider.defaultValue = "75";
+      if (minSlider && (!minSlider.value || parseInt(minSlider.value) === 45 || minSlider.value === "45" || minSlider.value === "75")) {
+        minSlider.value = "70";
+        minSlider.defaultValue = "70";
       }
       if (maxSlider && (!maxSlider.value || parseInt(maxSlider.value) < 90)) {
         maxSlider.value = "120";
         maxSlider.defaultValue = "120";
       }
-      const minVal = parseInt(minSlider?.value) || 75;
+      const minVal = parseInt(minSlider?.value) || 70;
       const maxVal = parseInt(maxSlider?.value) || 120;
       updateTimeGapDisplays(minVal, maxVal);
     }
