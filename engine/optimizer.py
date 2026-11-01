@@ -316,7 +316,7 @@ class MultiObjectiveOptimizer:
         ea_worth_it = ea_net_benefit > 0.0
 
         # 2. Tesla Supercharger Membership: $12.99/mo -> $6.50 one-way allocated cost
-        tesla_kwh_used = sum(s.energy_added_kwh for s in stops_plan if s.network.lower() == "tesla")
+        tesla_kwh_used = sum(s.energy_added_kwh for s in stops_plan if s.network.lower() in ("tesla", "tesla ccs1", "tesla nacs"))
         # Regular $0.63-$0.64 vs Member $0.46 -> savings ~$0.175/kWh
         tesla_savings = tesla_kwh_used * 0.175
         tesla_allocated_fee = 6.50

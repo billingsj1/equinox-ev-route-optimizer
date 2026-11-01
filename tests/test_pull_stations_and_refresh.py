@@ -85,7 +85,7 @@ async def test_pull_and_refresh():
                 raise TimeoutError("handlePullOcmStations did not finish in time")
 
             # Verify NY stations are NOT present
-            ny_tesla = await eval_js("ALL_STATIONS.filter(s => s.network === 'Tesla' && (s.state === 'NY' || (s.name && s.name.includes(', NY'))))")
+            ny_tesla = await eval_js("ALL_STATIONS.filter(s => (s.network === 'Tesla CCS1' || s.network === 'Tesla NACS' || s.network === 'Tesla') && (s.state === 'NY' || (s.name && s.name.includes(', NY'))))")
             print(f"NY Tesla stations in database: {len(ny_tesla)}")
             assert len(ny_tesla) == 0, f"Expected 0 NY Tesla stations, but found {len(ny_tesla)}: {ny_tesla}"
 
@@ -97,9 +97,12 @@ async def test_pull_and_refresh():
             print("Verified: West Seneca, North Hudson, Staten Island, and Parish are NOT in station list.")
 
             # Check corridor Tesla stations count
-            corridor_tesla = await eval_js("ALL_STATIONS.filter(s => s.network === 'Tesla')")
-            print(f"Corridor Tesla Magic Dock stations added: {len(corridor_tesla)}")
-            assert len(corridor_tesla) > 0, "No Tesla stations were pulled!"
+            corridor_tesla = await eval_js("ALL_STATIONS.filter(s => s.network === 'Tesla CCS1' || s.network === 'Tesla NACS')")
+            corridor_ccs1 = await eval_js("ALL_STATIONS.filter(s => s.network === 'Tesla CCS1')")
+            corridor_nacs = await eval_js("ALL_STATIONS.filter(s => s.network === 'Tesla NACS')")
+            print(f"Corridor Tesla stations: Total={len(corridor_tesla)} (CCS1={len(corridor_ccs1)}, NACS={len(corridor_nacs)})")
+            assert len(corridor_ccs1) > 0, "No Tesla CCS1 stations were pulled!"
+            assert len(corridor_nacs) > 0, "No Tesla NACS stations were pulled!"
 
             # 3. Test Refresh Prices
             print("\n--- Testing handleRefreshPrices() ---")
@@ -114,7 +117,7 @@ async def test_pull_and_refresh():
                 raise TimeoutError("handleRefreshPrices did not finish in time")
 
             # Check unverified Tesla stations
-            unverified_tesla = await eval_js("ALL_STATIONS.filter(s => s.network === 'Tesla' && (s.price_verified === false || s.on == null || s.on <= 0))")
+            unverified_tesla = await eval_js("ALL_STATIONS.filter(s => (s.network === 'Tesla CCS1' || s.network === 'Tesla NACS') && (s.price_verified === false || s.on == null || s.on <= 0))")
             print(f"Unverified Tesla stations: {len(unverified_tesla)}")
             if len(unverified_tesla) > 0:
                 print(f"First 5 unverified: {unverified_tesla[:5]}")

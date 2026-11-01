@@ -117,7 +117,7 @@ class StationManager:
             return round(mem_rate, 2)
 
         # 3. Tesla Supercharger membership
-        if has_tesla_membership and station.network.lower() == "tesla":
+        if has_tesla_membership and station.network.lower() in ("tesla", "tesla ccs1", "tesla nacs"):
             mem_rate = station.membership_rate_off_peak if is_off_peak else station.membership_rate_on_peak
             return round(mem_rate, 2)
 

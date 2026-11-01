@@ -220,8 +220,8 @@ class PricingScraperPipeline:
             ov = MANUALLY_VERIFIED_OVERRIDES[st_id]
             return ov["price"], ov["url"], ov.get("gm_discount_eligible")
 
-        # 2. Check Tesla Magic Dock real scraped stations
-        if network == "Tesla":
+        # 2. Check Tesla Magic Dock and NACS real scraped stations
+        if network in ("Tesla", "Tesla CCS1", "Tesla NACS"):
             s_id_lower = (st_id or "").lower()
             for t in scraped_db.get("tesla", []):
                 t_slug = (t.get("slug") or "").lower()
@@ -556,7 +556,7 @@ class PricingScraperPipeline:
                 if ov.get("url"):
                     ex["plugshare_url"] = ov["url"]
                 refreshed_count += 1
-            elif net == "Tesla":
+            elif net in ("Tesla", "Tesla CCS1", "Tesla NACS"):
                 t_match = None
                 s_id_lower = st_id.lower()
                 for t in scraped_db.get("tesla", []):

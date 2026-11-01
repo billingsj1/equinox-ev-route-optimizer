@@ -2759,9 +2759,9 @@ class TeslaSuperchargerAdapter(BaseNetworkAdapter):
                 s for s in data
                 if s.get("status") == "OPEN"
                 and s.get("address", {}).get("country") == "USA"
-                and s.get("plugs", {}).get("ccs1", 0) > 0
+                and (s.get("plugs", {}).get("ccs1", 0) > 0 or s.get("otherEVs") is True)
             ]
-            logger.info(f"Retrieved {len(magic_dock_sites)} active Magic Dock Superchargers from registry.")
+            logger.info(f"Retrieved {len(magic_dock_sites)} active Magic Dock / NACS Superchargers from registry.")
             return magic_dock_sites
         except Exception as e:
             logger.warning(f"Error fetching supercharge registry: {e}")
@@ -2918,14 +2918,18 @@ class TeslaSuperchargerAdapter(BaseNetworkAdapter):
             slug = str(s.get("locationId") or s.get("id"))
             if slug not in seen_slugs:
                 seen_slugs.add(slug)
+                has_magic_dock = s.get("plugs", {}).get("ccs1", 0) > 0
+                net_name = "Tesla CCS1" if has_magic_dock else "Tesla NACS"
+                prefix = "(+CCS1)" if has_magic_dock else "(NACS Adapter)"
                 site_targets.append({
                     "slug": slug,
                     "city": s.get("address", {}).get("city", ""),
                     "state": s.get("address", {}).get("state", ""),
-                    "name": f"Tesla Supercharger (+CCS1) - {s.get('name') or s.get('address', {}).get('city', 'Station')}, {s.get('address', {}).get('state')}",
+                    "name": f"Tesla Supercharger {prefix} - {s.get('name') or s.get('address', {}).get('city', 'Station')}, {s.get('address', {}).get('state')}",
                     "lat": s.get("gps", {}).get("latitude"),
                     "lon": s.get("gps", {}).get("longitude"),
-                    "kw": s.get("powerKilowatt", 250)
+                    "kw": s.get("powerKilowatt", 250),
+                    "network": net_name
                 })
 
         # Add any known profiles not in supercharge.info query
@@ -3049,7 +3053,7 @@ class TeslaSuperchargerAdapter(BaseNetworkAdapter):
 
             results.append({
                 "id": f"tesla-{slug}",
-                "network": "Tesla",
+                "network": st_info.get("network", "Tesla CCS1"),
                 "name": st_info["name"],
                 "slug": slug,
                 "city": st_info["city"],
