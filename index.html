@@ -7286,40 +7286,56 @@
         const localDayOfWeek = (depDow + daysElapsed) % 7;
 
         let base_mph;
+        let free_flow_mph = posted_speed;
         if (is_plaza) {
           base_mph = 20.0;
+          free_flow_mph = 20.0;
         } else if (is_ramp) {
           base_mph = Math.min(posted_speed, 28.0);
+          free_flow_mph = Math.min(posted_speed, 28.0);
         } else if (sName.includes('turnpike') || sRef.includes('turnpike') || sRef.includes('patp')) {
           if (sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel')) || posted_speed <= 55.0) {
             base_mph = 55.0; // PA Turnpike Tunnels
+            free_flow_mph = 55.0;
           } else if (lon > -75.05 && lon < -74.70 && lat > 39.88 && lat < 40.16) {
             base_mph = getNJTurnpikeHourlySpeed(localDayOfWeek, localHourInt); // NJ Turnpike Mainline
+            free_flow_mph = 57.6;
           } else if (lon > -75.40 && lon < -74.74 && lat > 40.05 && lat < 40.20) {
             base_mph = getI276HourlySpeed(localDayOfWeek, localHourInt); // PA Turnpike East Extension
+            free_flow_mph = 64.0;
           } else {
             base_mph = posted_speed; // Mainline PA Turnpike cruising
+            free_flow_mph = posted_speed;
           }
         } else if ((sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.42 && lon < -75.16)) && lat > 39.92 && lat < 40.12) {
           base_mph = getSchuylkillHourlySpeed(localDayOfWeek, localHourInt);
+          free_flow_mph = 49.5;
         } else if ((sName.includes('vine') || (sRef.includes('676') && lon > -75.40) || sName.includes('ben franklin') || sName.includes('benjamin franklin') || (sRef.includes('30') && lon > -75.18 && lon < -75.12)) && lat > 39.94 && lat < 39.98) {
           base_mph = getVineStHourlySpeed(localDayOfWeek, localHourInt);
+          free_flow_mph = 31.0;
         } else if ((sName.includes('marlton') || sRef.includes('nj 70') || sRef.includes('route 70') || (sRef.includes('70') && lon > -75.12 && lon < -74.88)) && lat > 39.86 && lat < 39.96) {
           base_mph = getNJ70HourlySpeed(localDayOfWeek, localHourInt);
+          free_flow_mph = 34.3;
         } else if ((sRef.includes('73') || sName.includes('route 73') || sName.includes('nj-73')) && lon > -75.02 && lon < -74.88 && lat > 39.88 && lat < 39.96) {
           base_mph = getNJ73HourlySpeed(localDayOfWeek, localHourInt);
+          free_flow_mph = 25.2;
         } else if (sRef.includes('283') || sName.includes('pa 283') || (sRef.includes('30') && lon < -75.30 && lon > -76.80)) {
           base_mph = getUS30PA283HourlySpeed(localDayOfWeek, localHourInt, posted_speed);
+          free_flow_mph = 63.7;
         } else if (posted_speed <= 30.0) {
           base_mph = 25.0;
+          free_flow_mph = 25.0;
         } else if (posted_speed <= 35.0) {
           const isRush = (localHourInt >= 7 && localHourInt <= 9) || (localHourInt >= 16 && localHourInt <= 18);
           base_mph = isRush ? 26.0 : 32.0;
+          free_flow_mph = 32.0;
         } else if (posted_speed <= 45.0) {
           const isRush = (localHourInt >= 7 && localHourInt <= 9) || (localHourInt >= 16 && localHourInt <= 18);
           base_mph = isRush ? 34.0 : 43.0;
+          free_flow_mph = 43.0;
         } else {
           base_mph = posted_speed;
+          free_flow_mph = posted_speed;
         }
 
         if (traffic_profile === 'off_peak') {
@@ -7331,7 +7347,7 @@
         } else if (traffic_profile === 'rush_hour') {
           if (sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.42)) base_mph = 18.0;
           else if (sName.includes('vine') || sRef.includes('676')) base_mph = 14.0;
-          else if (sRef.includes('70') && lon > -75.12) base_mph = 24.0;
+          else if (sName.includes('70') && lon > -75.12) base_mph = 24.0;
           else if (posted_speed <= 35.0) base_mph = 20.0;
           else if (posted_speed <= 45.0) base_mph = 28.0;
           else if (base_mph > 45.0) base_mph = Math.max(35.0, base_mph * 0.80);
@@ -7341,11 +7357,26 @@
         if (is_plaza) {
           target_mph = 20.0;
         } else if (is_ramp) {
-          target_mph = Math.min(posted_speed, 25.0 + Math.min(speed_offset, 5.0));
+          target_mph = Math.min(posted_speed, 25.0 + Math.min(Math.max(0, speed_offset), 5.0));
         } else {
-          const flow_ratio = Math.min(1.0, base_mph / Math.max(25.0, posted_speed));
-          const effective_offset = speed_offset * Math.pow(flow_ratio, 1.8);
-          target_mph = Math.min(base_mph + effective_offset, max_cap);
+          // Flow ratio measures the health of traffic flow against unobstructed free-flow speeds
+          const flow_ref = Math.max(20.0, free_flow_mph || posted_speed);
+          const flow_ratio = Math.max(0.1, Math.min(1.0, base_mph / flow_ref));
+
+          if (flow_ratio >= 0.90) {
+            // Free-flow / open road regime:
+            // Driver can cruise at preferred speed (posted + offset), or flow with prevailing traffic if faster, up to max_cap
+            const desired_cruising = Math.min(posted_speed + speed_offset, max_cap);
+            target_mph = Math.min(Math.max(desired_cruising, base_mph), max_cap);
+          } else {
+            // Congested / bottleneck regime:
+            // Alert driver can make slightly faster progress (+2 to +5 mph) in the fast lane,
+            // but in heavy gridlock (flow_ratio < 0.4) offset tapers down to near zero.
+            const effective_offset = speed_offset * Math.pow(flow_ratio, 2.0);
+            target_mph = Math.min(base_mph + effective_offset, max_cap);
+            target_mph = Math.min(target_mph, Math.min(posted_speed + speed_offset, max_cap));
+          }
+          target_mph = Math.max(12.0, target_mph);
         }
 
         const v_ms = target_mph * 0.44704;
@@ -7415,7 +7446,7 @@
         const is_surface_street = !is_expressway && !is_plaza && (posted_speed <= 50.0);
 
         if (is_surface_street && num_intersections > 0) {
-          const flow_ratio = Math.min(1.0, base_mph / Math.max(25.0, posted_speed));
+          const flow_ratio = Math.min(1.0, base_mph / Math.max(20.0, free_flow_mph || posted_speed));
           let stop_prob = 0.08 + (1.0 - flow_ratio) * 0.22;
           if (traffic_profile === 'off_peak') stop_prob = 0.08;
           else if (traffic_profile === 'rush_hour') stop_prob = 0.30;
