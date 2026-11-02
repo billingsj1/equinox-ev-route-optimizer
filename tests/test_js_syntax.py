@@ -28,6 +28,14 @@ CDP_PORT = 9298
 USER_DATA_DIR = r"C:\temp\chrome_js_syntax_test"
 
 
+async def recv_response(ws, msg_id):
+    """Skip CDP event notifications until the reply with the matching id arrives."""
+    while True:
+        msg = json.loads(await ws.recv())
+        if msg.get("id") == msg_id:
+            return msg
+
+
 async def compile_script_v8(script_content: str, name: str = "inline.js"):
     os.makedirs(USER_DATA_DIR, exist_ok=True)
     chrome_proc = subprocess.Popen([
@@ -49,7 +57,7 @@ async def compile_script_v8(script_content: str, name: str = "inline.js"):
 
         async with websockets.connect(ws_url, max_size=50 * 1024 * 1024) as ws:
             await ws.send(json.dumps({"id": 1, "method": "Runtime.enable"}))
-            await ws.recv()
+            await recv_response(ws, 1)
 
             compile_cmd = {
                 "id": 2,
@@ -61,7 +69,7 @@ async def compile_script_v8(script_content: str, name: str = "inline.js"):
                 }
             }
             await ws.send(json.dumps(compile_cmd))
-            res = json.loads(await ws.recv())
+            res = await recv_response(ws, 2)
 
             result = res.get("result", {})
             exc = result.get("exceptionDetails")
