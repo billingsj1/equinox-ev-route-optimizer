@@ -11720,14 +11720,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       }
 
-      // 3. General spatial deduplication (same network within 2.5 miles)
+      // 3. General spatial deduplication (same network within 0.35 miles)
       for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
         const a = ALL_STATIONS[i];
         for (let j = 0; j < i; j++) {
           const b = ALL_STATIONS[j];
           if (a.network === b.network) {
             const dist = haversineMiles(a.lat, a.lon, b.lat, b.lon);
-            if (dist < 2.5) {
+            if (dist < 0.35) {
               if (a.price_verified && !b.price_verified) {
                 b.on = a.on; b.off = a.off; b.mem_on = a.mem_on; b.mem_off = a.mem_off;
                 b.price_verified = true; b.plug = a.plug;
@@ -11743,6 +11743,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // 4. Sanitize all stations so Pilot / Flying J locations never carry GM discount and migrate legacy Tesla network
       ALL_STATIONS.forEach(s => {
+        if (s.name) {
+          s.name = s.name.replace(/,\s*([A-Z]{2}),\s*\1\b/g, ', $1');
+        }
         if (s.network === 'Tesla') {
           s.network = 'Tesla CCS1';
         }
@@ -11759,6 +11762,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (Array.isArray(parsed)) {
             const cleaned = parsed.filter(s => !isStationBlocked(s) && s.name !== 'Electrify America - Bedford, PA');
             cleaned.forEach(s => {
+              if (s.name) {
+                s.name = s.name.replace(/,\s*([A-Z]{2}),\s*\1\b/g, ', $1');
+              }
               if (s.network === 'Tesla') {
                 s.network = 'Tesla CCS1';
               }
@@ -11812,6 +11818,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       'tesla-medford-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/19516', verified: true },
       'tesla-hamilton-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/424861', verified: true },
       'tesla-blackwood-nj': { on: 0.73, off: 0.38, mem_on: 0.52, mem_off: 0.27, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/59126', verified: true },
+      'tesla-34183': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/34183', verified: true, tou_rates: [] },
       'evgo-pilot-marengo-oh': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-306512': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
       'ocm-351529': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
@@ -11838,6 +11845,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           off: ov.off,
           mem_on: ov.mem_on,
           mem_off: ov.mem_off,
+          tou_rates: ov.tou_rates || [],
           gm: canGm,
           gm_pct: canGm ? (ov.gm_pct || 0.10) : 0.0,
           url: ov.url,
@@ -12044,13 +12052,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const db = await loadScrapedDatabase();
       if (db) {
         ALL_STATIONS.forEach(s => {
-          if (!s.price_verified || s.on == null || s.on <= 0) {
+          if (s.name) {
+            s.name = s.name.replace(/,\s*([A-Z]{2}),\s*\1\b/g, ', $1');
+          }
+          const hasOverride = Boolean(MANUALLY_VERIFIED_OVERRIDES[s.id]);
+          const isTesla = isTeslaNetwork(s.network);
+          if (!s.price_verified || s.on == null || s.on <= 0 || hasOverride || isTesla) {
             const res = matchStationToScrapedData(s, db);
             if (res.verified) {
               s.on = res.on;
               s.off = res.off;
               if (res.mem_on) s.mem_on = res.mem_on;
               if (res.mem_off) s.mem_off = res.mem_off;
+              s.tou_rates = res.tou_rates || [];
               if (res.gm !== undefined) s.gm = res.gm;
               if (res.gm_pct !== undefined) s.gm_pct = res.gm_pct;
               if (res.url) s.plug = res.url;
@@ -12264,11 +12278,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
               if (!exists) {
                 const stId = `tesla-${slug.toLowerCase()}`;
-                const stationTitle = s.name || (s.address && s.address.city) || 'Station';
+                const rawTitle = (s.name || (s.address && s.address.city) || 'Station').trim();
                 const stState = (s.address && s.address.state) || '';
+                let cleanTitle = rawTitle;
+                if (stState) {
+                  const stateRegex = new RegExp(`,\\s*${stState}\\.?$`, 'i');
+                  cleanTitle = cleanTitle.replace(stateRegex, '').trim();
+                }
                 const name = hasMagicDock
-                  ? `Tesla Supercharger (+CCS1) - ${stationTitle}, ${stState}`
-                  : `Tesla Supercharger (NACS Adapter) - ${stationTitle}, ${stState}`;
+                  ? `Tesla Supercharger (+CCS1) - ${cleanTitle}, ${stState}`
+                  : `Tesla Supercharger (NACS Adapter) - ${cleanTitle}, ${stState}`;
                 const kw = s.powerKilowatt || 250;
 
                 const res = matchStationToScrapedData({
@@ -12329,10 +12348,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         updateStationManagerBadge();
 
         if (statusBox) {
+          const headline = (newlyAdded === 0)
+            ? `Station Discovery Complete: All stations are already up to date!`
+            : `Station Discovery Complete: Added ${newlyAdded} stations (${newlyAdded - teslaAdded} OCM, ${teslaCcs1Added} Tesla CCS1, ${teslaNacsAdded} Tesla NACS)!`;
           statusBox.innerHTML = `
             <div class="text-emerald-400 font-semibold flex items-center gap-1.5 text-xs">
               <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-              <span>Station Discovery Complete: Added ${newlyAdded} stations (${newlyAdded - teslaAdded} OCM, ${teslaCcs1Added} Tesla CCS1, ${teslaNacsAdded} Tesla NACS)!</span>
+              <span>${headline}</span>
             </div>
             <div class="text-[11px] text-slate-300">
               Database: <b>${ALL_STATIONS.length} total stations</b> (${newlyVerified} verified from scrapers). Unverified stations are listed below.

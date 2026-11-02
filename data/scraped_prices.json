@@ -13421,7 +13421,7 @@
     {
       "id": "tesla-18487",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Marmet, WV, WV",
+      "name": "Tesla Supercharger (NACS Adapter) - Marmet, WV",
       "slug": "18487",
       "city": "Marmet",
       "state": "WV",
@@ -13438,7 +13438,7 @@
     {
       "id": "tesla-19507",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bridgeville, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Bridgeville, PA",
       "slug": "19507",
       "city": "Bridgeville",
       "state": "PA",
@@ -13483,7 +13483,7 @@
     {
       "id": "tesla-lancasterpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Lancaster, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Lancaster, PA",
       "slug": "lancasterpasupercharger",
       "city": "Lancaster",
       "state": "PA",
@@ -13528,7 +13528,7 @@
     {
       "id": "tesla-412306",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Greenbelt, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Greenbelt, MD",
       "slug": "412306",
       "city": "Greenbelt",
       "state": "MD",
@@ -13582,7 +13582,7 @@
     {
       "id": "tesla-33580",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Parma, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Parma, OH",
       "slug": "33580",
       "city": "Parma",
       "state": "OH",
@@ -13627,7 +13627,7 @@
     {
       "id": "tesla-13542",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Halethorpe, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Halethorpe, MD",
       "slug": "13542",
       "city": "Halethorpe",
       "state": "MD",
@@ -13681,7 +13681,7 @@
     {
       "id": "tesla-mapleshadenjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Maple Shade, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Maple Shade, NJ",
       "slug": "mapleshadenjsupercharger",
       "city": "Maple Shade",
       "state": "NJ",
@@ -13726,7 +13726,7 @@
     {
       "id": "tesla-northwalespasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - North Wales, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - North Wales, PA",
       "slug": "NorthWalesPASupercharger",
       "city": "North Wales",
       "state": "PA",
@@ -13771,7 +13771,7 @@
     {
       "id": "tesla-williamsportpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Williamsport, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Williamsport, PA",
       "slug": "williamsportpasupercharger",
       "city": "Williamsport",
       "state": "PA",
@@ -13788,7 +13788,7 @@
     {
       "id": "tesla-58815",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Edgewood, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Edgewood, PA",
       "slug": "58815",
       "city": "Edgewood",
       "state": "PA",
@@ -13833,7 +13833,7 @@
     {
       "id": "tesla-freeholdnjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Freehold, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Freehold, NJ",
       "slug": "freeholdnjsupercharger",
       "city": "Freehold",
       "state": "NJ",
@@ -13878,7 +13878,7 @@
     {
       "id": "tesla-34939",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Carneys Point, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Carneys Point, NJ",
       "slug": "34939",
       "city": "Carneys Point",
       "state": "NJ",
@@ -13914,7 +13914,7 @@
     {
       "id": "tesla-whitemarshmdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - White Marsh, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - White Marsh, MD",
       "slug": "whitemarshmdsupercharger",
       "city": "White Marsh",
       "state": "MD",
@@ -13968,7 +13968,7 @@
     {
       "id": "tesla-459273",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Reynoldsburg, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Reynoldsburg, OH",
       "slug": "459273",
       "city": "Reynoldsburg",
       "state": "OH",
@@ -14013,7 +14013,7 @@
     {
       "id": "tesla-chillicotheohsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Chillicothe, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Chillicothe, OH",
       "slug": "chillicotheohsupercharger",
       "city": "Chillicothe",
       "state": "OH",
@@ -14058,7 +14058,7 @@
     {
       "id": "tesla-grovecitypasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Grove City, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Grove City, PA",
       "slug": "grovecitypasupercharger",
       "city": "Grove City",
       "state": "PA",
@@ -14103,7 +14103,7 @@
     {
       "id": "tesla-gettysburgpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Gettysburg, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Gettysburg, PA",
       "slug": "gettysburgpasupercharger",
       "city": "Gettysburg",
       "state": "PA",
@@ -14148,7 +14148,7 @@
     {
       "id": "tesla-oceancitymdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Ocean City, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Ocean City, MD",
       "slug": "oceancitymdsupercharger",
       "city": "West Ocean City",
       "state": "MD",
@@ -14193,7 +14193,7 @@
     {
       "id": "tesla-452152",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Potomac, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Potomac, MD",
       "slug": "452152",
       "city": "Potomac",
       "state": "MD",
@@ -14247,7 +14247,7 @@
     {
       "id": "tesla-26773",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Milton, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Milton, PA",
       "slug": "26773",
       "city": "Milton",
       "state": "PA",
@@ -14264,7 +14264,7 @@
     {
       "id": "tesla-19533",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Owings Mills, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Owings Mills, MD",
       "slug": "19533",
       "city": "Owings Mills",
       "state": "MD",
@@ -14318,7 +14318,7 @@
     {
       "id": "tesla-hamburgpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Hamburg, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Hamburg, PA",
       "slug": "HamburgPAsupercharger",
       "city": "Hamburg",
       "state": "PA",
@@ -14417,7 +14417,7 @@
     {
       "id": "tesla-washingtonpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Washington, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Washington, PA",
       "slug": "washingtonpasupercharger",
       "city": "Washington",
       "state": "PA",
@@ -14462,7 +14462,7 @@
     {
       "id": "tesla-26702",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - McKees Rocks, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - McKees Rocks, PA",
       "slug": "26702",
       "city": "McKees Rocks",
       "state": "PA",
@@ -14561,7 +14561,7 @@
     {
       "id": "tesla-437003",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Newark, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Newark, NJ",
       "slug": "437003",
       "city": "Newark",
       "state": "NJ",
@@ -14606,7 +14606,7 @@
     {
       "id": "tesla-407479",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Pennsville, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Pennsville, NJ",
       "slug": "407479",
       "city": "Pennsville",
       "state": "NJ",
@@ -14642,7 +14642,7 @@
     {
       "id": "tesla-26685",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Chambersburg, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Chambersburg, PA",
       "slug": "26685",
       "city": "Chambersburg",
       "state": "PA",
@@ -14659,7 +14659,7 @@
     {
       "id": "tesla-26692",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Hazleton, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Hazleton, PA",
       "slug": "26692",
       "city": "Hazleton",
       "state": "PA",
@@ -14704,7 +14704,7 @@
     {
       "id": "tesla-urbanamdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Urbana, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Urbana, MD",
       "slug": "UrbanaMDsupercharger",
       "city": "Urbana",
       "state": "MD",
@@ -14758,7 +14758,7 @@
     {
       "id": "tesla-58845",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Germantown, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Germantown, MD",
       "slug": "58845",
       "city": "Germantown",
       "state": "MD",
@@ -14812,7 +14812,7 @@
     {
       "id": "tesla-27467",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Dillsburg, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Dillsburg, PA",
       "slug": "27467",
       "city": "Dillsburg",
       "state": "PA",
@@ -14866,7 +14866,7 @@
     {
       "id": "tesla-4006212",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Millville, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Millville, NJ",
       "slug": "4006212",
       "city": "Millville",
       "state": "NJ",
@@ -14911,7 +14911,7 @@
     {
       "id": "tesla-32909",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Montgomery, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Montgomery, PA",
       "slug": "32909",
       "city": "Montgomery",
       "state": "PA",
@@ -14928,7 +14928,7 @@
     {
       "id": "tesla-33715",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - North Ridgeville, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - North Ridgeville, OH",
       "slug": "33715",
       "city": "North Ridgeville",
       "state": "OH",
@@ -14973,7 +14973,7 @@
     {
       "id": "tesla-waldorfmdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Waldorf, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Waldorf, MD",
       "slug": "WaldorfMDsupercharger",
       "city": "Waldorf",
       "state": "MD",
@@ -15027,7 +15027,7 @@
     {
       "id": "tesla-glenmillspasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Glen Mills, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Glen Mills, PA",
       "slug": "glenmillspasupercharger",
       "city": "Glen Mills",
       "state": "PA",
@@ -15081,7 +15081,7 @@
     {
       "id": "tesla-rehobothbeachdesupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Rehoboth Beach, DE, DE",
+      "name": "Tesla Supercharger (NACS Adapter) - Rehoboth Beach, DE",
       "slug": "rehobothbeachdesupercharger",
       "city": "Rehoboth Beach",
       "state": "DE",
@@ -15126,7 +15126,7 @@
     {
       "id": "tesla-clarksburgnjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Clarksburg, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Clarksburg, NJ",
       "slug": "clarksburgnjsupercharger",
       "city": "Millstone",
       "state": "NJ",
@@ -15171,7 +15171,7 @@
     {
       "id": "tesla-statecollegepasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - State College, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - State College, PA",
       "slug": "statecollegepasupercharger",
       "city": "State College",
       "state": "PA",
@@ -15188,7 +15188,7 @@
     {
       "id": "tesla-flemingtonnjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Flemington, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Flemington, NJ",
       "slug": "FlemingtonNJsupercharger",
       "city": "Flemington",
       "state": "NJ",
@@ -15233,7 +15233,7 @@
     {
       "id": "tesla-californiamdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - California, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - California, MD",
       "slug": "CaliforniaMDsupercharger",
       "city": "California",
       "state": "MD",
@@ -15287,7 +15287,7 @@
     {
       "id": "tesla-edgewatermdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Edgewater, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Edgewater, MD",
       "slug": "EdgewaterMDsupercharger",
       "city": "Edgewater",
       "state": "MD",
@@ -15341,7 +15341,7 @@
     {
       "id": "tesla-towsonmdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Towson, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Towson, MD",
       "slug": "TowsonMDsupercharger",
       "city": "Towson",
       "state": "MD",
@@ -15395,7 +15395,7 @@
     {
       "id": "tesla-doylestownpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Doylestown, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Doylestown, PA",
       "slug": "DoylestownPAsupercharger",
       "city": "Doylestown",
       "state": "PA",
@@ -15440,7 +15440,7 @@
     {
       "id": "tesla-19546",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Cumberland, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Cumberland, MD",
       "slug": "19546",
       "city": "Cumberland",
       "state": "MD",
@@ -15494,7 +15494,7 @@
     {
       "id": "tesla-middletowndesupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Middletown, DE, DE",
+      "name": "Tesla Supercharger (NACS Adapter) - Middletown, DE",
       "slug": "MiddletownDEsupercharger",
       "city": "Middletown",
       "state": "DE",
@@ -15539,7 +15539,7 @@
     {
       "id": "tesla-twinsburgohsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Twinsburg, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Twinsburg, OH",
       "slug": "TwinsburgOHSupercharger",
       "city": "Twinsburg",
       "state": "OH",
@@ -15584,7 +15584,7 @@
     {
       "id": "tesla-cranfordnjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Cranford, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Cranford, NJ",
       "slug": "CranfordNJSupercharger",
       "city": "Cranford",
       "state": "NJ",
@@ -15629,7 +15629,7 @@
     {
       "id": "tesla-columbianjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Columbia, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Columbia, NJ",
       "slug": "ColumbiaNJsupercharger",
       "city": "Columbia",
       "state": "NJ",
@@ -15674,7 +15674,7 @@
     {
       "id": "tesla-oldbridgenjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Old Bridge, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Old Bridge, NJ",
       "slug": "OldBridgeNJSupercharger",
       "city": "Old Bridge",
       "state": "NJ",
@@ -15764,7 +15764,7 @@
     {
       "id": "tesla-belairmdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bel Air, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Bel Air, MD",
       "slug": "BelAirMDSupercharger",
       "city": "Bel Air",
       "state": "MD",
@@ -15818,7 +15818,7 @@
     {
       "id": "tesla-27521",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Allamuchy, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Allamuchy, NJ",
       "slug": "27521",
       "city": "Hackettstown",
       "state": "NJ",
@@ -15863,7 +15863,7 @@
     {
       "id": "tesla-15343",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Ripley, WV, WV",
+      "name": "Tesla Supercharger (NACS Adapter) - Ripley, WV",
       "slug": "15343",
       "city": "Ripley",
       "state": "WV",
@@ -15880,7 +15880,7 @@
     {
       "id": "tesla-33752",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Heath, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Heath, OH",
       "slug": "33752",
       "city": "Heath",
       "state": "OH",
@@ -15925,7 +15925,7 @@
     {
       "id": "tesla-16540",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Newburg, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Newburg, PA",
       "slug": "16540",
       "city": "Newburg",
       "state": "PA",
@@ -15942,7 +15942,7 @@
     {
       "id": "tesla-17349",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Pompton Lakes, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Pompton Lakes, NJ",
       "slug": "17349",
       "city": "Pompton Lakes",
       "state": "NJ",
@@ -15987,7 +15987,7 @@
     {
       "id": "tesla-malaganjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Malaga, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Malaga, NJ",
       "slug": "malaganjsupercharger",
       "city": "Malaga",
       "state": "NJ",
@@ -16077,7 +16077,7 @@
     {
       "id": "tesla-ephratapasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Ephrata, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Ephrata, PA",
       "slug": "EphrataPASupercharger",
       "city": "Ephrata",
       "state": "PA",
@@ -16122,7 +16122,7 @@
     {
       "id": "tesla-seaforddesupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Seaford, DE, DE",
+      "name": "Tesla Supercharger (NACS Adapter) - Seaford, DE",
       "slug": "SeafordDESupercharger",
       "city": "Seaford",
       "state": "DE",
@@ -16167,7 +16167,7 @@
     {
       "id": "tesla-readingpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Reading, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Reading, PA",
       "slug": "ReadingPASupercharger",
       "city": "Reading",
       "state": "PA",
@@ -16212,7 +16212,7 @@
     {
       "id": "tesla-monroetownshipnjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Monroe Township, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Monroe Township, NJ",
       "slug": "MonroeTownshipNJSupercharger",
       "city": "Monroe Township",
       "state": "NJ",
@@ -16257,7 +16257,7 @@
     {
       "id": "tesla-beltsvillemdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Beltsville, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Beltsville, MD",
       "slug": "BeltsvilleMDSupercharger",
       "city": "Beltsville",
       "state": "MD",
@@ -16311,7 +16311,7 @@
     {
       "id": "tesla-fairmontwvsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Fairmont, WV, WV",
+      "name": "Tesla Supercharger (NACS Adapter) - Fairmont, WV",
       "slug": "FairmontWVSupercharger",
       "city": "Fairmont",
       "state": "WV",
@@ -16373,7 +16373,7 @@
     {
       "id": "tesla-girardohsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Girard, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Girard, OH",
       "slug": "GirardOHSupercharger",
       "city": "Girard",
       "state": "OH",
@@ -16418,7 +16418,7 @@
     {
       "id": "tesla-whiteplainsmdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - White Plains, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - White Plains, MD",
       "slug": "whiteplainsmdsupercharger",
       "city": "White Plains",
       "state": "MD",
@@ -16472,7 +16472,7 @@
     {
       "id": "tesla-eastonpaq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Easton, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Easton, PA",
       "slug": "EastonPAQ322",
       "city": "Easton",
       "state": "PA",
@@ -16517,7 +16517,7 @@
     {
       "id": "tesla-langhornepasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Langhorne, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Langhorne, PA",
       "slug": "LanghornePASupercharger",
       "city": "Langhorne",
       "state": "PA",
@@ -16562,7 +16562,7 @@
     {
       "id": "tesla-11630",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - New Philadelphia, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - New Philadelphia, OH",
       "slug": "11630",
       "city": "New Philadelphia",
       "state": "OH",
@@ -16607,7 +16607,7 @@
     {
       "id": "tesla-27020",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Quakertown, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Quakertown, PA",
       "slug": "27020",
       "city": "Quakertown",
       "state": "PA",
@@ -16652,7 +16652,7 @@
     {
       "id": "tesla-18730",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - North Canton, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - North Canton, OH",
       "slug": "18730",
       "city": "North Canton",
       "state": "OH",
@@ -16697,7 +16697,7 @@
     {
       "id": "tesla-20549",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Matamoras, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Matamoras, PA",
       "slug": "20549",
       "city": "Matamoras",
       "state": "PA",
@@ -16742,7 +16742,7 @@
     {
       "id": "tesla-augustanjq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Augusta, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Augusta, NJ",
       "slug": "AugustaNJQ322",
       "city": "Augusta",
       "state": "NJ",
@@ -16787,7 +16787,7 @@
     {
       "id": "tesla-34290",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Joppatowne, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Joppatowne, MD",
       "slug": "34290",
       "city": "Joppatowne",
       "state": "MD",
@@ -16841,7 +16841,7 @@
     {
       "id": "tesla-34179",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Brandywine, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Brandywine, MD",
       "slug": "34179",
       "city": "Brandywine",
       "state": "MD",
@@ -16940,7 +16940,7 @@
     {
       "id": "tesla-25936",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Malvern, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Malvern, PA",
       "slug": "25936",
       "city": "Malvern",
       "state": "PA",
@@ -16994,7 +16994,7 @@
     {
       "id": "tesla-downingtownpaq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Downingtown, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Downingtown, PA",
       "slug": "DowningtownPAQ322",
       "city": "Downingtown",
       "state": "PA",
@@ -17138,7 +17138,7 @@
     {
       "id": "tesla-southrivernjsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - South River, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - South River, NJ",
       "slug": "SouthRiverNJSupercharger",
       "city": "South River",
       "state": "NJ",
@@ -17183,7 +17183,7 @@
     {
       "id": "tesla-19506",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Wilkes-Barre Township, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Wilkes-Barre Township, PA",
       "slug": "19506",
       "city": "Wilkes-Barre Township",
       "state": "PA",
@@ -17228,7 +17228,7 @@
     {
       "id": "tesla-28629",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Mechanicsburg, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Mechanicsburg, PA",
       "slug": "28629",
       "city": "Mechanicsburg",
       "state": "PA",
@@ -17282,7 +17282,7 @@
     {
       "id": "tesla-18461",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Rosedale, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Rosedale, MD",
       "slug": "18461",
       "city": "Rosedale",
       "state": "MD",
@@ -17336,7 +17336,7 @@
     {
       "id": "tesla-howelltownshipnjq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Howell Township, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Howell Township, NJ",
       "slug": "HowellTownshipNJQ322",
       "city": "Howell Township",
       "state": "NJ",
@@ -17381,7 +17381,7 @@
     {
       "id": "tesla-59210",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Yardley, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Yardley, PA",
       "slug": "59210",
       "city": "Yardley",
       "state": "PA",
@@ -17426,7 +17426,7 @@
     {
       "id": "tesla-19530",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Baltimore, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Baltimore, MD",
       "slug": "19530",
       "city": "Baltimore",
       "state": "MD",
@@ -17480,7 +17480,7 @@
     {
       "id": "tesla-32869",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - McHenry, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - McHenry, MD",
       "slug": "32869",
       "city": "McHenry",
       "state": "MD",
@@ -17534,7 +17534,7 @@
     {
       "id": "tesla-32887",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Kennett Square, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Kennett Square, PA",
       "slug": "32887",
       "city": "Kennett Square",
       "state": "PA",
@@ -17588,7 +17588,7 @@
     {
       "id": "tesla-chesterspringspaq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Chester Springs, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Chester Springs, PA",
       "slug": "ChesterSpringsPAQ322",
       "city": "Chester Springs",
       "state": "PA",
@@ -17642,7 +17642,7 @@
     {
       "id": "tesla-pottstownpaq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Pottstown, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Pottstown, PA",
       "slug": "PottstownPAQ322",
       "city": "Pottstown",
       "state": "PA",
@@ -17696,7 +17696,7 @@
     {
       "id": "tesla-33849",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Arbutus, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Arbutus, MD",
       "slug": "33849",
       "city": "Halethorpe",
       "state": "MD",
@@ -17750,7 +17750,7 @@
     {
       "id": "tesla-26777",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bristol, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Bristol, PA",
       "slug": "26777",
       "city": "Bristol",
       "state": "PA",
@@ -17795,7 +17795,7 @@
     {
       "id": "tesla-19521",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - West Chester, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - West Chester, PA",
       "slug": "19521",
       "city": "West Chester",
       "state": "PA",
@@ -17849,7 +17849,7 @@
     {
       "id": "tesla-59020",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Cortland, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Cortland, OH",
       "slug": "59020",
       "city": "Cortland",
       "state": "OH",
@@ -17894,7 +17894,7 @@
     {
       "id": "tesla-32161",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Port Deposit, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Port Deposit, MD",
       "slug": "32161",
       "city": "Port Deposit",
       "state": "MD",
@@ -17948,7 +17948,7 @@
     {
       "id": "tesla-26776",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Swedesboro, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Swedesboro, NJ",
       "slug": "26776",
       "city": "Swedesboro",
       "state": "NJ",
@@ -17984,7 +17984,7 @@
     {
       "id": "tesla-19245",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Union, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Union, NJ",
       "slug": "19245",
       "city": "Union",
       "state": "NJ",
@@ -18029,7 +18029,7 @@
     {
       "id": "tesla-19514",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Fort Washington, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Fort Washington, PA",
       "slug": "19514",
       "city": "Fort Washington",
       "state": "PA",
@@ -18128,7 +18128,7 @@
     {
       "id": "tesla-20505",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - New Stanton, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - New Stanton, PA",
       "slug": "20505",
       "city": "New Stanton",
       "state": "PA",
@@ -18173,7 +18173,7 @@
     {
       "id": "tesla-12795",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Monroeville, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Monroeville, PA",
       "slug": "12795",
       "city": "Monroeville",
       "state": "PA",
@@ -18218,7 +18218,7 @@
     {
       "id": "tesla-32911",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Exton, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Exton, PA",
       "slug": "32911",
       "city": "Exton",
       "state": "PA",
@@ -18326,7 +18326,7 @@
     {
       "id": "tesla-claysburgpaq42022",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Claysburg, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Claysburg, PA",
       "slug": "ClaysburgPAQ42022",
       "city": "Claysburg",
       "state": "PA",
@@ -18343,7 +18343,7 @@
     {
       "id": "tesla-34555",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Boothwyn, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Boothwyn, PA",
       "slug": "34555",
       "city": "Boothwyn",
       "state": "PA",
@@ -18397,7 +18397,7 @@
     {
       "id": "tesla-17301",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - District Heights, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - District Heights, MD",
       "slug": "17301",
       "city": "District Heights",
       "state": "MD",
@@ -18496,7 +18496,7 @@
     {
       "id": "tesla-blakesleepaq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Blakeslee, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Blakeslee, PA",
       "slug": "BlakesleePAQ322",
       "city": "Blakeslee",
       "state": "PA",
@@ -18541,7 +18541,7 @@
     {
       "id": "tesla-bartonsvillepasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bartonsville, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Bartonsville, PA",
       "slug": "BartonsvillePASupercharger",
       "city": "Bartonsville",
       "state": "PA",
@@ -18586,7 +18586,7 @@
     {
       "id": "tesla-32729",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Nottingham, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Nottingham, MD",
       "slug": "32729",
       "city": "Nottingham",
       "state": "MD",
@@ -18640,7 +18640,7 @@
     {
       "id": "tesla-438003",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Pine Brook, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Pine Brook, NJ",
       "slug": "438003",
       "city": "Pine Brook",
       "state": "NJ",
@@ -18685,7 +18685,7 @@
     {
       "id": "tesla-439417",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bedminster, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Bedminster, NJ",
       "slug": "439417",
       "city": "Bedminster",
       "state": "NJ",
@@ -18775,7 +18775,7 @@
     {
       "id": "tesla-417261",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Sugarloaf, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Sugarloaf, PA",
       "slug": "417261",
       "city": "Drums",
       "state": "PA",
@@ -18820,7 +18820,7 @@
     {
       "id": "tesla-407772",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Logan Township, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Logan Township, NJ",
       "slug": "407772",
       "city": "Logan Township",
       "state": "NJ",
@@ -18856,7 +18856,7 @@
     {
       "id": "tesla-26703",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Mount Pocono, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Mount Pocono, PA",
       "slug": "26703",
       "city": "Mt Pocono",
       "state": "PA",
@@ -18901,7 +18901,7 @@
     {
       "id": "tesla-407617",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Philadelphia, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Philadelphia, PA",
       "slug": "407617",
       "city": "Philadelphia",
       "state": "PA",
@@ -18946,7 +18946,7 @@
     {
       "id": "tesla-4005904",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Trout Run, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Trout Run, PA",
       "slug": "4005904",
       "city": "Trout Run",
       "state": "PA",
@@ -18963,7 +18963,7 @@
     {
       "id": "tesla-450566",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Phoenixville, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Phoenixville, PA",
       "slug": "450566",
       "city": "Schuylkill Township",
       "state": "PA",
@@ -19017,7 +19017,7 @@
     {
       "id": "tesla-18634",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Zanesville, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Zanesville, OH",
       "slug": "18634",
       "city": "Zanesville",
       "state": "OH",
@@ -19062,7 +19062,7 @@
     {
       "id": "tesla-445652",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Newtown, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Newtown, PA",
       "slug": "445652",
       "city": "Newtown Twp",
       "state": "PA",
@@ -19107,7 +19107,7 @@
     {
       "id": "tesla-19525",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Denville, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Denville, NJ",
       "slug": "19525",
       "city": "Denville",
       "state": "NJ",
@@ -19152,7 +19152,7 @@
     {
       "id": "tesla-442207",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Riverdale, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Riverdale, NJ",
       "slug": "442207",
       "city": "Riverdale",
       "state": "NJ",
@@ -19197,7 +19197,7 @@
     {
       "id": "tesla-26708",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Mifflintown, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Mifflintown, PA",
       "slug": "26708",
       "city": "Mifflintown",
       "state": "PA",
@@ -21281,7 +21281,7 @@
     {
       "id": "tesla-19510",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Conshohocken, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Conshohocken, PA",
       "slug": "19510",
       "city": "Conshohocken",
       "state": "PA",
@@ -21326,7 +21326,7 @@
     {
       "id": "tesla-20029",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Elkridge, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Elkridge, MD",
       "slug": "20029",
       "city": "Elkridge",
       "state": "MD",
@@ -21380,7 +21380,7 @@
     {
       "id": "tesla-beardeq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bear, DE, DE",
+      "name": "Tesla Supercharger (NACS Adapter) - Bear, DE",
       "slug": "BearDEQ322",
       "city": "Bear",
       "state": "DE",
@@ -21470,7 +21470,7 @@
     {
       "id": "tesla-bowiemdsupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bowie, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Bowie, MD",
       "slug": "BowieMDsupercharger",
       "city": "Bowie",
       "state": "MD",
@@ -21524,7 +21524,7 @@
     {
       "id": "tesla-bensalempasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bensalem, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Bensalem, PA",
       "slug": "bensalempasupercharger",
       "city": "Bensalem",
       "state": "PA",
@@ -21569,7 +21569,7 @@
     {
       "id": "tesla-18646",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - New Albany, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - New Albany, OH",
       "slug": "18646",
       "city": "New Albany",
       "state": "OH",
@@ -21659,7 +21659,7 @@
     {
       "id": "tesla-34052",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Ocean View, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Ocean View, NJ",
       "slug": "34052",
       "city": "Ocean View",
       "state": "NJ",
@@ -21704,7 +21704,7 @@
     {
       "id": "tesla-18460",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Georgetown, DE, DE",
+      "name": "Tesla Supercharger (NACS Adapter) - Georgetown, DE",
       "slug": "18460",
       "city": "Georgetown",
       "state": "DE",
@@ -21749,47 +21749,20 @@
     {
       "id": "tesla-34183",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Morgantown, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Morgantown, PA",
       "slug": "34183",
       "city": "Morgantown",
       "state": "PA",
       "lat": 40.1551,
       "lon": -75.8738,
       "power_kw": 250,
-      "rate_on": 0.68,
-      "rate_off": 0.3,
-      "mem_on": 0.49,
-      "mem_off": 0.22,
-      "tou_rates": [
-        {
-          "start": "00:00",
-          "end": "08:00",
-          "on": 0.3,
-          "off": 0.3,
-          "mem_on": 0.22,
-          "mem_off": 0.22,
-          "label": "Off-Peak"
-        },
-        {
-          "start": "08:00",
-          "end": "22:00",
-          "on": 0.68,
-          "off": 0.68,
-          "mem_on": 0.49,
-          "mem_off": 0.49,
-          "label": "Peak"
-        },
-        {
-          "start": "22:00",
-          "end": "24:00",
-          "on": 0.3,
-          "off": 0.3,
-          "mem_on": 0.22,
-          "mem_off": 0.22,
-          "label": "Off-Peak"
-        }
-      ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34183"
+      "rate_on": 0.56,
+      "rate_off": 0.56,
+      "mem_on": 0.41,
+      "mem_off": 0.41,
+      "tou_rates": [],
+      "url": "https://www.tesla.com/findus/location/supercharger/34183",
+      "is_tou": false
     },
     {
       "id": "tesla-36131",
@@ -21839,7 +21812,7 @@
     {
       "id": "tesla-16610",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Brooklyn, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Brooklyn, OH",
       "slug": "16610",
       "city": "Brooklyn",
       "state": "OH",
@@ -21884,7 +21857,7 @@
     {
       "id": "tesla-18484",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Perry Hall, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Perry Hall, MD",
       "slug": "18484",
       "city": "Perry Hall",
       "state": "MD",
@@ -21938,7 +21911,7 @@
     {
       "id": "tesla-18737",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Shaker Heights, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Shaker Heights, OH",
       "slug": "18737",
       "city": "Shaker Heights",
       "state": "OH",
@@ -22028,7 +22001,7 @@
     {
       "id": "tesla-bethelparkpaq322",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Bethel Park, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Bethel Park, PA",
       "slug": "BethelParkPAQ322",
       "city": "Bethel Park",
       "state": "PA",
@@ -22073,7 +22046,7 @@
     {
       "id": "tesla-millhallpasupercharger",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Mill Hall, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Mill Hall, PA",
       "slug": "millhallpasupercharger",
       "city": "Mill Hall",
       "state": "PA",
@@ -22090,7 +22063,7 @@
     {
       "id": "tesla-19499",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Woolwich Township, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Woolwich Township, NJ",
       "slug": "19499",
       "city": "Woolwich Township",
       "state": "NJ",
@@ -22126,7 +22099,7 @@
     {
       "id": "tesla-26763",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Somers Point, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Somers Point, NJ",
       "slug": "26763",
       "city": "Somers Point",
       "state": "NJ",
@@ -22306,7 +22279,7 @@
     {
       "id": "tesla-19515",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Manahawkin, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Manahawkin, NJ",
       "slug": "19515",
       "city": "Stafford Township",
       "state": "NJ",
@@ -22396,7 +22369,7 @@
     {
       "id": "tesla-59071",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Essington, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Essington, PA",
       "slug": "59071",
       "city": "Essington",
       "state": "PA",
@@ -22441,7 +22414,7 @@
     {
       "id": "tesla-26760",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Brick Township, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Brick Township, NJ",
       "slug": "26760",
       "city": "Brick Township",
       "state": "NJ",
@@ -22531,7 +22504,7 @@
     {
       "id": "tesla-19491",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Clearfield, PA, PA",
+      "name": "Tesla Supercharger (NACS Adapter) - Clearfield, PA",
       "slug": "19491",
       "city": "Clearfield",
       "state": "PA",
@@ -22548,7 +22521,7 @@
     {
       "id": "tesla-27531",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Upper Sandusky, OH, OH",
+      "name": "Tesla Supercharger (NACS Adapter) - Upper Sandusky, OH",
       "slug": "27531",
       "city": "Upper Sandusky",
       "state": "OH",
@@ -22647,7 +22620,7 @@
     {
       "id": "tesla-36222",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Berkeley Heights, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Berkeley Heights, NJ",
       "slug": "36222",
       "city": "Berkeley Heights",
       "state": "NJ",
@@ -22692,7 +22665,7 @@
     {
       "id": "tesla-33777",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Cockeysville, MD, MD",
+      "name": "Tesla Supercharger (NACS Adapter) - Cockeysville, MD",
       "slug": "33777",
       "city": "Cockeysville",
       "state": "MD",
@@ -22746,7 +22719,7 @@
     {
       "id": "tesla-3520",
       "network": "Tesla NACS",
-      "name": "Tesla Supercharger (NACS Adapter) - Hazlet, NJ, NJ",
+      "name": "Tesla Supercharger (NACS Adapter) - Hazlet, NJ",
       "slug": "3520",
       "city": "Hazlet",
       "state": "NJ",
