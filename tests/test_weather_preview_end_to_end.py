@@ -13,7 +13,12 @@ import sys
 import threading
 import time
 import urllib.request
-import uvicorn
+try:
+    import uvicorn
+    from ui.app import app
+except ImportError:
+    uvicorn = None
+    app = None
 import websockets
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -21,14 +26,14 @@ if hasattr(sys.stdout, "reconfigure"):
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ui.app import app
-
 APP_PORT = 8795
 CDP_PORT = 9295
 USER_DATA_DIR = r"C:\temp\chrome_weather_preview_test"
 
 
 def start_app_server():
+    if uvicorn is None:
+        raise RuntimeError("uvicorn is not installed")
     config = uvicorn.Config(app, host="127.0.0.1", port=APP_PORT, log_level="warning")
     server = uvicorn.Server(config)
     thread = threading.Thread(target=server.run, daemon=True)

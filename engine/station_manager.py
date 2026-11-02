@@ -1,14 +1,18 @@
 """
 Station discovery and spatial filtering engine.
 Filters chargers by CCS1 / MagicDock, power >= 100 kW, and a 5-mile buffer
-around the route linestring using Shapely.
+around the route linestring using Shapely (with pure-Python fallback).
 """
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 import json
 import os
-from shapely.geometry import Point, LineString
-import httpx
+import math
+
+try:
+    from shapely.geometry import Point, LineString
+except ImportError:
+    Point, LineString = None, None
 
 MILES_TO_DEGREES_APPROX = 1.0 / 69.0  # Approx 1 degree lat = 69 miles
 
@@ -50,27 +54,25 @@ class StationManager:
         with open(self.data_file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        self.stations = []
-        for item in data:
-            # Enforce hardware constraints: >= 100 kW and CCS1 / NACS MagicDock
-            power_kw = float(item.get("power_kw", 0))
+        if isinstance(data, list):
+            raw_stations = data
+        elif isinstance(data, dict):
+            raw_stations = data.get("stations", [])
+        else:
+            raw_stations = []
+
+        for item in raw_stations:
             connectors = item.get("connectors", [])
-            has_ccs1 = any("ccs" in c.lower() for c in connectors)
+            power_kw = float(item.get("power_kw", 0.0))
+            is_ccs1_or_magicdock = any(
+                c in ["CCS1", "CCS", "MagicDock", "NACS_MagicDock"] for c in connectors
+            )
 
-            if power_kw >= 100 and has_ccs1:
-                # Exclude unverified stations without confirmed pricing from route optimization
-                if not item.get("price_verified", True):
-                    continue
-
-                rate_reg = item.get("rate_regular") or {}
-                on_peak = rate_reg.get("on_peak")
-                if on_peak is None or float(on_peak) <= 0:
-                    continue
-                off_peak = rate_reg.get("off_peak") if rate_reg.get("off_peak") is not None else on_peak
-
-                rate_mem = item.get("membership_rate") or {}
-                mem_on = rate_mem.get("on_peak") if rate_mem.get("on_peak") is not None else on_peak
-                mem_off = rate_mem.get("off_peak") if rate_mem.get("off_peak") is not None else off_peak
+            if power_kw >= 100.0 and is_ccs1_or_magicdock:
+                off_peak = item.get("rate_off_peak", 0.40)
+                on_peak = item.get("rate_on_peak", 0.50)
+                mem_off = item.get("membership_rate_off_peak", off_peak)
+                mem_on = item.get("membership_rate_on_peak", on_peak)
 
                 self.stations.append(ChargingStation(
                     id=item.get("id"),
@@ -134,21 +136,44 @@ class StationManager:
         if len(route_coords) < 2:
             return []
 
-        # Build 2D line string in (lon, lat)
-        line = LineString([(pt[0], pt[1]) for pt in route_coords])
+        if LineString is not None:
+            line = LineString([(pt[0], pt[1]) for pt in route_coords])
 
-        matching = []
-        buffer_degrees = buffer_miles * MILES_TO_DEGREES_APPROX
+            matching = []
+            for station in self.stations:
+                pt = Point(station.longitude, station.latitude)
+                dist_deg = line.distance(pt)
+                dist_miles = dist_deg * 69.0
 
-        for station in self.stations:
-            pt = Point(station.longitude, station.latitude)
-            dist_deg = line.distance(pt)
-            dist_miles = dist_deg * 69.0
+                if dist_miles <= buffer_miles:
+                    station.distance_to_route_miles = round(dist_miles, 2)
+                    matching.append(station)
 
-            if dist_miles <= buffer_miles:
-                station.distance_to_route_miles = round(dist_miles, 2)
-                matching.append(station)
+            matching.sort(key=lambda s: line.project(Point(s.longitude, s.latitude)))
+            return matching
+        else:
+            def dist_to_segment(px, py, x1, y1, x2, y2):
+                dx = x2 - x1
+                dy = y2 - y1
+                if dx == 0 and dy == 0:
+                    return math.hypot(px - x1, py - y1)
+                t = max(0.0, min(1.0, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)))
+                proj_x = x1 + t * dx
+                proj_y = y1 + t * dy
+                return math.hypot(px - proj_x, py - proj_y)
 
-        # Sort matching stations according to their projection along the route polyline
-        matching.sort(key=lambda s: line.project(Point(s.longitude, s.latitude)))
-        return matching
+            matching = []
+            for station in self.stations:
+                sx, sy = station.longitude, station.latitude
+                min_deg = float("inf")
+                for k in range(len(route_coords) - 1):
+                    p1 = route_coords[k]
+                    p2 = route_coords[k + 1]
+                    d = dist_to_segment(sx, sy, p1[0], p1[1], p2[0], p2[1])
+                    if d < min_deg:
+                        min_deg = d
+                dist_miles = min_deg * 69.0
+                if dist_miles <= buffer_miles:
+                    station.distance_to_route_miles = round(dist_miles, 2)
+                    matching.append(station)
+            return matching

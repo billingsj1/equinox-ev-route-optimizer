@@ -8621,14 +8621,36 @@
       }
     }
 
+        function formatLegIso(baseDateStr, hoursDecimal) {
+      const dateParts = (baseDateStr || new Date().toISOString().split('T')[0]).split('-');
+      const y = parseInt(dateParts[0], 10);
+      const m = parseInt(dateParts[1], 10) - 1;
+      const d = parseInt(dateParts[2], 10);
+      const baseMs = new Date(y, m, d, 0, 0, 0).getTime();
+      const totalMs = baseMs + Math.round(hoursDecimal * 3600 * 1000);
+      const dt = new Date(totalMs);
+      const yyyy = dt.getFullYear();
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getDate()).padStart(2, '0');
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const min = String(dt.getMinutes()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T${hh}:${min}:00`;
+    }
+
     let lastCalculatedInputSignature = "";
     function getCurrentInputSignature() {
       const o = document.getElementById('originAddress')?.value.trim() || "";
       const d = document.getElementById('destAddress')?.value.trim() || "";
       const date = document.getElementById('departureDate')?.value || "";
       const time = document.getElementById('departureTime')?.value || "";
-      const soc = document.getElementById('startSocInput')?.value || "";
-      return `${o}|${d}|${date}|${time}|${soc}`;
+      const soc = document.getElementById('startSocSlider')?.value || "100";
+      const offset = document.getElementById('speedOffset')?.value || "10";
+      const cap = document.getElementById('maxSpeedCap')?.value || "75";
+      const minT = document.getElementById('minTimeSlider')?.value || "70";
+      const maxT = document.getElementById('maxTimeSlider')?.value || "120";
+      const decamilla = document.getElementById('decamillaStopDuration')?.value || "0";
+      const profile = document.getElementById('trafficProfile')?.value || "typical";
+      return `${o}|${d}|${date}|${time}|${soc}|${offset}|${cap}|${minT}|${maxT}|${decamilla}|${profile}`;
     }
 
     async function handleTomTomPrecisionSync() {
@@ -8663,6 +8685,7 @@
 
         if (!activeRoutesData || activeRoutesData.length === 0 || !calculatedResults || !calculatedResults.fastest_x) {
           alert("Could not generate base routes. Please check your origin and destination.");
+          btnText.innerHTML = originalText;
           return;
         }
 
@@ -8674,9 +8697,7 @@
           const k = (cand.route.id || cand.route.name) + '|' + (cand.stops || []).map(s => (s.station?.id || s.station?.name) + '@' + Math.round(s.tgt_soc || 0)).join('-');
           if (!seenKeys.has(k)) {
             seenKeys.add(k);
-            // Deep clone candidate so precision adjustments do not mutate prior objects prematurely
             const cloned = JSON.parse(JSON.stringify(cand));
-            // Preserve station object references for Leaflet map markers
             if (cand.stops && cloned.stops) {
               cand.stops.forEach((origS, idx) => {
                 if (cloned.stops[idx]) cloned.stops[idx].station = origS.station;
@@ -8687,13 +8708,11 @@
           }
         }
 
-        // Add the currently active winners first
         [
           calculatedResults.fastest_x, calculatedResults.cheapest_x, calculatedResults.balanced_x,
           calculatedResults.fastest_y, calculatedResults.cheapest_y, calculatedResults.balanced_y
         ].forEach(addCandidate);
 
-        // Add top ~3 contenders for each card category from window.lastEvaluatedPool
         if (window.lastEvaluatedPool && Array.isArray(window.lastEvaluatedPool)) {
           const xStops = calculatedResults.x_stops;
           const yStops = calculatedResults.y_stops;
@@ -8714,10 +8733,11 @@
 
         if (candidatePool.length === 0) {
           alert("No viable route candidates to evaluate.");
+          btnText.innerHTML = originalText;
           return;
         }
 
-        // Step 3: Decompose into individual driving legs and deduplicate
+        // Step 3: Decompose into individual driving legs and deduplicate with calendar-aware rollover
         const depDateStr = document.getElementById('departureDate')?.value || new Date().toISOString().split('T')[0];
         const uniqueLegsMap = new Map();
         const legAssignments = [];
@@ -8730,10 +8750,8 @@
 
           if (stops.length === 0) {
             const depHour = getDepartureHoursDecimal();
-            const depHourInt = Math.floor(depHour % 24);
-            const depMinInt = Math.floor((depHour * 60) % 60);
-            const iso = `${depDateStr}T${String(depHourInt).padStart(2, '0')}:${String(depMinInt).padStart(2, '0')}:00`;
-            const legKey = `${originCoords[0].toFixed(4)},${originCoords[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${depHourInt}`;
+            const iso = formatLegIso(depDateStr, depHour);
+            const legKey = `${originCoords[0].toFixed(4)},${originCoords[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${iso.slice(0, 13)}`;
             if (!uniqueLegsMap.has(legKey)) {
               uniqueLegsMap.set(legKey, { start: originCoords, end: destCoords, iso: iso, result: null });
             }
@@ -8745,10 +8763,8 @@
               const startC = (i === 0) ? originCoords : [stops[i-1].station.lat, stops[i-1].station.lon];
               const endC = [sp.station.lat, sp.station.lon];
 
-              const depHourInt = Math.floor(currentDepHour % 24);
-              const depMinInt = Math.floor((currentDepHour * 60) % 60);
-              const iso = `${depDateStr}T${String(depHourInt).padStart(2, '0')}:${String(depMinInt).padStart(2, '0')}:00`;
-              const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${endC[0].toFixed(4)},${endC[1].toFixed(4)}@${depHourInt}`;
+              const iso = formatLegIso(depDateStr, currentDepHour);
+              const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${endC[0].toFixed(4)},${endC[1].toFixed(4)}@${iso.slice(0, 13)}`;
               if (!uniqueLegsMap.has(legKey)) {
                 uniqueLegsMap.set(legKey, { start: startC, end: endC, iso: iso, result: null });
               }
@@ -8762,10 +8778,8 @@
             // Final leg to destination
             const lastSp = stops[stops.length - 1];
             const startC = [lastSp.station.lat, lastSp.station.lon];
-            const depHourInt = Math.floor(currentDepHour % 24);
-            const depMinInt = Math.floor((currentDepHour * 60) % 60);
-            const iso = `${depDateStr}T${String(depHourInt).padStart(2, '0')}:${String(depMinInt).padStart(2, '0')}:00`;
-            const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${depHourInt}`;
+            const iso = formatLegIso(depDateStr, currentDepHour);
+            const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${iso.slice(0, 13)}`;
             if (!uniqueLegsMap.has(legKey)) {
               uniqueLegsMap.set(legKey, { start: startC, end: destCoords, iso: iso, result: null });
             }
@@ -8777,6 +8791,9 @@
         const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
         const max_cap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
         const uniqueLegList = Array.from(uniqueLegsMap.entries());
+
+        let successCount = 0;
+        let failCount = 0;
 
         for (let i = 0; i < uniqueLegList.length; i++) {
           const [lKey, lObj] = uniqueLegList[i];
@@ -8821,18 +8838,29 @@
                 speed_mph: v_eff,
                 no_traffic_hours: no_traffic_hours
               };
+              successCount++;
             } else if (resp.status === 429) {
               console.warn("TomTom 429 Rate limit, waiting 2.5s...");
               await new Promise(r => setTimeout(r, 2500));
               i--;
               continue;
+            } else {
+              failCount++;
+              console.warn(`TomTom API error (HTTP ${resp.status}) for leg ${lKey}`);
             }
           } catch (e) {
+            failCount++;
             console.warn("TomTom leg fetch error:", e);
           }
 
           // Throttle to respect TomTom 5 QPS rate limit
           await new Promise(r => setTimeout(r, 260));
+        }
+
+        if (successCount === 0 && failCount > 0) {
+          alert("TomTom API call failed. Please verify your TomTom API key in Advanced Settings.");
+          btnText.innerHTML = originalText;
+          return;
         }
 
         // Step 5: Re-simulate candidates with TomTom precision data
