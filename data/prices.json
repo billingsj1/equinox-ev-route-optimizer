@@ -1084,5 +1084,36 @@
     "session_fee": 0.0,
     "plugshare_url": "https://www.tesla.com/findus/location/supercharger/424861",
     "price_verified": true
+  },
+  {
+    "id": "ag-sideling-hill-pa",
+    "name": "Applegreen Electric - Sideling Hill, PA (PA Turnpike)",
+    "network": "Applegreen",
+    "city": "Taylor Township",
+    "state": "PA",
+    "latitude": 40.059,
+    "longitude": -78.0817,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://dcfctracker.com/stations/465436",
+    "price_verified": true
   }
 ]
