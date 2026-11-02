@@ -8840,10 +8840,15 @@
               };
               successCount++;
             } else if (resp.status === 429) {
-              console.warn("TomTom 429 Rate limit, waiting 2.5s...");
-              await new Promise(r => setTimeout(r, 2500));
-              i--;
-              continue;
+              lObj.retries = (lObj.retries || 0) + 1;
+              if (lObj.retries <= 3) {
+                console.warn(`TomTom 429 rate limit, waiting 2.5s (retry ${lObj.retries}/3)...`);
+                await new Promise(r => setTimeout(r, 2500));
+                i--;
+                continue;
+              }
+              failCount++;
+              console.warn(`TomTom 429 persisted after 3 retries for leg ${lKey}`);
             } else {
               failCount++;
               console.warn(`TomTom API error (HTTP ${resp.status}) for leg ${lKey}`);
