@@ -948,6 +948,7 @@
                 <tr class="border-b border-slate-800 text-slate-400 font-medium">
                   <th class="py-2 px-3">Stop # &amp; Station</th>
                   <th class="py-2 px-3">Drive Leg</th>
+                  <th class="py-2 px-3 text-center">Traffic Delay</th>
                   <th class="py-2 px-3">Detour</th>
                   <th class="py-2 px-3">Battery SoC</th>
                   <th class="py-2 px-3">Charge Time</th>
@@ -7226,14 +7227,14 @@
     // Precomputed O(1) Cumulative Physics Lookup Table (Prefix Sums)
     // Eliminates redundant loops across hundreds of sub-steps during forward search,
     // reducing thousands of leg calculations from seconds of UI freeze down to under 5ms.
-    function precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile) {
+    function precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, start_clock_hours) {
       const curb_kg = 2233.0;
       const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
       const temp_c = (temp_f - 32) * 5 / 9;
       const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
       const v_wind_ms = wind_speed * 0.44704;
 
-      const depHour = getDepartureHoursDecimal();
+      const depHour = (start_clock_hours != null) ? start_clock_hours : getDepartureHoursDecimal();
       const depDow = getDepartureDayOfWeek();
       const decamillaVal = (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) 
         ? document.getElementById('decamillaStopDuration').value : '0';
@@ -7242,16 +7243,19 @@
 
       let cum_m = 0.0;
       let cum_h = 0.0;
+      let cum_ff_h = 0.0;
       let cum_k = 0.0;
       let cum_w_spd = 0.0;
 
       const records = [{
         mile: 0.0,
         cum_hours: 0.0,
+        cum_free_flow_hours: 0.0,
         cum_kwh: 0.0,
         cum_weighted_spd: 0.0,
         step_len: 0.0,
         step_hours: 0.0,
+        step_free_flow_hours: 0.0,
         step_kwh: 0.0,
         step_speed: fallback_speed || 70.0
       }];
@@ -7381,6 +7385,8 @@
 
         const v_ms = target_mph * 0.44704;
         const slice_hours = step_len / Math.max(15.0, target_mph);
+        const free_flow_target = Math.min(Math.max(posted_speed + speed_offset, free_flow_mph), max_cap);
+        const slice_ff_hours = step_len / Math.max(15.0, free_flow_target);
         const dist_m = step_len * 1609.34;
 
         let step_bearing = 90.0;
@@ -7487,18 +7493,23 @@
 
         const slice_total_kwh = ((tractive_planar_kwh + kinetic_kwh) / (tractive_planar_kwh >= 0 ? batt_eff : 1.0)) + aux_kwh;
 
+        const step_tot_ff_hours = slice_ff_hours + (idle_hours * 0.25) + maneuver_delay_hours;
+
         cum_m += step_len;
         cum_h += step_tot_hours;
+        cum_ff_h += step_tot_ff_hours;
         cum_k += slice_total_kwh;
         cum_w_spd += (target_mph * step_len);
 
         records.push({
           mile: cum_m,
           cum_hours: cum_h,
+          cum_free_flow_hours: cum_ff_h,
           cum_kwh: cum_k,
           cum_weighted_spd: cum_w_spd,
           step_len: step_len,
           step_hours: step_tot_hours,
+          step_free_flow_hours: step_tot_ff_hours,
           step_kwh: slice_total_kwh,
           step_speed: target_mph
         });
@@ -7508,18 +7519,19 @@
         records: records,
         total_miles: cum_m,
         total_hours: cum_h,
+        total_free_flow_hours: cum_ff_h,
         total_kwh: cum_k
       };
     }
 
     function queryStepsPhysicsLUT(lut, start_mile, end_mile) {
       const recs = lut.records;
-      if (recs.length <= 1) return { hours: 0, kwh: 0, target_mph: 65.0 };
+      if (recs.length <= 1) return { hours: 0, free_flow_hours: 0, traffic_delay_mins: 0, kwh: 0, target_mph: 65.0 };
 
       function getPoint(m) {
-        if (m <= 0.0) return { h: 0.0, k: 0.0, w: 0.0 };
+        if (m <= 0.0) return { h: 0.0, ff_h: 0.0, k: 0.0, w: 0.0 };
         const last = recs[recs.length - 1];
-        if (m >= last.mile) return { h: last.cum_hours, k: last.cum_kwh, w: last.cum_weighted_spd };
+        if (m >= last.mile) return { h: last.cum_hours, ff_h: last.cum_free_flow_hours || last.cum_hours, k: last.cum_kwh, w: last.cum_weighted_spd };
 
         let low = 0, high = recs.length - 1, idx = 0;
         while (low <= high) {
@@ -7532,13 +7544,14 @@
           }
         }
 
-        if (idx >= recs.length - 1) return { h: last.cum_hours, k: last.cum_kwh, w: last.cum_weighted_spd };
+        if (idx >= recs.length - 1) return { h: last.cum_hours, ff_h: last.cum_free_flow_hours || last.cum_hours, k: last.cum_kwh, w: last.cum_weighted_spd };
         const next = recs[idx + 1];
         const seg_len = next.step_len || 0.001;
         const frac = Math.max(0.0, Math.min(1.0, (m - recs[idx].mile) / seg_len));
 
         return {
           h: recs[idx].cum_hours + frac * next.step_hours,
+          ff_h: (recs[idx].cum_free_flow_hours || recs[idx].cum_hours) + frac * (next.step_free_flow_hours || next.step_hours),
           k: recs[idx].cum_kwh + frac * next.step_kwh,
           w: recs[idx].cum_weighted_spd + frac * (next.step_speed * next.step_len)
         };
@@ -7547,15 +7560,20 @@
       const p0 = getPoint(start_mile);
       const p1 = getPoint(end_mile);
       const d_mi = Math.max(0.001, end_mile - start_mile);
+      const h_drive = Math.max(0.0001, p1.h - p0.h);
+      const ff_drive = Math.max(0.0001, (p1.ff_h || p1.h) - (p0.ff_h || p0.h));
+      const delay_mins = Math.max(0, Math.round((h_drive - ff_drive) * 60.0));
 
       return {
-        hours: Math.max(0.0001, p1.h - p0.h),
+        hours: h_drive,
+        free_flow_hours: ff_drive,
+        traffic_delay_mins: delay_mins,
         kwh: Math.max(0.0, p1.k - p0.k),
         target_mph: (p1.w - p0.w) / d_mi
       };
     }
 
-    function simulateLegFromSteps(steps, start_mile, end_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed) {
+    function simulateLegFromSteps(steps, start_mile, end_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, start_clock_hours) {
       if (!steps || steps.length === 0) {
         return simulateLegPhysics(end_mile - start_mile, fallback_speed || 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
       }
@@ -7572,9 +7590,10 @@
       const depVal = (typeof document !== 'undefined' && document.getElementById('departureTime')) ? document.getElementById('departureTime').value : '08:00';
       const depDateVal = (typeof document !== 'undefined' && document.getElementById('departureDate')) ? document.getElementById('departureDate').value : '';
       const decamillaStopVal = (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) ? document.getElementById('decamillaStopDuration').value : '0';
-      const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${depDateVal}_${depVal}_${decamillaStopVal}_${weatherKey}`;
+      const clockKey = (start_clock_hours != null) ? start_clock_hours.toFixed(2) : depVal;
+      const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${depDateVal}_${clockKey}_${decamillaStopVal}_${weatherKey}`;
       if (!steps._lut || steps._lutKey !== lutKey) {
-        steps._lut = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile);
+        steps._lut = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, start_clock_hours);
         steps._lutKey = lutKey;
       }
 
@@ -7609,6 +7628,8 @@
 
       return {
         hours: total_hours,
+        free_flow_hours: res.free_flow_hours,
+        traffic_delay_mins: res.traffic_delay_mins,
         kwh: total_kwh,
         mi_per_kwh: total_kwh > 0 ? (total_slice_dist / total_kwh) : 3.0,
         wh_per_mi: total_slice_dist > 0 ? (total_kwh * 1000.0 / total_slice_dist) : 330,
@@ -9399,8 +9420,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         for (let j = 0; j < routeStations.length; j++) {
           const st = routeStations[j];
-          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
           startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+          const approx_stops = Math.floor(st.mile / 160.0);
+          const est_station_dep_clock = departure_hours + startToStationLegs[j].hours + (approx_stops * 0.45);
+          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph, est_station_dep_clock);
 
           if (st.is_decamilla) {
             stationDetours[j] = {
@@ -10169,12 +10192,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let pack_temp = isPreheated ? Math.max(48.0, ambTemp0) : ambTemp0;
 
         const rawStops = [];
+        let current_leg_clock = departure_hours;
 
         for (let idx = 0; idx < cand.stops.length; idx++) {
           const sp = cand.stops[idx];
           const leg = osrmData.legs[idx];
 
-          const legSim = simulateLegFromSteps(leg.steps, 0, leg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
+          const legSim = simulateLegFromSteps(leg.steps, 0, leg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph, current_leg_clock);
           total_drive_hrs += legSim.hours;
 
           let arrAmb = temp_f;
@@ -10214,7 +10238,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
 
           const nextLeg = osrmData.legs[idx + 1];
-          const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
+          const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph, current_leg_clock);
           const needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
           const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer;
 
@@ -10255,6 +10279,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const arr_clock = formatClockTime(arr_clock_dec);
           const dep_clock = formatClockTime(arr_clock_dec + (stop_mins / 60.0));
           total_ch_hrs += (stop_mins / 60.0);
+          current_leg_clock = arr_clock_dec + (stop_mins / 60.0);
 
           const actual_detour_miles = sp.is_decamilla ? 12.8 : Math.max(0.0, Math.round((leg.distance_miles - (sp.mile - (idx === 0 ? 0 : cand.stops[idx-1].mile))) * 10) / 10);
 
@@ -10263,6 +10288,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             arr_clock_dec: arr_clock_dec,
             leg_drive_hrs: legSim.hours,
             leg_drive_mins: Math.round(legSim.hours * 60.0),
+            leg_traffic_delay_mins: legSim.traffic_delay_mins || 0,
             leg_miles: Math.round(leg.distance_miles * 10) / 10,
             from_label: idx === 0 ? "from Start" : `from Stop ${idx}`,
             detour_miles: actual_detour_miles > 0 ? actual_detour_miles : sp.detour_miles,
@@ -10283,7 +10309,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         if (!valid) return null;
 
         const finalLeg = osrmData.legs[osrmData.legs.length - 1];
-        const finalLegSim = simulateLegFromSteps(finalLeg.steps, 0, finalLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph);
+        const finalLegSim = simulateLegFromSteps(finalLeg.steps, 0, finalLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph, current_leg_clock);
         total_drive_hrs += finalLegSim.hours;
 
         let final_leg_kwh = finalLegSim.kwh;
@@ -10398,6 +10424,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           final_leg_hrs: finalLegSim.hours,
           final_leg_mins: Math.round(finalLegSim.hours * 60.0),
           final_leg_miles: Math.round(finalLeg.distance_miles * 10) / 10,
+          final_leg_traffic_delay_mins: finalLegSim.traffic_delay_mins || 0,
+          total_traffic_delay_mins: rawStops.reduce((a, s) => a + (s.leg_traffic_delay_mins || 0), 0) + (finalLegSim.traffic_delay_mins || 0),
           ch_cost: Math.round(total_ch_cost * 100) / 100,
           membership_fees: p_membership_fees,
           total_cost: total_cost,
@@ -10983,6 +11011,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               ${fromLabel} (${Math.round(legMiles)} mi)
             </div>
           </td>
+          <td class="py-2.5 px-3 font-mono text-center">
+            ${(s.leg_traffic_delay_mins != null && s.leg_traffic_delay_mins > 2)
+              ? `<span class="text-amber-400 font-bold">+${s.leg_traffic_delay_mins}m</span><div class="text-[10px] text-amber-500/80 font-sans">slowdown</div>`
+              : ((s.leg_traffic_delay_mins != null && s.leg_traffic_delay_mins > 0)
+                ? `<span class="text-slate-300 font-medium">+${s.leg_traffic_delay_mins}m</span><div class="text-[10px] text-slate-500 font-sans">minor</div>`
+                : `<span class="text-emerald-400 font-medium">0m</span><div class="text-[10px] text-emerald-500/80 font-sans">clear</div>`)}
+          </td>
           <td class="py-2.5 px-3 text-xs">${detourBadge}</td>
           <td class="py-2.5 px-3 font-mono">
             <div class="flex items-center gap-1.5 font-bold">
@@ -11059,6 +11094,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               from Stop ${itin.stops.length} (${Math.round(finalLegMiles)} mi)
             </div>
           </td>
+          <td class="py-2.5 px-3 font-mono text-center">
+            ${(itin.final_leg_traffic_delay_mins != null && itin.final_leg_traffic_delay_mins > 2)
+              ? `<span class="text-amber-400 font-bold">+${itin.final_leg_traffic_delay_mins}m</span><div class="text-[10px] text-amber-500/80 font-sans">slowdown</div>`
+              : ((itin.final_leg_traffic_delay_mins != null && itin.final_leg_traffic_delay_mins > 0)
+                ? `<span class="text-slate-300 font-medium">+${itin.final_leg_traffic_delay_mins}m</span><div class="text-[10px] text-slate-500 font-sans">minor</div>`
+                : `<span class="text-emerald-400 font-medium">0m</span><div class="text-[10px] text-emerald-500/80 font-sans">clear</div>`)}
+          </td>
           <td class="py-2.5 px-3 text-xs text-slate-500">—</td>
           <td class="py-2.5 px-3 font-mono">
             <div class="text-emerald-400 font-bold">${itin.final_soc}% SoC</div>
@@ -11083,16 +11125,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         tfoot.innerHTML = `
           <tr class="border-t border-slate-700 bg-slate-950/60 font-mono text-xs">
-            <td colspan="5" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
+            <td colspan="6" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
             <td colspan="2" class="py-2.5 px-3 text-white font-semibold">$${itin.ch_cost.toFixed(2)}</td>
           </tr>
           ${itin.membership_fees > 0 ? `
           <tr class="bg-slate-950/60 font-mono text-xs">
-            <td colspan="5" class="py-1.5 px-3 text-right text-amber-400/90 font-sans">+ One-Way Membership Fees (${feeLabels.join(', ')}):</td>
+            <td colspan="6" class="py-1.5 px-3 text-right text-amber-400/90 font-sans">+ One-Way Membership Fees (${feeLabels.join(', ')}):</td>
             <td colspan="2" class="py-1.5 px-3 text-amber-400 font-semibold">+$${itin.membership_fees.toFixed(2)}</td>
           </tr>` : ''}
           <tr class="bg-slate-950/60 font-mono text-xs">
-            <td colspan="5" class="py-1.5 px-3 text-right text-slate-400 font-sans">
+            <td colspan="6" class="py-1.5 px-3 text-right text-slate-400 font-sans">
               ${(() => {
                 let tollTitle = "Highway Tolls (2026 PA Turnpike E-ZPass):";
                 let tollSubtitle = "Class 1 (2L) &bull; New Stanton #75 to Valley Forge #326 per Jan 4, 2026 Schedule";
@@ -11118,11 +11160,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             <td colspan="2" class="py-1.5 px-3 text-slate-300 font-semibold align-top">$${itin.toll_cost.toFixed(2)}</td>
           </tr>
           <tr class="text-sm font-bold border-t border-slate-800 bg-slate-900/80">
-            <td colspan="5" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
+            <td colspan="6" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
             <td colspan="2" class="py-2.5 px-3 text-emerald-400 text-base font-mono">
               $${itin.total_cost.toFixed(2)}
               ${itin.memberships.ea.active && !itin.memberships.ea.pre_owned && itin.memberships.ea.net > 0 ? `<span class="block text-[11px] text-emerald-300 font-sans font-normal">(Net Pass+ Savings: $${itin.memberships.ea.net.toFixed(2)})</span>` : ''}
             </td>
+          </tr>
+          <tr class="bg-slate-950/60 font-mono text-xs border-t border-slate-800/80">
+            <td colspan="6" class="py-1.5 px-3 text-right text-slate-400 font-sans">
+              ${(itin.total_traffic_delay_mins != null && itin.total_traffic_delay_mins > 2)
+                ? `<span class="text-amber-400 font-semibold">Total Predicted Traffic Slowdown:</span> <span class="text-amber-400 font-bold ml-1">+${itin.total_traffic_delay_mins} min</span>`
+                : `<span class="text-slate-400">Total Traffic Slowdown:</span> <span class="text-emerald-400 ml-1">Minimal (${itin.total_traffic_delay_mins || 0} min)</span>`}
+            </td>
+            <td colspan="2" class="py-1.5 px-3 text-slate-500 text-[11px] text-right font-sans">TomTom 7&times;24 Matrix</td>
           </tr>
         `;
       }
