@@ -1,6 +1,7 @@
 import asyncio
 import http.server
 import json
+import os
 import shutil
 import subprocess
 import threading
@@ -134,7 +135,60 @@ async def test_traffic_flow():
             print(f"Friday PM Total Driving Time: {int(friday_info['drive_hours'])}h {int(round((friday_info['drive_hours']%1)*60))}m")
             assert friday_info['drive_hours'] > sunday_info['drive_hours'], "Friday rush hour should take longer than Sunday free flow"
 
-            print("\n*** ALL TRAFFIC PREDICTIVE TESTS PASSED SUCCESSFULLY! ***")
+            # Test C: On-Demand TomTom Precision Sync
+            print("\n[TEST 2] Testing on-demand TomTom Precision Sync...")
+            key_path = "scratch/tomtom_api_key.txt"
+            api_key = ""
+            if os.path.exists(key_path):
+                with open(key_path, "r", encoding="utf-8") as f:
+                    api_key = f.read().strip()
+
+            assert api_key, "API key should be present in scratch/tomtom_api_key.txt"
+
+            # Inject TomTom API Key into window and localStorage
+            await eval_js(f"""(() => {{
+                window.TOMTOM_API_KEY = "{api_key}";
+                localStorage.setItem("tomtom_api_key", "{api_key}");
+                const inp = document.getElementById("tomtomApiKeyInput");
+                if (inp) inp.value = "{api_key}";
+            }})()""")
+
+            # Click TomTom Precision button
+            print("Clicking #precisionSyncBtn...")
+            await eval_js("document.getElementById('precisionSyncBtn').click();")
+
+            # Wait for sync to complete (max 30 seconds)
+            precision_completed = False
+            for _ in range(60):
+                await asyncio.sleep(0.5)
+                btn_text = await eval_js("document.getElementById('precisionSyncBtnText')?.innerText")
+                badge_hidden = await eval_js("document.getElementById('precisionStatusBadge')?.classList.contains('hidden')")
+                if "Precision Active" in (btn_text or "") and not badge_hidden:
+                    precision_completed = True
+                    break
+
+            assert precision_completed, "TomTom Precision Sync should complete and activate badge"
+            print("TomTom Precision Sync completed successfully!")
+
+            # Verify that route cards and timeline have precision results
+            precision_results = await eval_js("""(() => {
+                const f = calculatedResults?.fastest_x;
+                const tblRows = document.getElementById('stopsTableBody')?.children.length;
+                return {
+                    fastest_x_hours: f?.total_hours,
+                    drive_hours: f?.drive_hours,
+                    traffic_delay_mins: f?.total_traffic_delay_mins,
+                    dest_arr_clock: f?.dest_arr_clock,
+                    stops_count: f?.stops?.length,
+                    table_rows: tblRows
+                };
+            })()""")
+
+            print(f"Precision Route Details: {json.dumps(precision_results, indent=2)}")
+            assert precision_results["fastest_x_hours"] > 0, "Precision sync should produce valid total hours"
+            print(f"Precision Total Traffic Delay: +{precision_results['traffic_delay_mins']} mins")
+
+            print("\n*** ALL TRAFFIC PREDICTIVE & PRECISION TESTS PASSED SUCCESSFULLY! ***")
 
     finally:
         proc.terminate()

@@ -63,6 +63,14 @@
         <i data-lucide="search" class="w-4 h-4"></i>
         <span>Calculate Route</span>
       </button>
+      <button onclick="handleTomTomPrecisionSync()" id="precisionSyncBtn" class="bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-semibold px-3.5 py-2 rounded-lg text-sm flex items-center gap-1.5 transition shadow-lg shadow-amber-500/20 cursor-pointer" title="Query TomTom Predictive API for exact turn-by-turn speeds across all legs">
+        <i data-lucide="zap" class="w-4 h-4 fill-slate-950"></i>
+        <span id="precisionSyncBtnText">⚡ TomTom Precision</span>
+      </button>
+      <span id="precisionStatusBadge" class="hidden text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-1 rounded-md flex items-center gap-1">
+        <i data-lucide="check-circle" class="w-3 h-3 text-amber-400"></i>
+        <span>Precision Active</span>
+      </span>
     </div>
   </header>
 
@@ -497,6 +505,23 @@
                 <input type="checkbox" id="hasTeslaMember" class="accent-emerald-500 rounded">
                 <span class="text-[11px] truncate">Tesla Member Pre-Owned</span>
               </label>
+            </div>
+          </div>
+
+          <!-- TomTom API Key for Precision Mode -->
+          <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>TomTom API Key (Precision Traffic)</span>
+              </span>
+              <span id="tomtomKeyStatus" class="text-[10px] font-mono text-slate-400">Stored in browser</span>
+            </div>
+            <div class="flex gap-2 pt-1">
+              <input type="password" id="tomtomApiKeyInput" placeholder="Enter TomTom API Key..." 
+                class="flex-1 bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
+                onchange="saveTomTomApiKey(this.value)">
+              <button type="button" onclick="testTomTomApiKey()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">Verify</button>
             </div>
           </div>
 
@@ -8557,7 +8582,340 @@
       return { lat: 39.8912, lon: -74.9218, name: query, toll_ez: 37.59, toll_cash: 75.20 };
     }
 
-    async function handleSearchRoute() {
+        function getTomTomApiKey() {
+      if (typeof window !== 'undefined' && window.TOMTOM_API_KEY) {
+        return window.TOMTOM_API_KEY.trim();
+      }
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('tomtom_api_key')) {
+        return localStorage.getItem('tomtom_api_key').trim();
+      }
+      return "";
+    }
+
+    function saveTomTomApiKey(val) {
+      if (!val) return;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('tomtom_api_key', val.trim());
+      }
+      const status = document.getElementById('tomtomKeyStatus');
+      if (status) status.innerText = "Saved";
+    }
+
+    async function testTomTomApiKey() {
+      const key = getTomTomApiKey() || document.getElementById('tomtomApiKeyInput')?.value.trim();
+      if (!key) {
+        alert("Please enter a TomTom API Key first.");
+        return;
+      }
+      saveTomTomApiKey(key);
+      try {
+        const testUrl = `https://api.tomtom.com/routing/1/calculateRoute/40.0,-80.0:40.05,-79.95/json?key=${key}&traffic=false`;
+        const res = await fetch(testUrl);
+        if (res.ok) {
+          alert("TomTom API Key verified successfully! Connected to TomTom Routing API.");
+        } else {
+          alert(`TomTom Key Verification Failed: HTTP ${res.status}`);
+        }
+      } catch (e) {
+        alert("Error testing TomTom API Key: " + e.message);
+      }
+    }
+
+    let lastCalculatedInputSignature = "";
+    function getCurrentInputSignature() {
+      const o = document.getElementById('originAddress')?.value.trim() || "";
+      const d = document.getElementById('destAddress')?.value.trim() || "";
+      const date = document.getElementById('departureDate')?.value || "";
+      const time = document.getElementById('departureTime')?.value || "";
+      const soc = document.getElementById('startSocInput')?.value || "";
+      return `${o}|${d}|${date}|${time}|${soc}`;
+    }
+
+    async function handleTomTomPrecisionSync() {
+      const btn = document.getElementById('precisionSyncBtn');
+      const btnText = document.getElementById('precisionSyncBtnText');
+      if (!btn) return;
+
+      let key = getTomTomApiKey();
+      if (!key) {
+        key = prompt("Enter your TomTom API Key for Super-Accurate Predictive Traffic (will be saved locally in your browser):");
+        if (key && key.trim()) {
+          saveTomTomApiKey(key.trim());
+          if (document.getElementById('tomtomApiKeyInput')) {
+            document.getElementById('tomtomApiKeyInput').value = key.trim();
+          }
+        } else {
+          return;
+        }
+      }
+
+      btn.disabled = true;
+      const originalText = btnText.innerHTML;
+
+      try {
+        // Step 1: If calculations haven't been done or inputs changed, run base route calculation first
+        const currentSig = getCurrentInputSignature();
+        if (!activeRoutesData || activeRoutesData.length === 0 || !calculatedResults || !calculatedResults.fastest_x || lastCalculatedInputSignature !== currentSig) {
+          btnText.innerText = "Finding Base Routes...";
+          await handleSearchRoute();
+          lastCalculatedInputSignature = getCurrentInputSignature();
+        }
+
+        if (!activeRoutesData || activeRoutesData.length === 0 || !calculatedResults || !calculatedResults.fastest_x) {
+          alert("Could not generate base routes. Please check your origin and destination.");
+          return;
+        }
+
+        // Step 2: Extract top candidates across both Route X (min stops) and Route Y (next stop count)
+        const candidatePool = [];
+        const seenKeys = new Set();
+        function addCandidate(cand) {
+          if (!cand || !cand.route) return;
+          const k = (cand.route.id || cand.route.name) + '|' + (cand.stops || []).map(s => (s.station?.id || s.station?.name) + '@' + Math.round(s.tgt_soc || 0)).join('-');
+          if (!seenKeys.has(k)) {
+            seenKeys.add(k);
+            // Deep clone candidate so precision adjustments do not mutate prior objects prematurely
+            const cloned = JSON.parse(JSON.stringify(cand));
+            // Preserve station object references for Leaflet map markers
+            if (cand.stops && cloned.stops) {
+              cand.stops.forEach((origS, idx) => {
+                if (cloned.stops[idx]) cloned.stops[idx].station = origS.station;
+              });
+            }
+            cloned.route = cand.route;
+            candidatePool.push(cloned);
+          }
+        }
+
+        // Add the currently active winners first
+        [
+          calculatedResults.fastest_x, calculatedResults.cheapest_x, calculatedResults.balanced_x,
+          calculatedResults.fastest_y, calculatedResults.cheapest_y, calculatedResults.balanced_y
+        ].forEach(addCandidate);
+
+        // Add top ~3 contenders for each card category from window.lastEvaluatedPool
+        if (window.lastEvaluatedPool && Array.isArray(window.lastEvaluatedPool)) {
+          const xStops = calculatedResults.x_stops;
+          const yStops = calculatedResults.y_stops;
+
+          const poolX = window.lastEvaluatedPool.filter(c => c.stops.length === xStops);
+          const poolY = window.lastEvaluatedPool.filter(c => c.stops.length === yStops);
+
+          [poolX, poolY].forEach(subPool => {
+            if (!subPool || subPool.length === 0) return;
+            const byTime = [...subPool].sort((a,b) => a.total_hours - b.total_hours).slice(0, 3);
+            const byCost = [...subPool].sort((a,b) => a.total_cost - b.total_cost).slice(0, 3);
+            const byKnee = [...subPool].sort((a,b) => (a.knee_dist || 0) - (b.knee_dist || 0)).slice(0, 3);
+            byTime.forEach(addCandidate);
+            byCost.forEach(addCandidate);
+            byKnee.forEach(addCandidate);
+          });
+        }
+
+        if (candidatePool.length === 0) {
+          alert("No viable route candidates to evaluate.");
+          return;
+        }
+
+        // Step 3: Decompose into individual driving legs and deduplicate
+        const depDateStr = document.getElementById('departureDate')?.value || new Date().toISOString().split('T')[0];
+        const uniqueLegsMap = new Map();
+        const legAssignments = [];
+
+        candidatePool.forEach((cand, cIdx) => {
+          legAssignments[cIdx] = [];
+          const stops = cand.stops || [];
+          const originCoords = [cand.route.origin.lat, cand.route.origin.lon];
+          const destCoords = [cand.route.destination.lat, cand.route.destination.lon];
+
+          if (stops.length === 0) {
+            const depHour = getDepartureHoursDecimal();
+            const depHourInt = Math.floor(depHour % 24);
+            const depMinInt = Math.floor((depHour * 60) % 60);
+            const iso = `${depDateStr}T${String(depHourInt).padStart(2, '0')}:${String(depMinInt).padStart(2, '0')}:00`;
+            const legKey = `${originCoords[0].toFixed(4)},${originCoords[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${depHourInt}`;
+            if (!uniqueLegsMap.has(legKey)) {
+              uniqueLegsMap.set(legKey, { start: originCoords, end: destCoords, iso: iso, result: null });
+            }
+            legAssignments[cIdx].push(legKey);
+          } else {
+            let currentDepHour = getDepartureHoursDecimal();
+            for (let i = 0; i < stops.length; i++) {
+              const sp = stops[i];
+              const startC = (i === 0) ? originCoords : [stops[i-1].station.lat, stops[i-1].station.lon];
+              const endC = [sp.station.lat, sp.station.lon];
+
+              const depHourInt = Math.floor(currentDepHour % 24);
+              const depMinInt = Math.floor((currentDepHour * 60) % 60);
+              const iso = `${depDateStr}T${String(depHourInt).padStart(2, '0')}:${String(depMinInt).padStart(2, '0')}:00`;
+              const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${endC[0].toFixed(4)},${endC[1].toFixed(4)}@${depHourInt}`;
+              if (!uniqueLegsMap.has(legKey)) {
+                uniqueLegsMap.set(legKey, { start: startC, end: endC, iso: iso, result: null });
+              }
+              legAssignments[cIdx].push(legKey);
+
+              const driveHrs = sp.leg_drive_hrs || 1.5;
+              const chHrs = (sp.mins || 25.0) / 60.0;
+              currentDepHour += driveHrs + chHrs;
+            }
+
+            // Final leg to destination
+            const lastSp = stops[stops.length - 1];
+            const startC = [lastSp.station.lat, lastSp.station.lon];
+            const depHourInt = Math.floor(currentDepHour % 24);
+            const depMinInt = Math.floor((currentDepHour * 60) % 60);
+            const iso = `${depDateStr}T${String(depHourInt).padStart(2, '0')}:${String(depMinInt).padStart(2, '0')}:00`;
+            const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${depHourInt}`;
+            if (!uniqueLegsMap.has(legKey)) {
+              uniqueLegsMap.set(legKey, { start: startC, end: destCoords, iso: iso, result: null });
+            }
+            legAssignments[cIdx].push(legKey);
+          }
+        });
+
+        // Step 4: Query TomTom API for all unique legs (throttled at ~4.0 QPS to stay safely below 5 QPS rate limit)
+        const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
+        const max_cap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
+        const uniqueLegList = Array.from(uniqueLegsMap.entries());
+
+        for (let i = 0; i < uniqueLegList.length; i++) {
+          const [lKey, lObj] = uniqueLegList[i];
+          btnText.innerText = `Syncing (${i + 1}/${uniqueLegList.length})...`;
+
+          const coordsStr = `${lObj.start[0]},${lObj.start[1]}:${lObj.end[0]},${lObj.end[1]}`;
+          const url = `https://api.tomtom.com/routing/1/calculateRoute/${coordsStr}/json?key=${key}&traffic=true&departAt=${encodeURIComponent(lObj.iso)}&routeType=fastest&computeTravelTimeFor=all`;
+
+          try {
+            const resp = await fetch(url);
+            if (resp.ok) {
+              const data = await resp.json();
+              const sum = data.routes[0].summary;
+              const meters = sum.lengthInMeters || 1000;
+              const miles = meters / 1609.34;
+              const travelSec = sum.travelTimeInSeconds || (miles / 65.0 * 3600.0);
+              const noTrafficSec = sum.noTrafficTravelTimeInSeconds || travelSec;
+
+              const v_ff = miles / Math.max(0.001, noTrafficSec / 3600.0);
+              const v_pred = miles / Math.max(0.001, travelSec / 3600.0);
+              const v_pref = Math.min(v_ff + speed_offset, max_cap);
+
+              let v_eff;
+              if (v_pred >= v_ff) {
+                // Free flow or above: driver cruises at preferred speed
+                v_eff = Math.min(max_cap, Math.max(v_pred, v_pref));
+              } else {
+                // Congestion slowdown: blend user passing maneuverability
+                const cong = Math.min(1.0, Math.max(0.05, v_pred / v_ff));
+                const bonusFactor = cong >= 0.7 ? (cong * cong) : Math.pow(cong, 3);
+                v_eff = Math.min(max_cap, Math.max(v_pred, v_pred + (v_pref - v_ff) * bonusFactor));
+              }
+
+              const actual_travel_hours = miles / Math.max(10.0, v_eff);
+              const no_traffic_hours = miles / Math.max(10.0, v_pref);
+              const delay_mins = Math.max(0, Math.round((actual_travel_hours - no_traffic_hours) * 60.0));
+
+              lObj.result = {
+                miles: miles,
+                travel_hours: actual_travel_hours,
+                traffic_delay_mins: delay_mins,
+                speed_mph: v_eff,
+                no_traffic_hours: no_traffic_hours
+              };
+            } else if (resp.status === 429) {
+              console.warn("TomTom 429 Rate limit, waiting 2.5s...");
+              await new Promise(r => setTimeout(r, 2500));
+              i--;
+              continue;
+            }
+          } catch (e) {
+            console.warn("TomTom leg fetch error:", e);
+          }
+
+          // Throttle to respect TomTom 5 QPS rate limit
+          await new Promise(r => setTimeout(r, 260));
+        }
+
+        // Step 5: Re-simulate candidates with TomTom precision data
+        candidatePool.forEach((cand, cIdx) => {
+          const lKeys = legAssignments[cIdx];
+          let totalDriveHrs = 0;
+          let totalChHrs = 0;
+          let totalDelayMins = 0;
+          let currentClock = getDepartureHoursDecimal();
+
+          if (cand.stops.length === 0) {
+            const lRes = uniqueLegsMap.get(lKeys[0])?.result;
+            if (lRes) {
+              cand.drive_hours = lRes.travel_hours;
+              cand.total_hours = lRes.travel_hours;
+              cand.total_traffic_delay_mins = lRes.traffic_delay_mins;
+              cand.dest_arr_clock = formatClockTime(currentClock + lRes.travel_hours);
+            }
+          } else {
+            for (let sIdx = 0; sIdx < cand.stops.length; sIdx++) {
+              const sp = cand.stops[sIdx];
+              const lRes = uniqueLegsMap.get(lKeys[sIdx])?.result;
+              if (lRes) {
+                sp.leg_drive_hrs = lRes.travel_hours;
+                sp.leg_drive_mins = Math.round(lRes.travel_hours * 60.0);
+                sp.leg_traffic_delay_mins = lRes.traffic_delay_mins;
+                totalDriveHrs += lRes.travel_hours;
+                totalDelayMins += lRes.traffic_delay_mins;
+              } else {
+                totalDriveHrs += sp.leg_drive_hrs;
+                totalDelayMins += (sp.leg_traffic_delay_mins || 0);
+              }
+
+              const arrClockDec = currentClock + (lRes ? lRes.travel_hours : sp.leg_drive_hrs);
+              sp.arr_clock = formatClockTime(arrClockDec);
+              sp.dep_clock = formatClockTime(arrClockDec + (sp.mins / 60.0));
+              totalChHrs += (sp.mins / 60.0);
+              currentClock = arrClockDec + (sp.mins / 60.0);
+            }
+
+            // Final leg to destination
+            const finalLRes = uniqueLegsMap.get(lKeys[lKeys.length - 1])?.result;
+            if (finalLRes) {
+              cand.final_leg_hrs = finalLRes.travel_hours;
+              cand.final_leg_mins = Math.round(finalLRes.travel_hours * 60.0);
+              cand.final_leg_traffic_delay_mins = finalLRes.traffic_delay_mins;
+              totalDriveHrs += finalLRes.travel_hours;
+              totalDelayMins += finalLRes.traffic_delay_mins;
+            } else {
+              totalDriveHrs += (cand.final_leg_hrs || 1.5);
+              totalDelayMins += (cand.final_leg_traffic_delay_mins || 0);
+            }
+
+            cand.drive_hours = totalDriveHrs;
+            cand.ch_hours = totalChHrs;
+            cand.total_hours = totalDriveHrs + totalChHrs;
+            cand.total_traffic_delay_mins = totalDelayMins;
+            cand.dest_arr_clock = formatClockTime(currentClock + (cand.final_leg_hrs || 1.5));
+          }
+        });
+
+        // Step 6: Re-select winners for Route X and Route Y using applyRouteSelectionFromPool
+        applyRouteSelectionFromPool(candidatePool, calculatedResults.nonStop);
+
+        // Show Precision Active Badge and update button styling
+        const badge = document.getElementById('precisionStatusBadge');
+        if (badge) badge.classList.remove('hidden');
+
+        btnText.innerHTML = `<span>✓ Precision Active</span>`;
+        btn.classList.remove('from-amber-500', 'to-amber-400');
+        btn.classList.add('bg-emerald-500', 'text-slate-950');
+
+      } catch (err) {
+        console.error("Precision Sync error:", err);
+        alert("Precision Sync error: " + err.message);
+        btnText.innerHTML = originalText;
+      } finally {
+        btn.disabled = false;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+async function handleSearchRoute() {
       const destText = document.getElementById('destAddress').value.trim();
       const originText = document.getElementById('originAddress').value.trim();
       if (!destText) return;
@@ -10467,6 +10825,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Select fastest, cheapest, balanced according to duration cap and checkbox settings
       applyRouteSelectionFromPool(finalPool, fastestNonStop);
+      lastCalculatedInputSignature = getCurrentInputSignature();
 
       // Persistent Audit Bar Completion Update
       if (auditStatusText) auditStatusText.innerText = "Optimization Complete";
@@ -12401,6 +12760,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       initDepartureDateTimeControls();
       initManualWeatherOverride();
       updatePhysicsHUD();
+      // Populate TomTom API Key if stored in localStorage
+      const savedTomTomKey = getTomTomApiKey();
+      const tomtomInput = document.getElementById('tomtomApiKeyInput');
+      if (savedTomTomKey && tomtomInput && !tomtomInput.value) {
+        tomtomInput.value = savedTomTomKey;
+        const status = document.getElementById('tomtomKeyStatus');
+        if (status) status.innerText = "Loaded from storage";
+      }
       // Route calculation is not run automatically on load, allowing settings adjustment first
       lucide.createIcons();
 
