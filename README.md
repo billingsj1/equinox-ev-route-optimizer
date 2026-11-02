@@ -69,7 +69,7 @@ The project is decoupled into two independent systems:
 Real-time weight toggles modify the simulated mass:
 * **Josh:** `150 lbs`
 * **Courtney:** `130 lbs`
-* **Asher:** `20 lbs`
+* **Asher:** `15 lbs`
 * **Arno (Dog):** `50 lbs`
 * **Gear:** Slider from `0 to 100 lbs`
 

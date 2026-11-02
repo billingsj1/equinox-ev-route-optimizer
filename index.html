@@ -171,28 +171,28 @@
               <input type="checkbox" id="josh" checked onchange="updateMass()" class="accent-emerald-500 rounded">
               <span class="text-slate-200 text-[11px]">Josh</span>
             </span>
-            <span class="text-[10px] text-slate-500 font-mono">190</span>
+            <span class="text-[10px] text-slate-500 font-mono">150</span>
           </label>
           <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
             <span class="flex items-center gap-1.5">
               <input type="checkbox" id="courtney" checked onchange="updateMass()" class="accent-emerald-500 rounded">
               <span class="text-slate-200 text-[11px]">Courtney</span>
             </span>
-            <span class="text-[10px] text-slate-500 font-mono">140</span>
+            <span class="text-[10px] text-slate-500 font-mono">130</span>
           </label>
           <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
             <span class="flex items-center gap-1.5">
               <input type="checkbox" id="asher" checked onchange="updateMass()" class="accent-emerald-500 rounded">
               <span class="text-slate-200 text-[11px]">Asher</span>
             </span>
-            <span class="text-[10px] text-slate-500 font-mono">45</span>
+            <span class="text-[10px] text-slate-500 font-mono">15</span>
           </label>
           <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
             <span class="flex items-center gap-1.5">
               <input type="checkbox" id="arno" checked onchange="updateMass()" class="accent-emerald-500 rounded">
               <span class="text-slate-200 text-[11px]">Arno</span>
             </span>
-            <span class="text-[10px] text-slate-500 font-mono">15</span>
+            <span class="text-[10px] text-slate-500 font-mono">50</span>
           </label>
         </div>
         <!-- Cargo Slider -->
@@ -1142,7 +1142,7 @@
       let payload_lbs = 0;
       if (document.getElementById('josh').checked) payload_lbs += 150;
       if (document.getElementById('courtney').checked) payload_lbs += 130;
-      if (document.getElementById('asher').checked) payload_lbs += 20;
+      if (document.getElementById('asher').checked) payload_lbs += 15;
       if (document.getElementById('arno').checked) payload_lbs += 50;
       const gear = parseFloat(document.getElementById('gearSlider').value) || 0;
       payload_lbs += gear;
@@ -1223,7 +1223,7 @@
       let payload_lbs = 0;
       if (document.getElementById('josh').checked) payload_lbs += 150;
       if (document.getElementById('courtney').checked) payload_lbs += 130;
-      if (document.getElementById('asher').checked) payload_lbs += 20;
+      if (document.getElementById('asher').checked) payload_lbs += 15;
       if (document.getElementById('arno').checked) payload_lbs += 50;
       payload_lbs += parseFloat(document.getElementById('gearSlider').value) || 0;
 
@@ -3726,7 +3726,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       let payload_lbs = 0;
       if (document.getElementById('josh').checked) payload_lbs += 150;
       if (document.getElementById('courtney').checked) payload_lbs += 130;
-      if (document.getElementById('asher').checked) payload_lbs += 20;
+      if (document.getElementById('asher').checked) payload_lbs += 15;
       if (document.getElementById('arno').checked) payload_lbs += 50;
       payload_lbs += parseFloat(document.getElementById('gearSlider').value);
 

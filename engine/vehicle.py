@@ -10,7 +10,7 @@ LBS_TO_KG = 0.45359237
 class PayloadConfig:
     josh: bool = True          # 150 lbs
     courtney: bool = True      # 130 lbs
-    asher: bool = True         # 20 lbs
+    asher: bool = True         # 15 lbs
     arno: bool = True          # 50 lbs (Dog)
     gear_lbs: float = 100.0    # 0 to 250 lbs slider
 
@@ -21,7 +21,7 @@ class PayloadConfig:
         if self.courtney:
             total_lbs += 130.0
         if self.asher:
-            total_lbs += 20.0
+            total_lbs += 15.0
         if self.arno:
             total_lbs += 50.0
         total_lbs += max(0.0, min(250.0, self.gear_lbs))
@@ -34,7 +34,7 @@ class PayloadConfig:
         if self.courtney:
             total_lbs += 130.0
         if self.asher:
-            total_lbs += 20.0
+            total_lbs += 15.0
         if self.arno:
             total_lbs += 50.0
         total_lbs += max(0.0, min(250.0, self.gear_lbs))
