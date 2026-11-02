@@ -831,9 +831,9 @@
           </div>
         </div>
 
-        <!-- ROW 2: Extra Stop (Y Stops = X + 1) -->
+        <!-- ROW 2: Extra Stop (Y Stops) -->
         <div id="rowYContainer" class="space-y-2">
-          <div class="flex items-center justify-between pb-1 border-b border-slate-800/80">
+          <div id="rowYHeader" class="flex items-center justify-between pb-1 border-b border-slate-800/80">
             <div class="flex items-center gap-2">
               <span id="rowYBadge" class="text-xs font-bold uppercase tracking-wider text-purple-400 bg-purple-950/70 border border-purple-800/60 px-2.5 py-0.5 rounded-md font-mono">
                 <span id="rowYTitle">Y Stops (Extra Stop)</span>
@@ -842,7 +842,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div id="rowYCards" class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <!-- Fastest Route Card (Y Stops) -->
             <div id="cardFastestY" onclick="selectItinerary('fastest_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-emerald-500/50 transition flex flex-col justify-between">
               <div>
@@ -896,6 +896,11 @@
                 <span id="balancedMiles_y" class="text-slate-400">--</span>
               </div>
             </div>
+          </div>
+
+          <div id="rowYEmptyNotice" class="hidden p-3.5 bg-slate-900/60 border border-slate-800/80 rounded-xl text-xs text-slate-300 flex items-start gap-2.5">
+            <span class="text-base leading-none">💡</span>
+            <span id="rowYEmptyNoticeText" class="leading-relaxed text-slate-300"></span>
           </div>
         </div>
 
@@ -3668,13 +3673,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         };
       }
 
-      // Find x = min stops count among valid candidates, and y = x + 1
-      let minStopsX = Infinity;
-      finalPool.forEach(c => {
-        if (c.stops.length < minStopsX) minStopsX = c.stops.length;
-      });
-      const xStops = minStopsX;
-      const yStops = minStopsX + 1;
+      // Find x = min stops count among valid candidates, and y = next higher stops count
+      const availableStops = Array.from(new Set(finalPool.map(c => c.stops.length))).sort((a, b) => a - b);
+      const xStops = availableStops.length > 0 ? availableStops[0] : 0;
+      const yStops = availableStops.find(s => s > xStops) || (xStops + 1);
 
       const poolX = finalPool.filter(c => c.stops.length === xStops);
       const poolY = finalPool.filter(c => c.stops.length === yStops);
@@ -4431,13 +4433,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const uniqueSequencesCount = sequenceGroups.size;
       const totalItinerariesCount = stage1_candidates.length;
 
-      // Metric 2: Partition candidates by stop count: x (least stops) and y = x + 1 (up to 180 total)
-      let min_stage1_stops = Infinity;
-      stage1_candidates.forEach(c => {
-        if (c.stops.length < min_stage1_stops) min_stage1_stops = c.stops.length;
-      });
+      // Metric 2: Partition candidates by stop count: x (least stops) and y = next higher stops count (up to 180 total)
+      const availableStage1Stops = Array.from(new Set(stage1_candidates.map(c => c.stops.length))).sort((a, b) => a - b);
+      const min_stage1_stops = availableStage1Stops.length > 0 ? availableStage1Stops[0] : 0;
       const target_x = min_stage1_stops;
-      const target_y = min_stage1_stops + 1;
+      const target_y = availableStage1Stops.find(s => s > target_x) || (target_x + 1);
 
       const candidates_x = stage1_candidates.filter(c => c.stops.length === target_x);
       const candidates_y = stage1_candidates.filter(c => c.stops.length === target_y);
@@ -5098,8 +5098,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // ROW 2 (Y Stops)
       const rowYContainer = document.getElementById('rowYContainer');
+      const rowYCards = document.getElementById('rowYCards');
+      const rowYHeader = document.getElementById('rowYHeader');
+      const rowYEmptyNotice = document.getElementById('rowYEmptyNotice');
+
       if (hasY && fy) {
         if (rowYContainer) rowYContainer.classList.remove('hidden');
+        if (rowYHeader) rowYHeader.classList.remove('hidden');
+        if (rowYCards) rowYCards.classList.remove('hidden');
+        if (rowYEmptyNotice) rowYEmptyNotice.classList.add('hidden');
+
         const yStops = calculatedResults.y_stops != null ? calculatedResults.y_stops : (fy ? fy.stops.length : (xStops + 1));
         const rowYTitle = document.getElementById('rowYTitle');
         if (rowYTitle) {
@@ -5128,7 +5136,18 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const elBA = document.getElementById('balancedArrivalBadge_y'); if (elBA) elBA.innerText = (by.dest_arr_clock ? by.dest_arr_clock + ' • ' : '') + by.final_soc + '%';
         }
       } else {
-        if (rowYContainer) rowYContainer.classList.add('hidden');
+        // If Y stops not available, show clear informative banner instead of silently hiding Row 2
+        if (rowYContainer) rowYContainer.classList.remove('hidden');
+        if (rowYCards) rowYCards.classList.add('hidden');
+        if (rowYHeader) rowYHeader.classList.add('hidden');
+        if (rowYEmptyNotice) {
+          rowYEmptyNotice.classList.remove('hidden');
+          const minMins = parseInt(document.getElementById('minTimeSlider')?.value) || 70;
+          const noticeText = document.getElementById('rowYEmptyNoticeText');
+          if (noticeText) {
+            noticeText.innerHTML = `<b>Only ${xStops} charging ${xStops === 1 ? 'stop is' : 'stops are'} optimal under your current settings:</b> Additional stops would require driving stints shorter than your minimum drive time limit (${minMins} mins). Lower the <i>Min Time Between Stops</i> slider if you want shorter, more frequent stops.`;
+          }
+        }
       }
 
       selectItinerary(currentItineraryKey || 'fastest_x');
