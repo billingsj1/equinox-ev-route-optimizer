@@ -598,9 +598,9 @@
                   <div>
                     <label class="text-slate-400 block mb-0.5 text-[11px]">Traffic Profile</label>
                     <select id="trafficProfile" onchange="updatePhysicsHUD()" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200">
-                      <option value="off_peak">Off-Peak Free Flow</option>
-                      <option value="typical" selected>Typical Daytime</option>
-                      <option value="rush_hour">Rush Hour Congestion</option>
+                      <option value="typical" selected>Clock-Aware Predictive (168h)</option>
+                      <option value="off_peak">Off-Peak Free Flow (Force Clear)</option>
+                      <option value="rush_hour">Peak Congestion (Force Rush Hour)</option>
                     </select>
                   </div>
                   <div>
@@ -1841,6 +1841,118 @@
       return profile;
     }
 
+    // -------------------------------------------------------------------------
+    // 168-Hour Empirical Corridor Velocity Model (Day-of-Week x Hour-of-Day)
+    // -------------------------------------------------------------------------
+    function getDepartureDayOfWeek() {
+      const el = document.getElementById('departureDate');
+      if (!el || !el.value) {
+        return new Date().getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+      }
+      const parts = el.value.split('-');
+      if (parts.length < 3) return new Date().getDay();
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      return d.getDay();
+    }
+
+    function getSchuylkillHourlySpeed(dow, hour) {
+      const isWeekend = (dow === 0 || dow === 6);
+      if (isWeekend) {
+        return (hour >= 11 && hour <= 18) ? 48.0 : 58.0;
+      }
+      if (dow === 5) { // Friday
+        if (hour <= 5) return 60.0;
+        if (hour === 6) return 50.0;
+        if (hour >= 7 && hour <= 9) return 26.0;
+        if (hour >= 10 && hour <= 12) return 46.0;
+        if (hour === 13) return 38.0;
+        if (hour === 14) return 28.0;
+        if (hour >= 15 && hour <= 17) return 18.0;
+        if (hour === 18) return 24.0;
+        if (hour === 19) return 40.0;
+        return 56.0;
+      }
+      // Mon - Thu
+      if (hour <= 5) return 60.0;
+      if (hour === 6) return 52.0;
+      if (hour >= 7 && hour <= 8) return 25.0;
+      if (hour === 9) return 36.0;
+      if (hour >= 10 && hour <= 14) return 48.0;
+      if (hour === 15) return 32.0;
+      if (hour >= 16 && hour <= 17) return 22.0;
+      if (hour === 18) return 30.0;
+      if (hour === 19) return 45.0;
+      return 56.0;
+    }
+
+    function getVineStHourlySpeed(dow, hour) {
+      const isWeekend = (dow === 0 || dow === 6);
+      if (isWeekend) {
+        return (hour >= 11 && hour <= 18) ? 38.0 : 48.0;
+      }
+      if (dow === 5) { // Friday
+        if (hour <= 6) return 48.0;
+        if (hour >= 7 && hour <= 9) return 20.0;
+        if (hour >= 10 && hour <= 12) return 38.0;
+        if (hour >= 13 && hour <= 14) return 24.0;
+        if (hour >= 15 && hour <= 17) return 14.0;
+        if (hour === 18) return 18.0;
+        if (hour === 19) return 30.0;
+        return 48.0;
+      }
+      // Mon - Thu
+      if (hour <= 6) return 48.0;
+      if (hour >= 7 && hour <= 8) return 18.0;
+      if (hour === 9) return 28.0;
+      if (hour >= 10 && hour <= 14) return 40.0;
+      if (hour === 15) return 24.0;
+      if (hour >= 16 && hour <= 17) return 16.0;
+      if (hour === 18) return 22.0;
+      if (hour === 19) return 35.0;
+      return 48.0;
+    }
+
+    function getNJ70HourlySpeed(dow, hour) {
+      const isWeekend = (dow === 0 || dow === 6);
+      if (isWeekend) {
+        return (hour >= 11 && hour <= 17) ? 34.0 : 48.0;
+      }
+      if (hour <= 6) return 48.0;
+      if (hour >= 7 && hour <= 9) return 26.0;
+      if (hour >= 10 && hour <= 14) return 40.0;
+      if (hour >= 15 && hour <= 18) return 24.0;
+      if (hour >= 19 && hour <= 20) return 38.0;
+      return 48.0;
+    }
+
+    function getNJTurnpikeHourlySpeed(dow, hour) {
+      const isWeekend = (dow === 0 || dow === 6);
+      if (isWeekend) return 70.0;
+      const isPeak = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18);
+      return isPeak ? 62.0 : 70.0;
+    }
+
+    function getI276HourlySpeed(dow, hour) {
+      const isWeekend = (dow === 0 || dow === 6);
+      if (isWeekend) return 68.0;
+      const isPeak = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18);
+      return isPeak ? 60.0 : 68.0;
+    }
+
+    function getNJ73HourlySpeed(dow, hour) {
+      const isWeekend = (dow === 0 || dow === 6);
+      if (isWeekend) return (hour >= 11 && hour <= 17) ? 36.0 : 45.0;
+      const isPeak = (hour >= 7 && hour <= 9) || (hour >= 15 && hour <= 18);
+      return isPeak ? 28.0 : 45.0;
+    }
+
+    function getUS30PA283HourlySpeed(dow, hour, postedSpeed) {
+      const isWeekend = (dow === 0 || dow === 6);
+      if (isWeekend) return postedSpeed;
+      const isPeak = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18);
+      return isPeak ? Math.max(35.0, postedSpeed * 0.82) : postedSpeed;
+    }
+
     // Precomputed O(1) Cumulative Physics Lookup Table (Prefix Sums)
     // Eliminates redundant loops across hundreds of sub-steps during forward search,
     // reducing thousands of leg calculations from seconds of UI freeze down to under 5ms.
@@ -1850,6 +1962,13 @@
       const temp_c = (temp_f - 32) * 5 / 9;
       const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
       const v_wind_ms = wind_speed * 0.44704;
+
+      const depHour = getDepartureHoursDecimal();
+      const depDow = getDepartureDayOfWeek();
+      const decamillaVal = (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) 
+        ? document.getElementById('decamillaStopDuration').value : '0';
+      const decamillaDwell = (decamillaVal === 'overnight') ? 8.0 : parseFloat(decamillaVal || 0);
+      let hasPassedDecamilla = false;
 
       let cum_m = 0.0;
       let cum_h = 0.0;
@@ -1883,35 +2002,80 @@
         const is_local = (posted_speed <= 45.0) || is_ramp || is_plaza;
         let traffic_delay_hours = 0.0;
 
+        // Dynamic along-route clock advancement
+        if (decamillaDwell > 0 && !hasPassedDecamilla) {
+          if (lon > -77.05 && lon < -76.95 && lat > 40.10 && lat < 40.18) {
+            hasPassedDecamilla = true;
+          }
+        }
+        const effectiveDwell = hasPassedDecamilla ? decamillaDwell : 0.0;
+        const curTripHours = depHour + cum_h + effectiveDwell;
+        const localHourFloat = curTripHours % 24.0;
+        const localHourInt = Math.floor(localHourFloat);
+        const daysElapsed = Math.floor(curTripHours / 24.0);
+        const localDayOfWeek = (depDow + daysElapsed) % 7;
+
+        let base_mph;
+        if (is_plaza) {
+          base_mph = 20.0;
+        } else if (is_ramp) {
+          base_mph = Math.min(posted_speed, 28.0);
+        } else if (sName.includes('turnpike') || sRef.includes('turnpike') || sRef.includes('patp')) {
+          if (sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel')) || posted_speed <= 55.0) {
+            base_mph = 55.0; // PA Turnpike Tunnels
+          } else if (lon > -75.05 && lon < -74.70 && lat > 39.88 && lat < 40.16) {
+            base_mph = getNJTurnpikeHourlySpeed(localDayOfWeek, localHourInt); // NJ Turnpike Mainline
+          } else if (lon > -75.40 && lon < -74.74 && lat > 40.05 && lat < 40.20) {
+            base_mph = getI276HourlySpeed(localDayOfWeek, localHourInt); // PA Turnpike East Extension
+          } else {
+            base_mph = posted_speed; // Mainline PA Turnpike cruising
+          }
+        } else if ((sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.42 && lon < -75.16)) && lat > 39.92 && lat < 40.12) {
+          base_mph = getSchuylkillHourlySpeed(localDayOfWeek, localHourInt);
+        } else if ((sName.includes('vine') || (sRef.includes('676') && lon > -75.40) || sName.includes('ben franklin') || sName.includes('benjamin franklin') || (sRef.includes('30') && lon > -75.18 && lon < -75.12)) && lat > 39.94 && lat < 39.98) {
+          base_mph = getVineStHourlySpeed(localDayOfWeek, localHourInt);
+        } else if ((sName.includes('marlton') || sRef.includes('nj 70') || sRef.includes('route 70') || (sRef.includes('70') && lon > -75.12 && lon < -74.88)) && lat > 39.86 && lat < 39.96) {
+          base_mph = getNJ70HourlySpeed(localDayOfWeek, localHourInt);
+        } else if ((sRef.includes('73') || sName.includes('route 73') || sName.includes('nj-73')) && lon > -75.02 && lon < -74.88 && lat > 39.88 && lat < 39.96) {
+          base_mph = getNJ73HourlySpeed(localDayOfWeek, localHourInt);
+        } else if (sRef.includes('283') || sName.includes('pa 283') || (sRef.includes('30') && lon < -75.30 && lon > -76.80)) {
+          base_mph = getUS30PA283HourlySpeed(localDayOfWeek, localHourInt, posted_speed);
+        } else if (posted_speed <= 30.0) {
+          base_mph = 25.0;
+        } else if (posted_speed <= 35.0) {
+          const isRush = (localHourInt >= 7 && localHourInt <= 9) || (localHourInt >= 16 && localHourInt <= 18);
+          base_mph = isRush ? 26.0 : 32.0;
+        } else if (posted_speed <= 45.0) {
+          const isRush = (localHourInt >= 7 && localHourInt <= 9) || (localHourInt >= 16 && localHourInt <= 18);
+          base_mph = isRush ? 34.0 : 43.0;
+        } else {
+          base_mph = posted_speed;
+        }
+
+        if (traffic_profile === 'off_peak') {
+          if (sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.42)) base_mph = 58.0;
+          else if (sName.includes('vine') || sRef.includes('676')) base_mph = 48.0;
+          else if (sRef.includes('70') && lon > -75.12) base_mph = 48.0;
+          else if (posted_speed <= 35.0) base_mph = posted_speed;
+          else if (posted_speed <= 45.0) base_mph = posted_speed;
+        } else if (traffic_profile === 'rush_hour') {
+          if (sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.42)) base_mph = 18.0;
+          else if (sName.includes('vine') || sRef.includes('676')) base_mph = 14.0;
+          else if (sRef.includes('70') && lon > -75.12) base_mph = 24.0;
+          else if (posted_speed <= 35.0) base_mph = 20.0;
+          else if (posted_speed <= 45.0) base_mph = 28.0;
+          else if (base_mph > 45.0) base_mph = Math.max(35.0, base_mph * 0.80);
+        }
+
         let target_mph;
         if (is_plaza) {
           target_mph = 20.0;
         } else if (is_ramp) {
           target_mph = Math.min(posted_speed, 25.0 + Math.min(speed_offset, 5.0));
-        } else if (posted_speed <= 30.0) {
-          target_mph = Math.min(posted_speed, 22.0 + (speed_offset * 0.2)); // Local city streets (Powell Ave, Beaver Rd)
-        } else if (posted_speed <= 35.0) {
-          target_mph = Math.min(posted_speed, 26.0 + (speed_offset * 0.3)); // Urban arterials with signals (Sullivant Ave)
-        } else if (sName.includes('turnpike') || sRef.includes('turnpike')) {
-          if (sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel')) || posted_speed <= 55.0) {
-            target_mph = Math.min(posted_speed + Math.min(speed_offset, 3.0), max_cap); // PA Turnpike Tunnels
-          } else {
-            target_mph = Math.min(posted_speed + speed_offset, max_cap); // Mainline PA Turnpike cruising
-          }
-        } else if (sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.40)) {
-          target_mph = Math.min(40.0 + (speed_offset * 0.4), max_cap); // Schuylkill Expressway flow
-        } else if (sName.includes('vine') || (sRef.includes('676') && lon > -75.40)) {
-          target_mph = Math.min(32.0 + (speed_offset * 0.3), max_cap); // Vine St Expressway & Ben Franklin Bridge
-        } else if ((sName.includes('marlton') || sRef.includes('nj 70') || lon >= -75.10) && posted_speed <= 45.0) {
-          target_mph = Math.min(30.0 + (speed_offset * 0.4), posted_speed + speed_offset); // NJ-70 suburban traffic signals
         } else {
-          // All Interstates, US highways, state routes, and beltways (55, 60, 65, 70 mph posted zones)
-          target_mph = Math.min(posted_speed + speed_offset, max_cap);
-        }
-
-        if (traffic_profile === 'rush_hour') {
-          if (target_mph > 45.0) target_mph = Math.max(35.0, target_mph * 0.80);
-          else target_mph = Math.max(18.0, target_mph * 0.70);
+          const flow_ratio = Math.min(1.0, base_mph / Math.max(25.0, posted_speed));
+          const effective_offset = speed_offset * Math.pow(flow_ratio, 1.8);
+          target_mph = Math.min(base_mph + effective_offset, max_cap);
         }
 
         const v_ms = target_mph * 0.44704;
@@ -1974,8 +2138,19 @@
         let kinetic_kwh = 0.0;
         let idle_hours = 0.0;
         const num_intersections = (s.intersections && s.intersections.length) ? s.intersections.length : 0;
-        if (is_local && num_intersections > 0) {
-          const stops = num_intersections * 0.28;
+        const is_expressway = (posted_speed > 45.0) || is_ramp ||
+          sName.includes('turnpike') || sRef.includes('turnpike') ||
+          sName.includes('expressway') || sName.includes('freeway') ||
+          sRef.includes('i-') || sRef.includes('i ') || sRef.includes('i76') || sRef.includes('i676') || sRef.includes('i276');
+        const is_surface_street = !is_expressway && !is_plaza && (posted_speed <= 50.0);
+
+        if (is_surface_street && num_intersections > 0) {
+          const flow_ratio = Math.min(1.0, base_mph / Math.max(25.0, posted_speed));
+          let stop_prob = 0.08 + (1.0 - flow_ratio) * 0.22;
+          if (traffic_profile === 'off_peak') stop_prob = 0.08;
+          else if (traffic_profile === 'rush_hour') stop_prob = 0.30;
+
+          const stops = num_intersections * stop_prob;
           const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
           const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
           kinetic_kwh += (stops * cycle_loss) / 3.6e6;
@@ -2093,7 +2268,10 @@
       const weatherKey = isManual
         ? `manual_${temp_f}_${wind_speed}_${wind_dir}_${road_cond}`
         : (window.activeWeatherReport ? `smart_${window.activeWeatherReport.departure_time_iso}_${window.activeWeatherReport.route_id}` : `default_${temp_f}_${road_cond}`);
-      const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${weatherKey}`;
+      const depVal = (typeof document !== 'undefined' && document.getElementById('departureTime')) ? document.getElementById('departureTime').value : '08:00';
+      const depDateVal = (typeof document !== 'undefined' && document.getElementById('departureDate')) ? document.getElementById('departureDate').value : '';
+      const decamillaStopVal = (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) ? document.getElementById('decamillaStopDuration').value : '0';
+      const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${depDateVal}_${depVal}_${decamillaStopVal}_${weatherKey}`;
       if (!steps._lut || steps._lutKey !== lutKey) {
         steps._lut = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile);
         steps._lutKey = lutKey;
@@ -3079,7 +3257,8 @@
         let baseToll = has_ezpass ? (destGeo.toll_ez || 0) : (destGeo.toll_cash || 0);
 
         // Check if DeCamilla intermediate stop is active (for St. Onge / Marlton route)
-        const decamillaHours = parseFloat(document.getElementById('decamillaStopDuration')?.value || 0);
+        const decamillaVal = document.getElementById('decamillaStopDuration')?.value || '0';
+        const decamillaHours = (decamillaVal === 'overnight') ? 8.0 : parseFloat(decamillaVal || 0);
         const isStOnge = destText.toLowerCase().includes('marlton') || destText.toLowerCase().includes('conestoga') || destText.toLowerCase().includes('st. onge') || destText.toLowerCase().includes('st onge');
         const useDecamillaStop = (decamillaHours > 0) && isStOnge;
 
