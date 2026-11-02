@@ -3160,10 +3160,12 @@
               routesFound = true;
 
               // Check if East Coast destination from Midwest has a toll-free Maryland I-68 corridor
-                            // Check if East Coast / NJ destination can also evaluate the NJ Turnpike Bypass corridor (skip if routing via DeCamilla)
-              if (!useDecamillaStop && destGeo.lon > -75.5 && destGeo.lat > 39.5) {
+                            // Check if East Coast / NJ destination can also evaluate the NJ Turnpike Bypass corridor
+              if (destGeo.lon > -75.5 && destGeo.lat > 39.5) {
                 try {
-                  const njCoords = `${originGeo.lon},${originGeo.lat};-75.388,40.090;-74.7431,40.1195;${destGeo.lon},${destGeo.lat}`;
+                  const njCoords = useDecamillaStop
+                    ? `${originGeo.lon},${originGeo.lat};-77.0156,40.1413;-75.388,40.090;-74.7431,40.1195;${destGeo.lon},${destGeo.lat}`
+                    : `${originGeo.lon},${originGeo.lat};-75.388,40.090;-74.7431,40.1195;${destGeo.lon},${destGeo.lat}`;
                   const njUrl = `https://router.project-osrm.org/route/v1/driving/${njCoords}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
                   const njResp = await fetch(njUrl, { headers: { "User-Agent": "EquinoxEV-RouteOptimizer/2.0" } });
                   if (njResp.ok) {
@@ -3172,9 +3174,13 @@
                       const r = njData.routes[0];
                       const miles = r.distance * 0.000621371;
                       const rawSteps = [];
-                      (r.legs || []).forEach(leg => {
-                        (leg.steps || []).forEach(s => rawSteps.push(s));
-                      });
+                      let leg1_miles = 0;
+                      if (r.legs && r.legs.length > 0) {
+                        leg1_miles = r.legs[0].distance * 0.000621371;
+                        r.legs.forEach(leg => {
+                          (leg.steps || []).forEach(s => rawSteps.push(s));
+                        });
+                      }
                       const parsedSteps = parseStepsWithHighResSpeedLimits(rawSteps);
                       const totalStepDist = parsedSteps.reduce((acc, s) => acc + s.distance_miles, 0);
                       const sumSpdDist = parsedSteps.reduce((acc, s) => acc + (s.posted_speed * s.distance_miles), 0);
@@ -3197,19 +3203,32 @@
                       const paTollToDelRiver = has_ezpass ? 45.46 : 90.90;
                       const njBypassToll = Math.round((paTollToDelRiver + njToll) * 100) / 100;
 
-                      activeRoutesData.push({
+                      const routeObj = {
                         id: "pa_turnpike_njtpk_osrm",
-                        name: "Route: PA Turnpike to NJ Turnpike Bypass (Exit 6 to 4 / Mount Laurel)",
+                        name: useDecamillaStop 
+                          ? `Via DeCamilla ${decamillaHours}h L2 + PA/NJ Turnpike Bypass (Exit 6 to 4)` 
+                          : "Route: PA Turnpike to NJ Turnpike Bypass (Exit 6 to 4 / Mount Laurel)",
                         distance: Math.round(miles * 10) / 10,
                         base_speed_limit: Math.round(weightedLimit * 10) / 10,
                         speed_mph: Math.round(weightedLimit * 10) / 10,
                         steps: parsedSteps,
-                        speed_profile_text: "65-70 mph PA Turnpike & NJ Turnpike Bypass (Free-Flow Congestion Bypass)",
+                        speed_profile_text: useDecamillaStop
+                          ? `I-70/I-76 to Dillsburg (US-15) + ${decamillaHours}h L2 Stop + PA/NJ Turnpike Bypass (Exit 6 to 4)`
+                          : "65-70 mph PA Turnpike & NJ Turnpike Bypass (Free-Flow Congestion Bypass)",
                         toll: njBypassToll,
                         coordinates: r.geometry.coordinates,
                         origin: originGeo,
                         destination: destGeo
-                      });
+                      };
+                      if (useDecamillaStop) {
+                        routeObj.decamilla_stop = {
+                          hours: decamillaHours,
+                          lat: 40.1413,
+                          lon: -77.0156,
+                          mile: Math.round(leg1_miles * 10) / 10
+                        };
+                      }
+                      activeRoutesData.push(routeObj);
                     }
                   }
                 } catch (njErr) {
