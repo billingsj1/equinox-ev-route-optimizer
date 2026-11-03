@@ -71,6 +71,11 @@
         <i data-lucide="check-circle" class="w-3 h-3 text-amber-400"></i>
         <span>Precision Active</span>
       </span>
+      <button onclick="openSimHistoryModal()" id="simHistoryBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 transition cursor-pointer shadow-sm" title="View, compare, or copy previous simulation debug runs">
+        <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i>
+        <span>History</span>
+        <span id="simHistoryCountBadge" class="hidden bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold">0</span>
+      </button>
     </div>
   </header>
 
@@ -696,6 +701,10 @@
               <span id="rwQuickWeatherText">Smart Weather Ready</span>
             </div>
             
+            <button type="button" onclick="event.stopPropagation(); openSimHistoryModal();" class="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-800 hover:border-emerald-500/40 transition" title="Export & View Simulation Runs">
+              <i data-lucide="history" class="w-3.5 h-3.5"></i>
+              <span class="text-[11px] font-mono">Sim History</span>
+            </button>
             <button type="button" class="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1 cursor-pointer">
               <span id="telemetryToggleText" class="text-[11px]">Diagnostics</span>
               <i id="telemetryChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform duration-200"></i>
@@ -15031,6 +15040,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       applyRouteSelectionFromPool(finalPool, fastestNonStop);
       lastCalculatedInputSignature = getCurrentInputSignature();
 
+      // Automatically record simulation run in persistent session history
+      recordSimulationRun(finalPool, fastestNonStop);
+
       // Persistent Audit Bar Completion Update
       if (auditStatusText) auditStatusText.innerText = "Optimization Complete";
       const qSummary = document.getElementById("telemetryQuickSummary");
@@ -16993,12 +17005,363 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
     document.addEventListener('DOMContentLoaded', initStopGapsDefault);
 
+
+    // =========================================================================
+    // SIMULATION HISTORY & DEBUG EXPORT MANAGER
+    // =========================================================================
+    const SIM_HISTORY_KEY = "equinox_sim_history_v1";
+    const MAX_SIM_HISTORY_RUNS = 30;
+
+    function getSimHistory() {
+      try {
+        const raw = localStorage.getItem(SIM_HISTORY_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.warn("Could not read simulation history from storage:", e);
+      }
+      return [];
+    }
+
+    function saveSimHistory(runs) {
+      try {
+        localStorage.setItem(SIM_HISTORY_KEY, JSON.stringify(runs.slice(0, MAX_SIM_HISTORY_RUNS)));
+      } catch (e) {
+        console.warn("Could not save simulation history:", e);
+      }
+      updateSimHistoryBadge();
+    }
+
+    function recordSimulationRun(finalPool, fastestNonStop) {
+      try {
+        const history = getSimHistory();
+        const runId = "sim_" + Date.now();
+        const timestamp = new Date().toISOString();
+
+        // Extract full active input state
+        const origin = document.getElementById('originAddress')?.value.trim() || "";
+        const destination = document.getElementById('destAddress')?.value.trim() || "";
+        const depDate = document.getElementById('departureDate')?.value || "";
+        const depTime = document.getElementById('departureTime')?.value || "";
+        const startSoc = parseFloat(document.getElementById('startSocSlider')?.value) || 100;
+        const targetArrival = parseFloat(document.getElementById('targetArrivalSlider')?.value) || 15;
+        const bufferSoc = parseFloat(document.getElementById('bufferSlider')?.value) || 10;
+        const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
+        const maxCap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
+        const minTime = parseFloat(document.getElementById('minTimeSlider')?.value) || 70;
+        const maxTime = parseFloat(document.getElementById('maxTimeSlider')?.value) || 120;
+        const decamillaDur = document.getElementById('decamillaStopDuration')?.value || "0";
+        const trafficProfile = document.getElementById('trafficProfile')?.value || "typical";
+        const preheated = document.getElementById('scheduledDeparturePreheat')?.checked ?? true;
+        const hasEa = document.getElementById('hasEaPass')?.checked ?? false;
+        const hasTesla = document.getElementById('hasTeslaMember')?.checked ?? false;
+
+        let payloadLbs = 0;
+        if (document.getElementById('josh')?.checked) payloadLbs += 150;
+        if (document.getElementById('courtney')?.checked) payloadLbs += 130;
+        if (document.getElementById('asher')?.checked) payloadLbs += 15;
+        if (document.getElementById('arno')?.checked) payloadLbs += 50;
+        payloadLbs += parseFloat(document.getElementById('gearSlider')?.value || 0);
+
+        const tempF = parseFloat(document.getElementById('tempF')?.value) || 70;
+        const windSpeed = parseFloat(document.getElementById('windSpeed')?.value) || 0;
+        const windDir = parseFloat(document.getElementById('windDir')?.value) || 0;
+        const roadCond = document.getElementById('roadCond')?.value || "dry";
+
+        // Extract key results
+        const fx = calculatedResults?.fastest_x;
+        const cx = calculatedResults?.cheapest_x;
+        const bx = calculatedResults?.balanced_x;
+        const fy = calculatedResults?.fastest_y;
+        const cy = calculatedResults?.cheapest_y;
+        const by = calculatedResults?.balanced_y;
+
+        const serializeRoute = (r) => {
+          if (!r) return null;
+          return {
+            name: r.route?.name || r.name || "Custom",
+            total_hours: Math.round(r.total_hours * 100) / 100,
+            drive_hours: Math.round(r.drive_hours * 100) / 100,
+            ch_hours: Math.round((r.ch_hours || 0) * 100) / 100,
+            total_cost: Math.round(r.total_cost * 100) / 100,
+            toll_cost: Math.round((r.toll_cost || 0) * 100) / 100,
+            ch_cost: Math.round((r.ch_cost || 0) * 100) / 100,
+            miles: Math.round(r.total_actual_miles || r.base_miles || 0),
+            stops: (r.stops || []).map(s => ({
+              name: s.station?.name || s.name || "Stop",
+              network: s.station?.network || s.network || "",
+              charge_mins: s.charge_mins || s.mins || 0,
+              arr_soc: s.arr_soc,
+              tgt_soc: s.tgt_soc,
+              is_decamilla: !!s.is_decamilla,
+              cost: Math.round((s.cost || 0) * 100) / 100
+            }))
+          };
+        };
+
+        const newEntry = {
+          run_id: runId,
+          timestamp: timestamp,
+          local_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          inputs: {
+            origin: origin,
+            destination: destination,
+            departure_date: depDate,
+            departure_time: depTime,
+            start_soc: startSoc,
+            target_arrival_soc: targetArrival,
+            buffer_soc: bufferSoc,
+            speed_offset: speedOffset,
+            max_speed_cap: maxCap,
+            min_time_mins: minTime,
+            max_time_mins: maxTime,
+            decamilla_duration: decamillaDur,
+            traffic_profile: trafficProfile,
+            preheated: preheated,
+            payload_lbs: payloadLbs,
+            temp_f: tempF,
+            wind_mph: windSpeed,
+            wind_deg: windDir,
+            road_cond: roadCond,
+            has_ea_pass: hasEa,
+            has_tesla_member: hasTesla,
+            enabled_networks: Array.from(getEnabledNetworks())
+          },
+          summary: {
+            total_evaluated_combos: finalPool ? finalPool.length : 0,
+            x_stops: calculatedResults?.x_stops,
+            y_stops: calculatedResults?.y_stops,
+            has_y: calculatedResults?.has_y,
+            non_stop_hours: fastestNonStop ? Math.round(fastestNonStop.hours * 100) / 100 : null,
+            non_stop_miles: fastestNonStop ? Math.round(fastestNonStop.distance * 10) / 10 : null
+          },
+          winners: {
+            fastest_x: serializeRoute(fx),
+            cheapest_x: serializeRoute(cx),
+            balanced_x: serializeRoute(bx),
+            fastest_y: serializeRoute(fy),
+            cheapest_y: serializeRoute(cy),
+            balanced_y: serializeRoute(by)
+          }
+        };
+
+        // Add to front of list
+        history.unshift(newEntry);
+        saveSimHistory(history);
+      } catch (err) {
+        console.warn("Error recording simulation run:", err);
+      }
+    }
+
+    function updateSimHistoryBadge() {
+      const history = getSimHistory();
+      const badge = document.getElementById('simHistoryCountBadge');
+      if (badge) {
+        if (history.length > 0) {
+          badge.innerText = history.length;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+    }
+
+    function openSimHistoryModal() {
+      const modal = document.getElementById('simHistoryModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      renderSimHistoryList();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeSimHistoryModal() {
+      const modal = document.getElementById('simHistoryModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function clearSimHistory() {
+      if (confirm("Clear all recorded simulation history runs?")) {
+        localStorage.removeItem(SIM_HISTORY_KEY);
+        renderSimHistoryList();
+        updateSimHistoryBadge();
+      }
+    }
+
+    function renderSimHistoryList() {
+      const history = getSimHistory();
+      const container = document.getElementById('simRunsList');
+      const emptyBox = document.getElementById('simRunsEmpty');
+      const countEl = document.getElementById('modalRunCount');
+
+      if (countEl) countEl.innerText = `${history.length} run${history.length === 1 ? '' : 's'}`;
+
+      if (!container || !emptyBox) return;
+
+      if (history.length === 0) {
+        container.innerHTML = "";
+        emptyBox.classList.remove('hidden');
+        return;
+      }
+
+      emptyBox.classList.add('hidden');
+      container.innerHTML = history.map((run, idx) => {
+        const inp = run.inputs;
+        const win = run.winners?.fastest_x || run.winners?.balanced_x || {};
+        const stopCount = (win.stops || []).length;
+        const stopNames = (win.stops || []).map(s => s.name).join(" → ");
+        const durationStr = win.total_hours ? formatHours(win.total_hours) : "--";
+        const costStr = win.total_cost != null ? `$${win.total_cost.toFixed(2)}` : "--";
+
+        return `
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3 space-y-2 hover:border-slate-700 transition">
+            <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-800/80">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-white font-mono">Run #${history.length - idx}</span>
+                <span class="text-[10px] text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded font-mono">${run.local_time}</span>
+                <span class="text-[10px] text-emerald-400 font-mono font-semibold">${inp.destination.split(',')[0]}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="copySingleRunDebugString('${run.run_id}')" class="text-[11px] bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 px-2 py-1 rounded flex items-center gap-1 cursor-pointer transition" title="Copy debug string for this specific run">
+                  <i data-lucide="copy" class="w-3 h-3 text-emerald-400"></i>
+                  <span>Copy Run</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Parameters & Results Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
+              <div class="bg-slate-900/80 p-2 rounded border border-slate-800/80">
+                <span class="text-slate-400 text-[9px] block uppercase">Route Winner</span>
+                <span class="text-emerald-400 font-bold">${durationStr}</span> &bull; <span class="text-white">${costStr}</span>
+              </div>
+              <div class="bg-slate-900/80 p-2 rounded border border-slate-800/80">
+                <span class="text-slate-400 text-[9px] block uppercase">Stops</span>
+                <span class="text-white font-semibold">${stopCount} stop${stopCount === 1 ? '' : 's'}</span>
+              </div>
+              <div class="bg-slate-900/80 p-2 rounded border border-slate-800/80">
+                <span class="text-slate-400 text-[9px] block uppercase">Speed / Limits</span>
+                <span class="text-white">+${inp.speed_offset} mph &bull; max ${inp.max_speed_cap}</span>
+              </div>
+              <div class="bg-slate-900/80 p-2 rounded border border-slate-800/80">
+                <span class="text-slate-400 text-[9px] block uppercase">Min / Max Leg</span>
+                <span class="text-white">${inp.min_time_mins}m &ndash; ${inp.max_time_mins}m</span>
+              </div>
+            </div>
+
+            <!-- Stops Trail -->
+            <div class="text-[11px] text-slate-300 flex items-center gap-1.5 pt-1">
+              <span class="text-slate-500 font-mono text-[10px]">Stops:</span>
+              <span class="truncate text-slate-300 font-sans">${stopNames || "Non-stop"}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function formatDebugString(entry) {
+      if (!entry) return "No simulation run found.";
+      const inp = entry.inputs;
+      const win = entry.winners?.fastest_x || entry.winners?.balanced_x || {};
+      const stopsList = (win.stops || []).map((s, i) => 
+        `  Stop ${i+1}: ${s.name} (${s.network || 'Unknown'}) | ${s.arr_soc}%->${s.tgt_soc}% in ${s.charge_mins}m | $${s.cost ? s.cost.toFixed(2) : '0.00'}`
+      ).join("\n");
+
+      return `[SIMULATION DEBUG RUN: ${entry.run_id} | ${entry.timestamp}]
+INPUTS:
+  Origin: ${inp.origin}
+  Destination: ${inp.destination}
+  Departure: ${inp.departure_date} ${inp.departure_time} (${inp.traffic_profile})
+  Battery: Start SoC ${inp.start_soc}%, Buffer ${inp.buffer_soc}%, Target Arrival ${inp.target_arrival_soc}%
+  Speeds: +${inp.speed_offset} mph offset, ${inp.max_speed_cap} mph cap
+  Leg Durations: Min ${inp.min_time_mins}m, Max ${inp.max_time_mins}m
+  DeCamilla Stop: ${inp.decamilla_duration} hrs
+  Environment: Payload ${inp.payload_lbs} lbs, Temp ${inp.temp_f}°F, Road ${inp.road_cond}, Wind ${inp.wind_mph} mph @ ${inp.wind_deg}°
+  Networks Enabled: ${inp.enabled_networks.join(', ')}
+
+RESULTS (Fastest Route):
+  Total Time: ${win.total_hours ? formatHours(win.total_hours) : '--'} (Driving: ${win.drive_hours ? formatHours(win.drive_hours) : '--'}, Charging: ${win.ch_hours ? formatHours(win.ch_hours) : '--'})
+  Total Cost: $${win.total_cost ? win.total_cost.toFixed(2) : '--'} (Charging: $${win.ch_cost ? win.ch_cost.toFixed(2) : '0.00'}, Tolls: $${win.toll_cost ? win.toll_cost.toFixed(2) : '0.00'})
+  Total Miles: ${win.miles || '--'} mi
+  Stops (${(win.stops || []).length}):
+${stopsList || '  (None - Non-stop)'}
+  All Evaluated Combinations: ${entry.summary?.total_evaluated_combos || '--'}`;
+    }
+
+    function showCopyToast(msg) {
+      const toast = document.getElementById('simCopyToast');
+      const toastMsg = document.getElementById('simCopyToastMsg');
+      if (toast && toastMsg) {
+        toastMsg.innerText = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 5000);
+      }
+    }
+
+    function copyLatestDebugString() {
+      const history = getSimHistory();
+      if (history.length === 0) {
+        alert("No simulations recorded yet. Calculate a route first!");
+        return;
+      }
+      const debugText = formatDebugString(history[0]);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(debugText).then(() => {
+          showCopyToast("Latest simulation debug string copied to clipboard! Paste it directly into your chat.");
+        }).catch(() => {
+          prompt("Copy this simulation debug string:", debugText);
+        });
+      } else {
+        prompt("Copy this simulation debug string:", debugText);
+      }
+    }
+
+    function copySingleRunDebugString(runId) {
+      const history = getSimHistory();
+      const entry = history.find(r => r.run_id === runId);
+      if (!entry) return;
+      const debugText = formatDebugString(entry);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(debugText).then(() => {
+          showCopyToast(`Debug string for ${entry.run_id} copied! Paste it into your chat.`);
+        }).catch(() => {
+          prompt("Copy this simulation debug string:", debugText);
+        });
+      } else {
+        prompt("Copy this simulation debug string:", debugText);
+      }
+    }
+
+    function exportAllSimHistoryJson() {
+      const history = getSimHistory();
+      if (history.length === 0) {
+        alert("No simulations recorded yet.");
+        return;
+      }
+      const jsonStr = JSON.stringify(history, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `equinox_sim_history_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     window.onload = () => {
       initStationData();
       initDurationTolerance();
       initMap();
       initStopGapsDefault();
       initDepartureDateTimeControls();
+      updateSimHistoryBadge();
       initManualWeatherOverride();
       updatePhysicsHUD();
       // Populate TomTom API Key if stored in localStorage
@@ -17017,5 +17380,74 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       setTimeout(initStopGapsDefault, 400);
     };
   </script>
+  <!-- Simulation History & Debug Modal -->
+  <div id="simHistoryModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden text-slate-200">
+      <!-- Modal Header -->
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+            <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>Simulation History &amp; Debug Logs</span>
+              <span id="modalRunCount" class="text-[10px] font-mono bg-slate-800 px-2 py-0.5 rounded text-slate-300 border border-slate-700">0 runs</span>
+            </h2>
+            <p class="text-[11px] text-slate-400">Automatic record of all executed route simulations with input parameters and result snapshots</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="copyLatestDebugString()" class="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition" title="Copy compact debug string for the most recent simulation to clipboard">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copy Latest Run</span>
+          </button>
+          <button onclick="exportAllSimHistoryJson()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition" title="Export entire simulation history as JSON">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Export JSON</span>
+          </button>
+          <button onclick="clearSimHistory()" class="bg-slate-800 hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-800/50 text-xs px-2 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer transition" title="Clear history log">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="closeSimHistoryModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer ml-2">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Copy Success Toast Notification Inside Modal -->
+      <div id="simCopyToast" class="hidden bg-emerald-950/80 border-b border-emerald-800/80 px-4 py-2 text-xs text-emerald-300 font-mono flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+          <span id="simCopyToastMsg">Simulation debug string copied to clipboard! Paste it directly into your chat.</span>
+        </div>
+        <button onclick="document.getElementById('simCopyToast').classList.add('hidden')" class="text-emerald-400 hover:text-white">&times;</button>
+      </div>
+
+      <!-- Modal Body (Scrollable Table & Inspector) -->
+      <div class="p-4 overflow-y-auto space-y-4 flex-1">
+        <!-- Runs List -->
+        <div id="simRunsList" class="space-y-3">
+          <!-- Dynamically Populated -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="simRunsEmpty" class="hidden py-12 text-center text-slate-500 space-y-2">
+          <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-600"></i>
+          <p class="text-sm">No simulations recorded yet in this session.</p>
+          <p class="text-xs text-slate-600">Click &ldquo;Calculate Route&rdquo; to execute a simulation and its full telemetry will appear here.</p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400">
+        <span class="font-mono text-[11px]">Storage: Local browser session (persists across page reloads, up to 30 runs)</span>
+        <button onclick="closeSimHistoryModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition cursor-pointer">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
