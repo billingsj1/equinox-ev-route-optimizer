@@ -66,7 +66,7 @@ class OpenChargeMapClient:
     async def discover_chargers_for_states(
         self,
         states: Optional[List[str]] = None,
-        min_power_kw: float = 50.0
+        min_power_kw: float = 100.0
     ) -> List[Dict[str, Any]]:
         """
         Queries OCM POI API across target states with CCS1 (ID 32) and >= 100 kW.
