@@ -150,73 +150,19 @@
                 <span class="relative group cursor-pointer inline-flex items-center">
                   <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-emerald-400 transition"></i>
                   <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-52 p-2 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
-                    Adds stop &amp; free Level 2 charging on St. Onge route via Exit 236 (US-15 S / Dillsburg, PA).
+                    Adds stop &amp; free Level 2 charging on St. Onge route via Exit 236 (US-15 S / Dillsburg, PA). Enter hours (e.g. 0 for no stop, 1.5, 3.0, 8.0).
                   </span>
                 </span>
               </div>
-              <select id="decamillaStopDuration" class="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] rounded px-2 py-1 focus:outline-none focus:border-emerald-500 shrink-0">
-                <option value="0">Direct (No stop)</option>
-                <option value="1.0">1.0 hr Stop</option>
-                <option value="2.0">2.0 hr Stop</option>
-                <option value="3.0">3.0 hr Stop</option>
-                <option value="4.0">4.0 hr Stop</option>
-                <option value="5.0">5.0 hr Stop</option>
-                <option value="overnight">Overnight (100% full)</option>
-              </select>
+              <div class="flex items-center gap-1 shrink-0">
+                <input type="number" id="decamillaStopDuration" min="0" max="24" step="0.25" value="3.0" placeholder="0" class="w-16 bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded px-2 py-1 text-right focus:outline-none focus:border-emerald-500 font-mono">
+                <span class="text-[11px] text-slate-400 font-mono">hrs</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Passengers & Cargo (Payload Weight) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-            <i data-lucide="users" class="w-3.5 h-3.5 text-emerald-400"></i>
-            <span>Passengers &amp; Cargo</span>
-          </h2>
-          <span class="text-[10px] text-slate-400 font-mono">Payload</span>
-        </div>
-        <!-- Passenger Toggle Chips -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
-          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
-            <span class="flex items-center gap-1.5">
-              <input type="checkbox" id="josh" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-              <span class="text-slate-200 text-[11px]">Josh</span>
-            </span>
-            <span class="text-[10px] text-slate-500 font-mono">150</span>
-          </label>
-          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
-            <span class="flex items-center gap-1.5">
-              <input type="checkbox" id="courtney" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-              <span class="text-slate-200 text-[11px]">Courtney</span>
-            </span>
-            <span class="text-[10px] text-slate-500 font-mono">130</span>
-          </label>
-          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
-            <span class="flex items-center gap-1.5">
-              <input type="checkbox" id="asher" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-              <span class="text-slate-200 text-[11px]">Asher</span>
-            </span>
-            <span class="text-[10px] text-slate-500 font-mono">15</span>
-          </label>
-          <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
-            <span class="flex items-center gap-1.5">
-              <input type="checkbox" id="arno" checked onchange="updateMass()" class="accent-emerald-500 rounded">
-              <span class="text-slate-200 text-[11px]">Arno</span>
-            </span>
-            <span class="text-[10px] text-slate-500 font-mono">50</span>
-          </label>
-        </div>
-        <!-- Cargo Slider -->
-        <div class="mt-2 pt-1 border-t border-slate-800/80">
-          <div class="flex items-center justify-between text-xs text-slate-400 mb-0.5">
-            <span class="text-[11px]">Cargo &amp; Luggage</span>
-            <span id="gearDisplay" class="font-mono text-emerald-400 font-semibold text-xs">100 lbs</span>
-          </div>
-          <input type="range" id="gearSlider" min="0" max="250" value="100" step="5" oninput="updateMass()" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
-        </div>
-      </div>
 
       <!-- Departure, Battery & Stint Limits -->
       <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm space-y-3">
@@ -239,10 +185,7 @@
               <span>Time</span>
               <span id="departureTimeDisplay" class="font-mono text-emerald-400 text-[10px]">08:00 AM</span>
             </div>
-            <select id="departureTime" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
-              <!-- Populated dynamically with 48 half-hour slots -->
-              <option value="08:00" selected>08:00 AM</option>
-            </select>
+            <input type="time" id="departureTime" value="08:00" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
           </div>
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">Speed vs Limit</label>
@@ -456,6 +399,56 @@
               <div id="networkFilterContainer" class="grid grid-cols-2 gap-1.5 text-xs max-h-56 overflow-y-auto pr-1">
                 <!-- Dynamically populated network checkboxes -->
               </div>
+            </div>
+          </div>
+
+          <!-- Passengers & Cargo (Payload Weight) -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <i data-lucide="users" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Passengers &amp; Cargo</span>
+              </h2>
+              <span id="massDisplay" class="text-[10px] text-emerald-400 font-mono">5,368 lbs</span>
+            </div>
+            <!-- Passenger Toggle Chips -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+              <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
+                <span class="flex items-center gap-1.5">
+                  <input type="checkbox" id="josh" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+                  <span class="text-slate-200 text-[11px]">Josh</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono">150</span>
+              </label>
+              <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
+                <span class="flex items-center gap-1.5">
+                  <input type="checkbox" id="courtney" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+                  <span class="text-slate-200 text-[11px]">Courtney</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono">130</span>
+              </label>
+              <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
+                <span class="flex items-center gap-1.5">
+                  <input type="checkbox" id="asher" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+                  <span class="text-slate-200 text-[11px]">Asher</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono">15</span>
+              </label>
+              <label class="flex items-center justify-between px-2 py-1 rounded bg-slate-950 border border-slate-800 hover:border-slate-700 cursor-pointer transition select-none">
+                <span class="flex items-center gap-1.5">
+                  <input type="checkbox" id="arno" checked onchange="updateMass()" class="accent-emerald-500 rounded">
+                  <span class="text-slate-200 text-[11px]">Arno</span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono">50</span>
+              </label>
+            </div>
+            <!-- Cargo Slider -->
+            <div class="mt-2 pt-1 border-t border-slate-800/80">
+              <div class="flex items-center justify-between text-xs text-slate-400 mb-0.5">
+                <span class="text-[11px]">Cargo &amp; Luggage</span>
+                <span id="gearDisplay" class="font-mono text-emerald-400 font-semibold text-xs">100 lbs</span>
+              </div>
+              <input type="range" id="gearSlider" min="0" max="250" value="100" step="5" oninput="updateMass()" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
             </div>
           </div>
 
@@ -12023,30 +12016,13 @@
         dateEl.value = `${yyyy}-${mm}-${dd}`;
       }
 
-      const curVal = timeEl.value;
-      timeEl.innerHTML = '';
-      const curHour = now.getHours();
-      const curMin = now.getMinutes();
-      let defaultIdx = Math.ceil((curHour * 60 + curMin) / 30);
-      if (defaultIdx >= 48) defaultIdx = 0;
-
-      for (let slot = 0; slot < 48; slot++) {
-        const h = Math.floor(slot / 2);
-        const m = (slot % 2) * 30;
-        const hh = String(h).padStart(2, '0');
-        const minStr = String(m).padStart(2, '0');
-        const val = `${hh}:${minStr}`;
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const h12 = (h % 12) === 0 ? 12 : (h % 12);
-        const label = `${h12}:${minStr} ${ampm}`;
-
-        const opt = document.createElement('option');
-        opt.value = val;
-        opt.textContent = label;
-        if (curVal ? (val === curVal) : (slot === defaultIdx)) {
-          opt.selected = true;
-        }
-        timeEl.appendChild(opt);
+      if (!timeEl.value) {
+        const curHour = now.getHours();
+        const curMin = now.getMinutes();
+        const roundedMin = Math.ceil(curMin / 30) * 30;
+        const finalHour = (curHour + Math.floor(roundedMin / 60)) % 24;
+        const finalMin = roundedMin % 60;
+        timeEl.value = `${String(finalHour).padStart(2, '0')}:${String(finalMin).padStart(2, '0')}`;
       }
 
       updateDepartureTimeDisplay();
