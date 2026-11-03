@@ -7376,7 +7376,7 @@
         } else if (traffic_profile === 'rush_hour') {
           if (sName.includes('schuylkill') || (sRef.includes('76') && lon > -75.42)) base_mph = 18.0;
           else if (sName.includes('vine') || sRef.includes('676')) base_mph = 14.0;
-          else if (sName.includes('70') && lon > -75.12) base_mph = 24.0;
+          else if ((sRef.includes('70') || sName.includes('marlton')) && lon > -75.12 && lon < -74.88 && lat > 39.86 && lat < 39.96) base_mph = 24.0;
           else if (posted_speed <= 35.0) base_mph = 20.0;
           else if (posted_speed <= 45.0) base_mph = 28.0;
           else if (base_mph > 45.0) base_mph = Math.max(35.0, base_mph * 0.80);
@@ -8578,8 +8578,11 @@
         console.warn("Photon geocode failed:", e);
       }
 
-      // 3. Fallback
-      return { lat: 39.8912, lon: -74.9218, name: query, toll_ez: 37.59, toll_cash: 75.20 };
+      // 3. No match: fail loudly. Silently routing to a hard-coded Marlton, NJ (with its $37.59 toll)
+      // for an unrecognized address would produce a plausible-looking but completely wrong trip.
+      const geoErr = new Error(`Could not find a location for "${query}". Please check the address and try again.`);
+      geoErr.isGeocode = true;
+      throw geoErr;
     }
 
         function getTomTomApiKey() {
@@ -8747,13 +8750,14 @@
           const stops = cand.stops || [];
           const originCoords = [cand.route.origin.lat, cand.route.origin.lon];
           const destCoords = [cand.route.destination.lat, cand.route.destination.lon];
+          const avoidTolls = !(cand.route.toll > 0); // toll-free corridor => ask TomTom for a toll-free path too
 
           if (stops.length === 0) {
             const depHour = getDepartureHoursDecimal();
             const iso = formatLegIso(depDateStr, depHour);
-            const legKey = `${originCoords[0].toFixed(4)},${originCoords[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${iso.slice(0, 13)}`;
+            const legKey = `${originCoords[0].toFixed(4)},${originCoords[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${iso.slice(0, 13)}${avoidTolls ? '|nt' : ''}`;
             if (!uniqueLegsMap.has(legKey)) {
-              uniqueLegsMap.set(legKey, { start: originCoords, end: destCoords, iso: iso, result: null });
+              uniqueLegsMap.set(legKey, { start: originCoords, end: destCoords, iso: iso, avoidTolls: avoidTolls, result: null });
             }
             legAssignments[cIdx].push(legKey);
           } else {
@@ -8764,9 +8768,9 @@
               const endC = [sp.station.lat, sp.station.lon];
 
               const iso = formatLegIso(depDateStr, currentDepHour);
-              const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${endC[0].toFixed(4)},${endC[1].toFixed(4)}@${iso.slice(0, 13)}`;
+              const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${endC[0].toFixed(4)},${endC[1].toFixed(4)}@${iso.slice(0, 13)}${avoidTolls ? '|nt' : ''}`;
               if (!uniqueLegsMap.has(legKey)) {
-                uniqueLegsMap.set(legKey, { start: startC, end: endC, iso: iso, result: null });
+                uniqueLegsMap.set(legKey, { start: startC, end: endC, iso: iso, avoidTolls: avoidTolls, result: null });
               }
               legAssignments[cIdx].push(legKey);
 
@@ -8779,9 +8783,9 @@
             const lastSp = stops[stops.length - 1];
             const startC = [lastSp.station.lat, lastSp.station.lon];
             const iso = formatLegIso(depDateStr, currentDepHour);
-            const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${iso.slice(0, 13)}`;
+            const legKey = `${startC[0].toFixed(4)},${startC[1].toFixed(4)}:${destCoords[0].toFixed(4)},${destCoords[1].toFixed(4)}@${iso.slice(0, 13)}${avoidTolls ? '|nt' : ''}`;
             if (!uniqueLegsMap.has(legKey)) {
-              uniqueLegsMap.set(legKey, { start: startC, end: destCoords, iso: iso, result: null });
+              uniqueLegsMap.set(legKey, { start: startC, end: destCoords, iso: iso, avoidTolls: avoidTolls, result: null });
             }
             legAssignments[cIdx].push(legKey);
           }
@@ -8800,7 +8804,7 @@
           btnText.innerText = `Syncing (${i + 1}/${uniqueLegList.length})...`;
 
           const coordsStr = `${lObj.start[0]},${lObj.start[1]}:${lObj.end[0]},${lObj.end[1]}`;
-          const url = `https://api.tomtom.com/routing/1/calculateRoute/${coordsStr}/json?key=${key}&traffic=true&departAt=${encodeURIComponent(lObj.iso)}&routeType=fastest&computeTravelTimeFor=all`;
+          const url = `https://api.tomtom.com/routing/1/calculateRoute/${coordsStr}/json?key=${key}&traffic=true&departAt=${encodeURIComponent(lObj.iso)}&routeType=fastest&computeTravelTimeFor=all${lObj.avoidTolls ? '&avoid=tollRoads' : ''}`;
 
           try {
             const resp = await fetch(url);
@@ -9182,6 +9186,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       } catch (err) {
         console.error("Route search error:", err);
+        if (err && err.isGeocode) {
+          const st = document.getElementById('auditStatusText');
+          if (st) st.innerText = 'Location not found';
+          alert(err.message);
+        }
       } finally {
         searchBtn.disabled = false;
         searchBtn.innerHTML = `<i data-lucide="search" class="w-4 h-4"></i><span>Calculate Route</span>`;
@@ -12189,16 +12198,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   const matchesState = cfg.aliases.some(a => stRaw === a || stRaw === `${a}.` || stRaw.startsWith(`${a} `));
                   if (!matchesState) return;
 
-                  const exists = ALL_STATIONS.some(s => 
-                    (s.ocm_id && poi.ID && s.ocm_id === poi.ID) || 
-                    (s.network === network && haversineMiles(s.lat, s.lon, lat, lon) < 3.0) ||
+                  // Resolve operator/network BEFORE the duplicate check (it was previously referenced before being defined,
+                  // which threw a ReferenceError and silently aborted every OCM state query).
+                  const opId = poi.OperatorID;
+                  const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
+                  const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
+
+                  const exists = ALL_STATIONS.some(s =>
+                    (s.ocm_id && poi.ID && s.ocm_id === poi.ID) ||
+                    (s.network === network && haversineMiles(s.lat, s.lon, lat, lon) < 0.5) ||
                     haversineMiles(s.lat, s.lon, lat, lon) < 0.35
                   );
 
                   if (!exists) {
-                    const opId = poi.OperatorID;
-                    const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
-                    const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
                     const isPilot = isPilotStation({ name: addr.Title, network: network, address: addr.AddressLine1, city: addr.Town });
                     const gm = (network === "IONNA" || network === "EVgo") && !isPilot;
                     const ea_pass = network === "Electrify America";
