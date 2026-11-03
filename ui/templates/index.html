@@ -14117,8 +14117,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
-          const maxAllowedDestMins = timeAgnosticBaseline ? (max_mins + 20.0) : max_mins;
-          if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= maxAllowedDestMins) {
+          if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
             if (curr.stops.length === 0 || leg_to_dest_mins >= 30.0) {
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
@@ -14276,11 +14275,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (!legSim) continue;
             const leg_mins = legSim.hours * 60.0;
 
-            const effectiveMaxMins = timeAgnosticBaseline ? (max_mins + 20.0) : max_mins;
-            const effectiveMinMins = timeAgnosticBaseline ? Math.max(10.0, min_mins - 15.0) : min_mins;
-            if (leg_mins > effectiveMaxMins) continue;
+            if (leg_mins > max_mins) continue;
             // No minimum drive time constraint for legs to/from DeCamilla L2 stop (charger before/after DeCamilla can be as little as 1 min)
-            if (!isToOrFromDecamilla && leg_mins < effectiveMinMins) continue;
+            if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
 
             const stDetour = stationDetours[j];
             const isPlaza = stDetour.isPlaza;
@@ -14445,8 +14442,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               }
               const frontier = paretoFrontier.get(stateKey);
               let dominated = false;
-              const tSlack = timeAgnosticBaseline ? 0.35 : 0.01;
-              const cSlack = timeAgnosticBaseline ? 4.00 : 0.05;
+              const tSlack = timeAgnosticBaseline ? 0.03 : 0.01;
+              const cSlack = timeAgnosticBaseline ? 0.25 : 0.05;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const prev = frontier[fIdx];
                 if (prev.t <= (leg_total_hrs - tSlack) && prev.c <= (leg_total_cost - cSlack)) {
@@ -14556,11 +14553,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Broader candidate retention: expand pool when optimizing departure times across +/- 2 hours
       const kTopPerCategory = shouldOptimizeDep ? 60 : 30;
+      const kTopCheapest = 30;
       const kTopPerCorridor = shouldOptimizeDep ? 10 : 5;
 
       // Group X: Top fastest, cheapest, Pareto
       const top_fastest_x = [...candidates_x].sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCategory);
-      const top_cheapest_x = [...candidates_x].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCategory);
+      const top_cheapest_x = [...candidates_x].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopCheapest);
       if (candidates_x.length > 0) {
         let min_t_x = Infinity, max_t_x = -Infinity, min_c_x = Infinity, max_c_x = -Infinity;
         candidates_x.forEach(c => {
@@ -14579,7 +14577,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Group Y: Top fastest, cheapest, Pareto
       const top_fastest_y = [...candidates_y].sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCategory);
-      const top_cheapest_y = [...candidates_y].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCategory);
+      const top_cheapest_y = [...candidates_y].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopCheapest);
       if (candidates_y.length > 0) {
         let min_t_y = Infinity, max_t_y = -Infinity, min_c_y = Infinity, max_c_y = -Infinity;
         candidates_y.forEach(c => {
