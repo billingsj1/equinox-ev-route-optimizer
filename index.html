@@ -14019,7 +14019,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         for (let i = 0; i < routeStations.length; i++) {
           stationToStationLegs[i] = new Array(routeStations.length);
           for (let j = i + 1; j < routeStations.length; j++) {
-            if (routeStations[j].mile > routeStations[i].mile + 5.0) {
+            const isToOrFromDecamilla = routeStations[i].is_decamilla || routeStations[j].is_decamilla;
+            const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
+            if (routeStations[j].mile > routeStations[i].mile + minGapMiles) {
               stationToStationLegs[i][j] = simulateLegFromSteps(route.steps, routeStations[i].mile, routeStations[j].mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
             }
           }
@@ -14235,7 +14237,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const startJ = (curr.stationIdx === -1) ? 0 : curr.stationIdx + 1;
           for (let j = startJ; j < routeStations.length; j++) {
             const st = routeStations[j];
-            if (st.mile <= curr.mile + 5.0) continue;
+            const isToOrFromDecamilla = st.is_decamilla || (curr.stationIdx >= 0 && routeStations[curr.stationIdx].is_decamilla);
+            const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
+            if (st.mile <= curr.mile + minGapMiles) continue;
 
             // If DeCamilla is mandatory and not yet visited, cannot skip past DeCamilla!
             if (decamillaStationObj && !curr.has_decamilla && j > decamillaIdx) {
@@ -14250,10 +14254,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const leg_mins = legSim.hours * 60.0;
 
             if (leg_mins > max_mins) continue;
-            // For stops to/from DeCamilla, allow min leg down to 15 min; for regular stops enforce min_mins
-            const isToOrFromDecamilla = st.is_decamilla || (curr.stationIdx >= 0 && routeStations[curr.stationIdx].is_decamilla);
+            // No minimum drive time constraint for legs to/from DeCamilla L2 stop (charger before/after DeCamilla can be as little as 1 min)
             if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
-            if (isToOrFromDecamilla && leg_mins < 15.0) continue;
 
             const stDetour = stationDetours[j];
             const isPlaza = stDetour.isPlaza;
@@ -14377,7 +14379,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const nextLegSim = stationToStationLegs[j][k];
               if (!nextLegSim) continue;
               const nextLegMins = nextLegSim.hours * 60.0;
-              if (nextLegMins >= min_mins && nextLegMins <= max_mins) {
+              const isToOrFromDecamillaK = st.is_decamilla || routeStations[k].is_decamilla;
+              const satisfiesMinMins = isToOrFromDecamillaK || (nextLegMins >= min_mins);
+              if (satisfiesMinMins && nextLegMins <= max_mins) {
                 const nextDetour = stationDetours[k];
                 const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
                 // Round UP (ceil): arriving at k at >= buffer. Raise to the min-charge floor if needed.
