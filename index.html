@@ -514,18 +514,38 @@
 
           <!-- TomTom API Key for Precision Mode -->
           <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i>
-                <span>TomTom API Key (Precision Traffic)</span>
-              </span>
-              <span id="tomtomKeyStatus" class="text-[10px] font-mono text-slate-400">Stored in browser</span>
+            <!-- TomTom Key -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                  <i data-lucide="key" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span>TomTom Traffic & Routing API Key</span>
+                </span>
+                <span id="tomtomKeyStatus" class="text-[10px] font-mono text-slate-400">Synced via Cloud</span>
+              </div>
+              <div class="flex gap-2 pt-0.5">
+                <input type="password" id="tomtomApiKeyInput" placeholder="Auto-configured from Cloud .env" 
+                  class="flex-1 bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
+                  onchange="saveTomTomApiKey(this.value)">
+                <button type="button" onclick="testTomTomApiKey()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">Verify</button>
+              </div>
             </div>
-            <div class="flex gap-2 pt-1">
-              <input type="password" id="tomtomApiKeyInput" placeholder="Enter TomTom API Key..." 
-                class="flex-1 bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
-                onchange="saveTomTomApiKey(this.value)">
-              <button type="button" onclick="testTomTomApiKey()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">Verify</button>
+
+            <!-- HERE Speed Limits Key -->
+            <div class="space-y-1 pt-1.5 border-t border-slate-800/80">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                  <i data-lucide="gauge" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  <span>HERE API Key (Legal Speed Limits)</span>
+                </span>
+                <span id="hereKeyStatus" class="text-[10px] font-mono text-slate-400">Synced via Cloud</span>
+              </div>
+              <div class="flex gap-2 pt-0.5">
+                <input type="password" id="hereApiKeyInput" placeholder="Auto-configured from Cloud .env" 
+                  class="flex-1 bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+                  onchange="saveHereApiKey(this.value)">
+                <button type="button" onclick="testHereApiKey()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">Verify</button>
+              </div>
             </div>
           </div>
 
@@ -1679,6 +1699,12 @@
       }
 
       const lowerName = name.toLowerCase();
+
+      // 0. Primary Ground Truth: Exact HERE Technologies Legal Speed Limit Database
+      const hereMatchedSpeed = matchHereSpeedLimit(lat, lon, ref, name);
+      if (hereMatchedSpeed && hereMatchedSpeed >= 20 && hereMatchedSpeed <= 85) {
+        return hereMatchedSpeed;
+      }
 
       // 1. Highway Ramps, Interchange Connectors, and Exit Loops (strictly 25-35 mph)
       if (maneuver_type.includes('ramp') || 
@@ -12707,6 +12733,139 @@
       }
     }
 
+    function getHereApiKey() {
+      if (typeof window !== 'undefined' && window.HERE_API_KEY) {
+        return window.HERE_API_KEY.trim();
+      }
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('here_api_key')) {
+        return localStorage.getItem('here_api_key').trim();
+      }
+      return "";
+    }
+
+    function saveHereApiKey(val) {
+      if (!val) return;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('here_api_key', val.trim());
+      }
+      const status = document.getElementById('hereKeyStatus');
+      if (status) status.innerText = "Saved";
+    }
+
+    async function testHereApiKey() {
+      const key = getHereApiKey() || document.getElementById('hereApiKeyInput')?.value.trim();
+      if (!key) {
+        alert("Please enter a HERE API Key first.");
+        return;
+      }
+      saveHereApiKey(key);
+      try {
+        const testUrl = `https://router.hereapi.com/v8/routes?transportMode=car&origin=39.95,-83.05&destination=39.95,-83.00&return=summary&apiKey=${key}`;
+        const res = await fetch(testUrl);
+        if (res.ok) {
+          alert("HERE API Key verified successfully! Connected to HERE Technologies Routing API.");
+        } else {
+          alert(`HERE Key Verification Failed: HTTP ${res.status}`);
+        }
+      } catch (e) {
+        alert("Error testing HERE API Key: " + e.message);
+      }
+    }
+
+    // Auto-fetch API keys from secure serverless backend endpoint (/api/keys)
+    async function syncCloudApiKeys() {
+      try {
+        const res = await fetch('/api/keys');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.tomtom_api_key) {
+            window.TOMTOM_API_KEY = data.tomtom_api_key;
+            const tomtomInput = document.getElementById('tomtomApiKeyInput');
+            if (tomtomInput && !tomtomInput.value) {
+              tomtomInput.value = data.tomtom_api_key;
+            }
+            const status = document.getElementById('tomtomKeyStatus');
+            if (status) status.innerText = "Active (Cloud Synced)";
+          }
+          if (data.here_api_key) {
+            window.HERE_API_KEY = data.here_api_key;
+            const hereInput = document.getElementById('hereApiKeyInput');
+            if (hereInput && !hereInput.value) {
+              hereInput.value = data.here_api_key;
+            }
+            const status = document.getElementById('hereKeyStatus');
+            if (status) status.innerText = "Active (Cloud Synced)";
+          }
+        }
+      } catch (e) {
+        console.log("Local static session; relying on client localStorage keys:", e.message);
+      }
+    }
+
+    // =========================================================================
+    // HERE TECHNOLOGIES LEGAL SPEED LIMITS DATABASE & K-D SPATIAL INDEX
+    // =========================================================================
+    let HERE_SPEED_LIMITS_DB = null;
+
+    async function loadHereSpeedLimitsDatabase() {
+      if (HERE_SPEED_LIMITS_DB) return HERE_SPEED_LIMITS_DB;
+      const ts = Date.now();
+      try {
+        const resp = await fetch(`data/here_speed_limits.json?t=${ts}`);
+        if (resp.ok) {
+          HERE_SPEED_LIMITS_DB = await resp.json();
+          console.log(`Loaded ${HERE_SPEED_LIMITS_DB.length} exact legal speed limit segments from HERE database.`);
+          return HERE_SPEED_LIMITS_DB;
+        }
+      } catch (e) {
+        console.warn("Could not load local data/here_speed_limits.json, trying GitHub raw:", e);
+      }
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/here_speed_limits.json?t=${ts}`;
+        const resp2 = await fetch(rawUrl);
+        if (resp2.ok) {
+          HERE_SPEED_LIMITS_DB = await resp2.json();
+          console.log(`Loaded ${HERE_SPEED_LIMITS_DB.length} exact legal speed limit segments from GitHub.`);
+          return HERE_SPEED_LIMITS_DB;
+        }
+      } catch (e2) {
+        console.warn("Could not load HERE speed limits database from GitHub:", e2);
+      }
+      return null;
+    }
+
+    // Fast Spatial Matcher: Finds the exact HERE speed limit within ~1.2 miles of step mid-coordinate
+    function matchHereSpeedLimit(lat, lon, refStr, nameStr) {
+      if (!HERE_SPEED_LIMITS_DB || HERE_SPEED_LIMITS_DB.length === 0) return null;
+      let bestMatch = null;
+      let minDistanceSq = 0.0004; // ~1.3 miles max search radius squared
+
+      const normRef = (refStr || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normName = (nameStr || '').toLowerCase();
+
+      for (let i = 0; i < HERE_SPEED_LIMITS_DB.length; i++) {
+        const seg = HERE_SPEED_LIMITS_DB[i];
+        if (!seg.mid || !seg.speed_mph) continue;
+        const dLat = seg.mid[0] - lat;
+        const dLon = seg.mid[1] - lon;
+        const distSq = (dLat * dLat) + (dLon * dLon);
+        if (distSq < minDistanceSq) {
+          // If street names or refs match, strongly prefer this segment
+          const segNames = (seg.names || []).join(' ').toLowerCase();
+          const nameMatches = normName && segNames.includes(normName);
+          const refMatches = normRef && segNames.replace(/[^a-z0-9]/g, '').includes(normRef);
+          if (nameMatches || refMatches) {
+            minDistanceSq = distSq;
+            bestMatch = seg;
+          } else if (!bestMatch) {
+            minDistanceSq = distSq;
+            bestMatch = seg;
+          }
+        }
+      }
+      return bestMatch ? bestMatch.speed_mph : null;
+    }
+
         function formatLegIso(baseDateStr, hoursDecimal) {
       const dateParts = (baseDateStr || new Date().toISOString().split('T')[0]).split('-');
       const y = parseInt(dateParts[0], 10);
@@ -17404,6 +17563,7 @@ ${stopsList || '  (None - Non-stop)'}
 
     window.onload = () => {
       initStationData();
+      loadHereSpeedLimitsDatabase();
       initDurationTolerance();
       initMap();
       initStopGapsDefault();
@@ -17411,7 +17571,8 @@ ${stopsList || '  (None - Non-stop)'}
       updateSimHistoryBadge();
       initManualWeatherOverride();
       updatePhysicsHUD();
-      // Populate TomTom API Key if stored in localStorage
+
+      // Auto-populate local keys or sync from Cloud
       const savedTomTomKey = getTomTomApiKey();
       const tomtomInput = document.getElementById('tomtomApiKeyInput');
       if (savedTomTomKey && tomtomInput && !tomtomInput.value) {
@@ -17419,6 +17580,18 @@ ${stopsList || '  (None - Non-stop)'}
         const status = document.getElementById('tomtomKeyStatus');
         if (status) status.innerText = "Loaded from storage";
       }
+
+      const savedHereKey = getHereApiKey();
+      const hereInput = document.getElementById('hereApiKeyInput');
+      if (savedHereKey && hereInput && !hereInput.value) {
+        hereInput.value = savedHereKey;
+        const status = document.getElementById('hereKeyStatus');
+        if (status) status.innerText = "Loaded from storage";
+      }
+
+      // Background cloud sync for Vercel deployment
+      syncCloudApiKeys();
+
       // Route calculation is not run automatically on load, allowing settings adjustment first
       lucide.createIcons();
 

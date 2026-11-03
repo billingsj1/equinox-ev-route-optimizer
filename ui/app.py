@@ -111,6 +111,45 @@ async def serve_index():
                 pass
     return HTMLResponse(content="""<!DOCTYPE html><html><head><title>Equinox EV Route Optimizer</title></head><body style='font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; text-align: center;'><h2>Equinox EV Route Optimizer API is active.</h2><p><a href='/' style='color: #10b981;'>Click here to return to dashboard</a></p></body></html>""")
 
+def _load_env_keys():
+    keys = {
+        "tomtom": os.environ.get("TOMTOM_API_KEY", "").strip(),
+        "here": os.environ.get("HERE_API_KEY", "").strip()
+    }
+    # If not present in environment variables, check local .env
+    if not keys["tomtom"] or not keys["here"]:
+        env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip()
+                            if k == "TOMTOM_API_KEY" and not keys["tomtom"]:
+                                keys["tomtom"] = v
+                            elif k == "HERE_API_KEY" and not keys["here"]:
+                                keys["here"] = v
+            except Exception:
+                pass
+    return keys
+
+@app.get("/api/keys")
+async def get_api_keys():
+    """
+    Returns API keys stored securely in environment variables (Vercel) or local .env.
+    """
+    keys = _load_env_keys()
+    return JSONResponse({
+        "status": "ok",
+        "has_tomtom": bool(keys["tomtom"]),
+        "has_here": bool(keys["here"]),
+        "tomtom_api_key": keys["tomtom"],
+        "here_api_key": keys["here"]
+    })
+
 @app.get("/api/stations")
 async def get_stations():
     """
