@@ -14185,6 +14185,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
           candidates.push({
             route: route,
+            speed_offset: sOffset,
+            max_speed_cap: sCap,
             base_miles: total_miles,
             total_actual_miles: total_miles,
             total_detour_miles: 0.0,
@@ -14425,6 +14427,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const dest_arr_clock_s1 = formatClockTime(departure_hours + total_drive_hrs + curr.ch_hrs);
               candidates.push({
                 route: route,
+                speed_offset: sOffset,
+                max_speed_cap: sCap,
                 base_miles: total_miles,
                 total_actual_miles: total_actual_miles,
                 total_detour_miles: total_detour_miles,
@@ -14838,10 +14842,45 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       });
 
-      // Deduplicate across all candidate buckets (30x3 for X, 30x3 for Y, up to 180 total)
+      // Diversity Safeguard 1: Guarantee every distinct physical stop sequence has its best representative
+      const bestPerSequenceX = [];
+      const bestPerSequenceY = [];
+      sequenceGroups.forEach((cands, sKey) => {
+        const cX = cands.filter(c => c.stops.length === target_x);
+        if (cX.length > 0) {
+          bestPerSequenceX.push([...cX].sort((a, b) => a.total_hours - b.total_hours)[0]);
+        }
+        const cY = cands.filter(c => c.stops.length === target_y);
+        if (cY.length > 0) {
+          bestPerSequenceY.push([...cY].sort((a, b) => a.total_hours - b.total_hours)[0]);
+        }
+      });
+
+      // Diversity Safeguard 2: When multi-parameter optimizing across speed/cap pairs,
+      // guarantee that each pair's fastest candidates are retained so higher speed caps cannot starve lower speed pairs
+      const perPairTop = [];
+      if (stage1Pairs.length > 1) {
+        stage1Pairs.forEach(pair => {
+          const pairCandsX = candidates_x.filter(c => c.speed_offset === pair.off && c.max_speed_cap === pair.cap);
+          if (pairCandsX.length > 0) {
+            const pFastX = [...pairCandsX].sort((a, b) => a.total_hours - b.total_hours).slice(0, 20);
+            pFastX.forEach(c => perPairTop.push(c));
+          }
+          const pairCandsY = candidates_y.filter(c => c.speed_offset === pair.off && c.max_speed_cap === pair.cap);
+          if (pairCandsY.length > 0) {
+            const pFastY = [...pairCandsY].sort((a, b) => a.total_hours - b.total_hours).slice(0, 20);
+            pFastY.forEach(c => perPairTop.push(c));
+          }
+        });
+      }
+
+      // Deduplicate across all candidate buckets (unique sequences, per-pair fast, category leaders, corridors)
       const combinedTop = [];
       const seenTopKeys = new Set();
       const candidateGroups = [
+        bestPerSequenceX,
+        bestPerSequenceY,
+        perPairTop,
         top_fastest_x, top_cheapest_x, top_balanced_x,
         top_fastest_y, top_cheapest_y, top_balanced_y,
         perCorridorTop
