@@ -182,16 +182,16 @@
           </div>
           <div>
             <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
-              <span class="flex items-center gap-1.5">
-                <span>Time</span>
-                <label class="inline-flex items-center gap-1 text-[10px] text-cyan-400 cursor-pointer font-sans select-none" title="Optimize across departure times &plusmn;2 hours in 30-min increments">
-                  <input type="checkbox" id="optimizeDepartureTime" onchange="onDepartureDateTimeChanged();" class="accent-cyan-500 rounded w-3 h-3 cursor-pointer">
-                  <span class="font-semibold">Optimize</span>
-                </label>
-              </span>
+              <span>Time</span>
               <span id="departureTimeDisplay" class="font-mono text-emerald-400 text-[10px]">08:00 AM</span>
             </div>
             <input type="time" id="departureTime" value="08:00" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
+            <div class="mt-1">
+              <label class="inline-flex items-center gap-1 text-[10px] text-cyan-400 cursor-pointer font-sans select-none" title="Optimize across departure times &plusmn;2 hours in 30-min increments">
+                <input type="checkbox" id="optimizeDepartureTime" onchange="onDepartureDateTimeChanged();" class="accent-cyan-500 rounded w-3 h-3 cursor-pointer">
+                <span class="font-semibold">Optimize</span>
+              </label>
+            </div>
           </div>
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">Speed vs Limit</label>
@@ -201,6 +201,12 @@
               <option value="10" selected>+10 mph</option>
               <option value="15">+15 mph</option>
             </select>
+            <div class="mt-1">
+              <label class="inline-flex items-center gap-1 text-[10px] text-cyan-400 cursor-pointer font-sans select-none" title="Optimize across +5 and +10 mph offsets">
+                <input type="checkbox" id="optimizeSpeedOffset" class="accent-cyan-500 rounded w-3 h-3 cursor-pointer">
+                <span class="font-semibold">Optimize</span>
+              </label>
+            </div>
           </div>
           <div>
             <label class="text-[11px] text-slate-400 block mb-1">Max Speed Cap</label>
@@ -210,6 +216,12 @@
               <option value="80">80 mph</option>
               <option value="85">85 mph</option>
             </select>
+            <div class="mt-1">
+              <label class="inline-flex items-center gap-1 text-[10px] text-cyan-400 cursor-pointer font-sans select-none" title="Optimize across 75 and 80 mph speed caps">
+                <input type="checkbox" id="optimizeSpeedCap" class="accent-cyan-500 rounded w-3 h-3 cursor-pointer">
+                <span class="font-semibold">Optimize</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -827,6 +839,7 @@
                   <span class="text-slate-500">&rarr;</span>
                   <span>Arr: <b class="text-cyan-400" id="fastestArr_x">--</b></span>
                 </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center justify-between" id="fastestSpeedRow_x"><span>Speed: <b class="text-cyan-400" id="fastestSpeed_x">--</b></span></div>
                 <!-- Hidden compatibility nodes for existing automated test suites -->
                 <span id="fastestTime" class="hidden">--</span>
                 <span id="fastestCost" class="hidden">--</span>
@@ -857,6 +870,7 @@
                   <span class="text-slate-500">&rarr;</span>
                   <span>Arr: <b class="text-cyan-400" id="cheapestArr_x">--</b></span>
                 </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center justify-between" id="cheapestSpeedRow_x"><span>Speed: <b class="text-cyan-400" id="cheapestSpeed_x">--</b></span></div>
                 <span id="cheapestTime" class="hidden">--</span>
                 <span id="cheapestCost" class="hidden">--</span>
                 <span id="cheapestMiles" class="hidden">--</span>
@@ -885,6 +899,7 @@
                   <span class="text-slate-500">&rarr;</span>
                   <span>Arr: <b class="text-cyan-400" id="balancedArr_x">--</b></span>
                 </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center justify-between" id="balancedSpeedRow_x"><span>Speed: <b class="text-cyan-400" id="balancedSpeed_x">--</b></span></div>
                 <span id="balancedTime" class="hidden">--</span>
                 <span id="balancedCost" class="hidden">--</span>
                 <span id="balancedMiles" class="hidden">--</span>
@@ -927,6 +942,7 @@
                   <span class="text-slate-500">&rarr;</span>
                   <span>Arr: <b class="text-cyan-400" id="fastestArr_y">--</b></span>
                 </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center justify-between" id="fastestSpeedRow_y"><span>Speed: <b class="text-cyan-400" id="fastestSpeed_y">--</b></span></div>
               </div>
               <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="fastestCost_y" class="text-slate-200">--</b></span>
@@ -950,6 +966,7 @@
                   <span class="text-slate-500">&rarr;</span>
                   <span>Arr: <b class="text-cyan-400" id="cheapestArr_y">--</b></span>
                 </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center justify-between" id="cheapestSpeedRow_y"><span>Speed: <b class="text-cyan-400" id="cheapestSpeed_y">--</b></span></div>
               </div>
               <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="cheapestCost_y" class="text-emerald-400">--</b></span>
@@ -973,6 +990,7 @@
                   <span class="text-slate-500">&rarr;</span>
                   <span>Arr: <b class="text-cyan-400" id="balancedArr_y">--</b></span>
                 </div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center justify-between" id="balancedSpeedRow_y"><span>Speed: <b class="text-cyan-400" id="balancedSpeed_y">--</b></span></div>
               </div>
               <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="balancedCost_y" class="text-blue-300">--</b></span>
@@ -12919,7 +12937,9 @@
       const decamilla = document.getElementById('decamillaStopDuration')?.value || "0";
       const profile = document.getElementById('trafficProfile')?.value || "typical";
       const optDep = document.getElementById('optimizeDepartureTime')?.checked ? "1" : "0";
-      return `${o}|${d}|${date}|${time}|${soc}|${offset}|${cap}|${minT}|${maxT}|${decamilla}|${profile}|${optDep}`;
+      const optSpd = document.getElementById('optimizeSpeedOffset')?.checked ? "1" : "0";
+      const optCap = document.getElementById('optimizeSpeedCap')?.checked ? "1" : "0";
+      return `${o}|${d}|${date}|${time}|${soc}|${offset}|${cap}|${minT}|${maxT}|${decamilla}|${profile}|${optDep}|${optSpd}|${optCap}`;
     }
 
     async function handleTomTomPrecisionSync() {
@@ -14060,30 +14080,43 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // Micro-yield to allow browser UI thread to repaint
       await new Promise(r => setTimeout(r, 60));
 
+      const shouldOptimizeDep = document.getElementById('optimizeDepartureTime')?.checked ?? false;
+      const shouldOptimizeSpeed = document.getElementById('optimizeSpeedOffset')?.checked ?? false;
+      const shouldOptimizeCap = document.getElementById('optimizeSpeedCap')?.checked ?? false;
+
+      const speedOffsetsToTry = shouldOptimizeSpeed ? [5, 10] : [speed_offset];
+      const speedCapsToTry = shouldOptimizeCap ? [75, 80] : [max_cap];
+
       // Compute Quickest Non-Stop Driving Baseline across active highway corridors
       let fastestNonStop = null;
       activeRoutesData.forEach(route => {
-        const sim = simulateLegFromSteps(
-          route.steps, 0, route.distance,
-          payload_lbs, temp_f, wind_speed, wind_dir, road_cond,
-          speed_offset, max_cap, route.speed_mph
-        );
-        let totalNonStopHrs = sim.hours;
-        let decamillaHrs = 0;
-        if (route.decamilla_stop && route.decamilla_stop.hours > 0) {
-          decamillaHrs = route.decamilla_stop.hours;
-          totalNonStopHrs += decamillaHrs;
-        }
-        if (!fastestNonStop || totalNonStopHrs < fastestNonStop.hours) {
-          fastestNonStop = {
-            distance: route.distance,
-            hours: totalNonStopHrs,
-            pure_driving_hours: sim.hours,
-            decamilla_stop_hours: decamillaHrs,
-            avg_speed: sim.target_mph,
-            route_name: route.name
-          };
-        }
+        speedOffsetsToTry.forEach(sOff => {
+          speedCapsToTry.forEach(sCap => {
+            const sim = simulateLegFromSteps(
+              route.steps, 0, route.distance,
+              payload_lbs, temp_f, wind_speed, wind_dir, road_cond,
+              sOff, sCap, route.speed_mph
+            );
+            let totalNonStopHrs = sim.hours;
+            let decamillaHrs = 0;
+            if (route.decamilla_stop && route.decamilla_stop.hours > 0) {
+              decamillaHrs = route.decamilla_stop.hours;
+              totalNonStopHrs += decamillaHrs;
+            }
+            if (!fastestNonStop || totalNonStopHrs < fastestNonStop.hours) {
+              fastestNonStop = {
+                distance: route.distance,
+                hours: totalNonStopHrs,
+                pure_driving_hours: sim.hours,
+                decamilla_stop_hours: decamillaHrs,
+                avg_speed: sim.target_mph,
+                speed_offset: sOff,
+                max_cap: sCap,
+                route_name: route.name
+              };
+            }
+          });
+        });
       });
       window.lastFastestNonStop = fastestNonStop;
       if (fastestNonStop) {
@@ -14104,7 +14137,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // =========================================================================
       // STAGE 1: FORWARD STATE-SPACE SEARCH TREE (EXPANDED TARGETS & DYNAMIC PROGRAMMING)
       // =========================================================================
-      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false) {
+      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false, sOffset = speed_offset, sCap = max_cap) {
         const candidates = [];
 
         for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
@@ -14146,7 +14179,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
-        const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+        const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
         const rem_soc0 = start_soc - (leg0.kwh / 85.0);
         const dur_mins0 = leg0.hours * 60.0;
         if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
@@ -14172,7 +14205,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         // Precompute start-to-dest leg
-        const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+        const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
 
         // Precompute station-to-destination legs and detour physics for all corridor stations
         const destLegPerStation = new Array(routeStations.length);
@@ -14182,10 +14215,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         for (let j = 0; j < routeStations.length; j++) {
           const st = routeStations[j];
-          startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+          startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
           const approx_stops = Math.floor(st.mile / 160.0);
           const est_station_dep_clock = timeAgnosticBaseline ? null : (departure_hours + startToStationLegs[j].hours + (approx_stops * 0.45));
-          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph, est_station_dep_clock);
+          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph, est_station_dep_clock);
 
           if (st.is_decamilla) {
             stationDetours[j] = {
@@ -14226,7 +14259,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const isToOrFromDecamilla = routeStations[i].is_decamilla || routeStations[j].is_decamilla;
             const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
             if (routeStations[j].mile > routeStations[i].mile + minGapMiles) {
-              stationToStationLegs[i][j] = simulateLegFromSteps(route.steps, routeStations[i].mile, routeStations[j].mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
+              stationToStationLegs[i][j] = simulateLegFromSteps(route.steps, routeStations[i].mile, routeStations[j].mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
             }
           }
         }
@@ -14679,9 +14712,20 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         return candidates;
       }
 
-      const shouldOptimizeDep = document.getElementById('optimizeDepartureTime')?.checked;
-      // Run forward search strictly adhering to user's min/max stop spacing guidelines (time-agnostic baseline if optimize checked)
-      const stage1_candidates = await runStage1Search(min_leg_mins, max_leg_mins, shouldOptimizeDep);
+      // Run forward search strictly adhering to user's min/max stop spacing guidelines
+      let stage1_candidates = [];
+      const stage1Pairs = [];
+      speedOffsetsToTry.forEach(off => {
+        speedCapsToTry.forEach(cap => {
+          stage1Pairs.push({ off, cap });
+        });
+      });
+
+      for (let pIdx = 0; pIdx < stage1Pairs.length; pIdx++) {
+        const pair = stage1Pairs[pIdx];
+        const res = await runStage1Search(min_leg_mins, max_leg_mins, shouldOptimizeDep, pair.off, pair.cap);
+        stage1_candidates = stage1_candidates.concat(res);
+      }
       window.lastStage1Candidates = stage1_candidates;
 
       const alertBanner = document.getElementById('alertBanner');
@@ -14731,10 +14775,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const candidates_x = stage1_candidates.filter(c => c.stops.length === target_x);
       const candidates_y = stage1_candidates.filter(c => c.stops.length === target_y);
 
-      // Broader candidate retention: expand pool when optimizing departure times across +/- 2 hours
-      const kTopPerCategory = shouldOptimizeDep ? 60 : 30;
+      // Broader candidate retention: expand pool when optimizing departure times, speed offsets, or caps
+      const isAnyOptimized = shouldOptimizeDep || shouldOptimizeSpeed || shouldOptimizeCap;
+      const kTopPerCategory = isAnyOptimized ? 60 : 30;
       const kTopCheapest = 30;
-      const kTopPerCorridor = shouldOptimizeDep ? 10 : 5;
+      const kTopPerCorridor = isAnyOptimized ? 10 : 5;
 
       // Group X: Top fastest, cheapest, Pareto
       const top_fastest_x = [...candidates_x].sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCategory);
@@ -14937,7 +14982,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       // Re-polish candidates using true OSRM multi-waypoint geometry
-      const polishOne = (cand, trimSlack, depHours = departure_hours) => {
+      const polishOne = (cand, trimSlack, depHours = departure_hours, testSpeedOffset = speed_offset, testMaxCap = max_cap) => {
         const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
         const osrmData = osrmResponses.get(seqKey);
 
@@ -14970,7 +15015,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const sp = cand.stops[idx];
           const leg = osrmData.legs[idx];
 
-          const legSim = simulateLegFromSteps(leg.steps, 0, leg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph, current_leg_clock);
+          const legSim = simulateLegFromSteps(leg.steps, 0, leg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, testSpeedOffset, testMaxCap, cand.route.speed_mph, current_leg_clock);
           total_drive_hrs += legSim.hours;
 
           let arrAmb = temp_f;
@@ -15010,7 +15055,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
 
           const nextLeg = osrmData.legs[idx + 1];
-          const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph, current_leg_clock);
+          const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, testSpeedOffset, testMaxCap, cand.route.speed_mph, current_leg_clock);
           const needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
           const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer;
 
@@ -15081,7 +15126,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         if (!valid) return null;
 
         const finalLeg = osrmData.legs[osrmData.legs.length - 1];
-        const finalLegSim = simulateLegFromSteps(finalLeg.steps, 0, finalLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, cand.route.speed_mph, current_leg_clock);
+        const finalLegSim = simulateLegFromSteps(finalLeg.steps, 0, finalLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, testSpeedOffset, testMaxCap, cand.route.speed_mph, current_leg_clock);
         total_drive_hrs += finalLegSim.hours;
 
         let final_leg_kwh = finalLegSim.kwh;
@@ -15224,6 +15269,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               net: Math.round(p_tesla_net * 100) / 100
             }
           },
+          speed_offset: testSpeedOffset,
+          max_speed_cap: testMaxCap,
+          departure_clock: formatClockTime(depHours),
+          departure_offset_hrs: ((depHours - departure_hours + 36.0) % 24.0) > 12 ? (((depHours - departure_hours + 36.0) % 24.0) - 24.0) : ((depHours - departure_hours + 36.0) % 24.0),
           osrmDetailedCoords: osrmData.coordinates
         };
       };
@@ -15234,17 +15283,27 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       depHourOffsets.forEach(offsetHours => {
         const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
-        combinedTop.forEach(cand => {
-          const asChosen = polishOne(cand, false, testDepHour);
-          const trimmed = polishOne(cand, true, testDepHour);
-          if (asChosen) {
-            asChosen.departure_offset_hrs = offsetHours;
-            polishedCandidates.push(asChosen);
-          }
-          if (trimmed && (!asChosen || trimmed.stops.some((s, i) => s.tgt_soc !== asChosen.stops[i].tgt_soc))) {
-            trimmed.departure_offset_hrs = offsetHours;
-            polishedCandidates.push(trimmed);
-          }
+        speedOffsetsToTry.forEach(testSpeedOffset => {
+          speedCapsToTry.forEach(testMaxCap => {
+            combinedTop.forEach(cand => {
+              const asChosen = polishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap);
+              const trimmed = polishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap);
+              if (asChosen) {
+                asChosen.departure_offset_hrs = offsetHours;
+                asChosen.departure_clock = formatClockTime(testDepHour);
+                asChosen.speed_offset = testSpeedOffset;
+                asChosen.max_speed_cap = testMaxCap;
+                polishedCandidates.push(asChosen);
+              }
+              if (trimmed && (!asChosen || trimmed.stops.some((s, i) => s.tgt_soc !== asChosen.stops[i].tgt_soc))) {
+                trimmed.departure_offset_hrs = offsetHours;
+                trimmed.departure_clock = formatClockTime(testDepHour);
+                trimmed.speed_offset = testSpeedOffset;
+                trimmed.max_speed_cap = testMaxCap;
+                polishedCandidates.push(trimmed);
+              }
+            });
+          });
         });
       });
 
@@ -15368,6 +15427,21 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (rowXTitle) {
         rowXTitle.innerText = (xStops === 0) ? "0 Stops (Direct Non-Stop Driving)" : `${xStops} Charging ${xStops === 1 ? 'Stop' : 'Stops'} (Minimal Stops)`;
       }
+
+      const updateCardSpeed = (id, r) => {
+        const el = document.getElementById(id);
+        if (el && r) {
+          const off = r.speed_offset != null ? r.speed_offset : speed_offset;
+          const cap = r.max_speed_cap != null ? r.max_speed_cap : max_cap;
+          el.innerText = `+${off} mph \u2022 ${cap} cap`;
+        }
+      };
+      if (fx) updateCardSpeed('fastestSpeed_x', fx);
+      if (cx) updateCardSpeed('cheapestSpeed_x', cx);
+      if (bx) updateCardSpeed('balancedSpeed_x', bx);
+      if (fy) updateCardSpeed('fastestSpeed_y', fy);
+      if (cy) updateCardSpeed('cheapestSpeed_y', cy);
+      if (by) updateCardSpeed('balancedSpeed_y', by);
 
       // Populate Row 1 (X Stops)
       if (fx) {
@@ -17316,6 +17390,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             toll_cost: Math.round((r.toll_cost || 0) * 100) / 100,
             ch_cost: Math.round((r.ch_cost || 0) * 100) / 100,
             miles: Math.round(r.total_actual_miles || r.base_miles || 0),
+            departure_clock: r.departure_clock || null,
+            departure_offset_hrs: r.departure_offset_hrs != null ? r.departure_offset_hrs : 0,
+            speed_offset: r.speed_offset != null ? r.speed_offset : speedOffset,
+            max_speed_cap: r.max_speed_cap != null ? r.max_speed_cap : maxCap,
             stops: (r.stops || []).map(s => ({
               name: s.station?.name || s.name || "Stop",
               network: s.station?.network || s.network || "",
@@ -17342,6 +17420,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             buffer_soc: bufferSoc,
             speed_offset: speedOffset,
             max_speed_cap: maxCap,
+            optimize_departure_time: document.getElementById('optimizeDepartureTime')?.checked ?? false,
+            optimize_speed_offset: document.getElementById('optimizeSpeedOffset')?.checked ?? false,
+            optimize_speed_cap: document.getElementById('optimizeSpeedCap')?.checked ?? false,
             min_time_mins: minTime,
             max_time_mins: maxTime,
             decamilla_duration: decamillaDur,
@@ -17497,20 +17578,27 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         `  Stop ${i+1}: ${s.name} (${s.network || 'Unknown'}) | ${s.arr_soc}%->${s.tgt_soc}% in ${s.charge_mins}m | $${s.cost ? s.cost.toFixed(2) : '0.00'}`
       ).join("\n");
 
+      const optDep = inp.optimize_departure_time ? " [Opt +/-2h]" : "";
+      const optSpd = inp.optimize_speed_offset ? " [Opt +5/+10]" : "";
+      const optCap = inp.optimize_speed_cap ? " [Opt 75/80]" : "";
+      const planLine = (inp.optimize_departure_time || inp.optimize_speed_offset || inp.optimize_speed_cap)
+        ? `  Selected Plan: Depart ${win.departure_clock || inp.departure_time} | +${win.speed_offset != null ? win.speed_offset : inp.speed_offset} mph offset | ${win.max_speed_cap != null ? win.max_speed_cap : inp.max_speed_cap} mph cap\n`
+        : "";
+
       return `[SIMULATION DEBUG RUN: ${entry.run_id} | ${entry.timestamp}]
 INPUTS:
   Origin: ${inp.origin}
   Destination: ${inp.destination}
-  Departure: ${inp.departure_date} ${inp.departure_time} (${inp.traffic_profile})
+  Departure: ${inp.departure_date} ${inp.departure_time}${optDep} (${inp.traffic_profile})
   Battery: Start SoC ${inp.start_soc}%, Buffer ${inp.buffer_soc}%, Target Arrival ${inp.target_arrival_soc}%
-  Speeds: +${inp.speed_offset} mph offset, ${inp.max_speed_cap} mph cap
+  Speeds: +${inp.speed_offset} mph offset${optSpd}, ${inp.max_speed_cap} mph cap${optCap}
   Leg Durations: Min ${inp.min_time_mins}m, Max ${inp.max_time_mins}m
   DeCamilla Stop: ${inp.decamilla_duration} hrs
   Environment: Payload ${inp.payload_lbs} lbs, Temp ${inp.temp_f}°F, Road ${inp.road_cond}, Wind ${inp.wind_mph} mph @ ${inp.wind_deg}°
   Networks Enabled: ${inp.enabled_networks.join(', ')}
 
 RESULTS (Fastest Route):
-  Total Time: ${win.total_hours ? formatHours(win.total_hours) : '--'} (Driving: ${win.drive_hours ? formatHours(win.drive_hours) : '--'}, Charging: ${win.ch_hours ? formatHours(win.ch_hours) : '--'})
+${planLine}  Total Time: ${win.total_hours ? formatHours(win.total_hours) : '--'} (Driving: ${win.drive_hours ? formatHours(win.drive_hours) : '--'}, Charging: ${win.ch_hours ? formatHours(win.ch_hours) : '--'})
   Total Cost: $${win.total_cost ? win.total_cost.toFixed(2) : '--'} (Charging: $${win.ch_cost ? win.ch_cost.toFixed(2) : '0.00'}, Tolls: $${win.toll_cost ? win.toll_cost.toFixed(2) : '0.00'})
   Total Miles: ${win.miles || '--'} mi
   Stops (${(win.stops || []).length}):
