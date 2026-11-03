@@ -1029,6 +1029,10 @@
       {"id":"ag-waterfall-pa","name":"Applegreen - Blue Mountain / Waterfall, PA (PA Turnpike)","network":"Applegreen","lat":40.1550,"lon":-78.1400,"kw":150,"off":0.55,"on":0.55,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/451875"},
       {"id":"tesla-fort-littleton-pa","name":"Tesla Supercharger (+CCS1) - Fort Littleton, PA","network":"Tesla CCS1","lat":40.0495,"lon":-77.9620,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/26674"},
       {"id":"ea-hagerstown-md","name":"Electrify America - Hagerstown, MD (I-68/I-70)","network":"Electrify America","lat":39.6418,"lon":-77.7200,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/170350"},
+      {"id":"blink-smail-acura-pa","name":"Blink - Smail Acura (US-30) - Greensburg, PA","network":"Blink","lat":40.2974,"lon":-79.4938,"city":"Greensburg","state":"PA","kw":60,"off":0.49,"on":0.49,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/347693"},
+      {"id":"blink-chambersburg-hyundai-pa","name":"Blink - Chambersburg Hyundai - Chambersburg, PA","network":"Blink","lat":39.9238,"lon":-77.6185,"city":"Chambersburg","state":"PA","kw":50,"off":0.49,"on":0.49,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/372865"},
+      {"id":"blink-washington-hyundai-pa","name":"Blink - Washington Hyundai - Washington, PA","network":"Blink","lat":40.1832,"lon":-80.2291,"city":"Washington","state":"PA","kw":50,"off":0.50,"on":0.50,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/356395"},
+      {"id":"blink-stuckey-ford-pa","name":"Blink - Stuckey Ford Commercial Center - Duncansville, PA","network":"Blink","lat":40.4357,"lon":-78.4328,"city":"Duncansville","state":"PA","kw":50,"off":0.49,"on":0.49,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/355886"},
       {"id":"fe-newburg-pa","name":"Francis Energy - Newburg, PA","network":"Francis Energy","lat":40.1340,"lon":-77.5560,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/446568"},
       {"id":"ag-newburg-pa","name":"Applegreen - Newburg, PA (PA Turnpike)","network":"Applegreen","lat":40.1350,"lon":-77.5500,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/743932"},
       {"id":"ionna-frederick-md","name":"IONNA - Frederick, MD (I-70)","network":"IONNA","lat":39.4143,"lon":-77.4105,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/462541"},
@@ -1095,6 +1099,7 @@
       "Applegreen": "#f97316",
       "Francis Energy": "#eab308",
       "Mercedes-Benz": "#38bdf8",
+      "Blink": "#0284c7",
       "Other": "#94a3b8"
     };
 
@@ -1395,7 +1400,8 @@
       "ChargePoint",
       "Applegreen",
       "Francis Energy",
-      "Mercedes-Benz"
+      "Mercedes-Benz",
+      "Blink"
     ];
 
     function isTeslaNetwork(net) {
@@ -1416,6 +1422,14 @@
             if (parsed.includes("Tesla") && (!parsed.includes("Tesla CCS1") || !parsed.includes("Tesla NACS"))) {
               if (!parsed.includes("Tesla CCS1")) parsed.push("Tesla CCS1");
               if (!parsed.includes("Tesla NACS")) parsed.push("Tesla NACS");
+            }
+            // Auto-enable Blink if newly introduced to KNOWN_NETWORKS
+            if (!localStorage.getItem('equinox_blink_initialized')) {
+              if (!parsed.includes("Blink")) parsed.push("Blink");
+              try {
+                localStorage.setItem('equinox_blink_initialized', 'true');
+                localStorage.setItem('equinox_enabled_networks', JSON.stringify(parsed));
+              } catch (e) {}
             }
             ENABLED_NETWORKS = new Set(parsed);
             return ENABLED_NETWORKS;
@@ -15793,7 +15807,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       5: "ChargePoint",
       3733: "Francis Energy",
       15: "EVgo",
-      3252: "EVgo"
+      3252: "EVgo",
+      9: "Blink"
     };
     const OCM_TARGET_CONFIGS = [
       { state: "OH", lat: 40.4173, lon: -82.9071, dist: 180, aliases: ["OH", "OHIO"] },
@@ -15985,6 +16000,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     }
 
     const MANUALLY_VERIFIED_OVERRIDES = {
+      'blink-smail-acura-pa': { on: 0.49, off: 0.49, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347693', verified: true },
+      'blink-chambersburg-hyundai-pa': { on: 0.49, off: 0.49, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/372865', verified: true },
+      'blink-washington-hyundai-pa': { on: 0.50, off: 0.50, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/356395', verified: true },
+      'blink-stuckey-ford-pa': { on: 0.49, off: 0.49, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/355886', verified: true },
       'cp-hancock-md': { on: 0.40, off: 0.40, url: 'https://driver.chargepoint.com/stations/13210691', verified: true },
       'ag-waterfall-pa': { on: 0.55, off: 0.55, url: 'https://dcfctracker.com/stations/451875', verified: true },
       'ea-belle-vernon-pa': { on: 0.60, off: 0.40, url: 'https://dcfctracker.com/stations/237974', verified: true },
@@ -16114,7 +16133,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         // Pilot / Flying J check
         const isPilot = isPilotStation(station) || fullStText.includes('pilot') || fullStText.includes('flying j');
 
-        const GENERIC = ['station', 'stations', 'plaza', 'center', 'centre', 'travel', 'charger', 'chargers', 'fast', 'charging', 'north', 'south', 'east', 'west', 'road', 'street', 'avenue', 'drive', 'route', 'highway', 'exit', 'lane', 'court', 'parkway', 'evgo', 'chargepoint', 'electrify', 'america', 'applegreen', 'tesla', 'francis', 'energy'];
+        const GENERIC = ['station', 'stations', 'plaza', 'center', 'centre', 'travel', 'charger', 'chargers', 'fast', 'charging', 'north', 'south', 'east', 'west', 'road', 'street', 'avenue', 'drive', 'route', 'highway', 'exit', 'lane', 'court', 'parkway', 'evgo', 'chargepoint', 'electrify', 'america', 'applegreen', 'tesla', 'francis', 'energy', 'blink'];
         const wordMatches = fullStText.match(/[a-zA-Z]{4,}/g) || [];
         const tokens = wordMatches.filter(w => !GENERIC.includes(w));
         const nums = fullStText.match(/\b\d{2,5}\b/g) || [];
@@ -16325,7 +16344,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const opIds = Object.keys(OCM_TARGET_OPERATORS).join(',');
 
         for (const cfg of OCM_TARGET_CONFIGS) {
-          const url = `https://api.openchargemap.io/v3/poi/?output=json&latitude=${cfg.lat}&longitude=${cfg.lon}&distance=${cfg.dist}&distanceunit=Miles&operatorid=${opIds}&connectiontypeid=32&minpowerkw=100&maxresults=250`;
+          const url = `https://api.openchargemap.io/v3/poi/?output=json&latitude=${cfg.lat}&longitude=${cfg.lon}&distance=${cfg.dist}&distanceunit=Miles&operatorid=${opIds}&connectiontypeid=32&minpowerkw=50&maxresults=250`;
           try {
             const resp = await fetch(url, {
               headers: { "User-Agent": "Equinox-Route-Optimizer/1.0", "X-API-Key": OCM_API_KEY }
@@ -16363,11 +16382,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                     const gm = (network === "IONNA" || network === "EVgo") && !isPilot;
                     const ea_pass = network === "Electrify America";
 
-                    let maxKw = 150;
+                    let maxKw = 0;
                     (poi.Connections || []).forEach(conn => {
                       const p = conn.PowerKW;
                       if (p && p > maxKw) maxKw = Math.round(p);
                     });
+                    if (maxKw === 0) maxKw = (network === "Blink") ? 50 : 150;
 
                     let sourceUrl = addr.RelatedURL || `https://openchargemap.org/site/poi/details/${poi.ID}`;
 

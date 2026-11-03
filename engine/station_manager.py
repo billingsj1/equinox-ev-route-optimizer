@@ -68,7 +68,7 @@ class StationManager:
                 c in ["CCS1", "CCS", "MagicDock", "NACS_MagicDock"] for c in connectors
             )
 
-            if power_kw >= 100.0 and is_ccs1_or_magicdock:
+            if power_kw >= 50.0 and is_ccs1_or_magicdock:
                 off_peak = item.get("rate_off_peak", 0.40)
                 on_peak = item.get("rate_on_peak", 0.50)
                 mem_off = item.get("membership_rate_off_peak", off_peak)
