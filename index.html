@@ -14785,106 +14785,102 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const kTopCheapest = 30;
       const kTopPerCorridor = isAnyOptimized ? 10 : 5;
 
-      // Group X: Top fastest, cheapest, Pareto
-      const top_fastest_x = [...candidates_x].sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCategory);
-      const top_cheapest_x = [...candidates_x].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopCheapest);
-      if (candidates_x.length > 0) {
-        let min_t_x = Infinity, max_t_x = -Infinity, min_c_x = Infinity, max_c_x = -Infinity;
-        candidates_x.forEach(c => {
-          if (c.total_hours < min_t_x) min_t_x = c.total_hours;
-          if (c.total_hours > max_t_x) max_t_x = c.total_hours;
-          if (c.total_cost < min_c_x) min_c_x = c.total_cost;
-          if (c.total_cost > max_c_x) max_c_x = c.total_cost;
+      // Calculate Knee Distance for Pareto Balanced Candidates
+      const computeKneeDist = (cands, distProp) => {
+        if (!cands || cands.length === 0) return;
+        let min_t = Infinity, max_t = -Infinity, min_c = Infinity, max_c = -Infinity;
+        cands.forEach(c => {
+          if (c.total_hours < min_t) min_t = c.total_hours;
+          if (c.total_hours > max_t) max_t = c.total_hours;
+          if (c.total_cost < min_c) min_c = c.total_cost;
+          if (c.total_cost > max_c) max_c = c.total_cost;
         });
-        candidates_x.forEach(c => {
-          const norm_t = (c.total_hours - min_t_x) / Math.max(0.01, max_t_x - min_t_x);
-          const norm_c = (c.total_cost - min_c_x) / Math.max(0.01, max_c_x - min_c_x);
-          c.knee_dist_x = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
+        cands.forEach(c => {
+          const norm_t = (c.total_hours - min_t) / Math.max(0.01, max_t - min_t);
+          const norm_c = (c.total_cost - min_c) / Math.max(0.01, max_c - min_c);
+          c[distProp] = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
         });
+      };
+      computeKneeDist(candidates_x, 'knee_dist_x');
+      computeKneeDist(candidates_y, 'knee_dist_y');
+
+      // Diverse Top Selector: Guarantees every physical stop sequence gets representation
+      // without allowing duplicate variants of a single sequence to monopolize slots.
+      function getDiverseTopCandidates(pool, maxQuota, scoreFn) {
+        if (!pool || pool.length === 0) return [];
+        const sorted = [...pool].sort((a, b) => scoreFn(a) - scoreFn(b));
+        const selected = [];
+        const seenSeq = new Set();
+        // Pass 1: Select the best representative of distinct physical station sequences
+        for (let i = 0; i < sorted.length && selected.length < maxQuota; i++) {
+          const cand = sorted[i];
+          const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
+          if (!seenSeq.has(seqKey)) {
+            seenSeq.add(seqKey);
+            selected.push(cand);
+          }
+        }
+        // Pass 2: If quota remains, fill with remaining best candidates
+        for (let i = 0; i < sorted.length && selected.length < maxQuota; i++) {
+          const cand = sorted[i];
+          if (!selected.includes(cand)) {
+            selected.push(cand);
+          }
+        }
+        return selected;
       }
-      const top_balanced_x = [...candidates_x].sort((a, b) => (a.knee_dist_x || 0) - (b.knee_dist_x || 0)).slice(0, kTopPerCategory);
 
-      // Group Y: Top fastest, cheapest, Pareto
-      const top_fastest_y = [...candidates_y].sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCategory);
-      const top_cheapest_y = [...candidates_y].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopCheapest);
-      if (candidates_y.length > 0) {
-        let min_t_y = Infinity, max_t_y = -Infinity, min_c_y = Infinity, max_c_y = -Infinity;
-        candidates_y.forEach(c => {
-          if (c.total_hours < min_t_y) min_t_y = c.total_hours;
-          if (c.total_hours > max_t_y) max_t_y = c.total_hours;
-          if (c.total_cost < min_c_y) min_c_y = c.total_cost;
-          if (c.total_cost > max_c_y) max_c_y = c.total_cost;
-        });
-        candidates_y.forEach(c => {
-          const norm_t = (c.total_hours - min_t_y) / Math.max(0.01, max_t_y - min_t_y);
-          const norm_c = (c.total_cost - min_c_y) / Math.max(0.01, max_c_y - min_c_y);
-          c.knee_dist_y = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
-        });
-      }
-      const top_balanced_y = [...candidates_y].sort((a, b) => (a.knee_dist_y || 0) - (b.knee_dist_y || 0)).slice(0, kTopPerCategory);
+      const candidateGroups = [];
 
-      // Per-Corridor Diversity: ensure each active corridor has representation in both stop tiers
-      const perCorridorTop = [];
-      activeRoutesData.forEach(r => {
-        const rcX = candidates_x.filter(c => c.route.id === r.id);
-        if (rcX.length > 0) {
-          const rFastX = rcX.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCorridor);
-          const rCheapX = rcX.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCorridor);
-          rFastX.forEach(c => perCorridorTop.push(c));
-          rCheapX.forEach(c => perCorridorTop.push(c));
-        }
-        const rcY = candidates_y.filter(c => c.route.id === r.id);
-        if (rcY.length > 0) {
-          const rFastY = rcY.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCorridor);
-          const rCheapY = rcY.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCorridor);
-          rFastY.forEach(c => perCorridorTop.push(c));
-          rCheapY.forEach(c => perCorridorTop.push(c));
-        }
-      });
+      if (stage1Pairs.length <= 1) {
+        // Single speed configuration (e.g. only Time optimized or fixed speeds)
+        candidateGroups.push(getDiverseTopCandidates(candidates_x, 30, c => c.total_hours));
+        candidateGroups.push(getDiverseTopCandidates(candidates_x, 20, c => c.total_cost));
+        candidateGroups.push(getDiverseTopCandidates(candidates_x, 30, c => c.knee_dist_x || 0));
 
-      // Diversity Safeguard 1: Guarantee every distinct physical stop sequence has its best representative
-      const bestPerSequenceX = [];
-      const bestPerSequenceY = [];
-      sequenceGroups.forEach((cands, sKey) => {
-        const cX = cands.filter(c => c.stops.length === target_x);
-        if (cX.length > 0) {
-          bestPerSequenceX.push([...cX].sort((a, b) => a.total_hours - b.total_hours)[0]);
-        }
-        const cY = cands.filter(c => c.stops.length === target_y);
-        if (cY.length > 0) {
-          bestPerSequenceY.push([...cY].sort((a, b) => a.total_hours - b.total_hours)[0]);
-        }
-      });
+        candidateGroups.push(getDiverseTopCandidates(candidates_y, 30, c => c.total_hours));
+        candidateGroups.push(getDiverseTopCandidates(candidates_y, 20, c => c.total_cost));
+        candidateGroups.push(getDiverseTopCandidates(candidates_y, 30, c => c.knee_dist_y || 0));
+      } else {
+        // Multi-parameter optimization: Partition slots fairly across each speed/cap pair
+        // so higher speed caps (shorter drive times) cannot crowd out lower speed caps.
+        const kFast = Math.max(8, Math.floor(32 / stage1Pairs.length));
+        const kCheap = Math.max(5, Math.floor(20 / stage1Pairs.length));
+        const kBal = Math.max(8, Math.floor(32 / stage1Pairs.length));
 
-      // Diversity Safeguard 2: When multi-parameter optimizing across speed/cap pairs,
-      // guarantee that each pair's fastest candidates are retained so higher speed caps cannot starve lower speed pairs
-      const perPairTop = [];
-      if (stage1Pairs.length > 1) {
         stage1Pairs.forEach(pair => {
           const pairCandsX = candidates_x.filter(c => c.speed_offset === pair.off && c.max_speed_cap === pair.cap);
           if (pairCandsX.length > 0) {
-            const pFastX = [...pairCandsX].sort((a, b) => a.total_hours - b.total_hours).slice(0, 20);
-            pFastX.forEach(c => perPairTop.push(c));
+            candidateGroups.push(getDiverseTopCandidates(pairCandsX, kFast, c => c.total_hours));
+            candidateGroups.push(getDiverseTopCandidates(pairCandsX, kCheap, c => c.total_cost));
+            candidateGroups.push(getDiverseTopCandidates(pairCandsX, kBal, c => c.knee_dist_x || 0));
           }
           const pairCandsY = candidates_y.filter(c => c.speed_offset === pair.off && c.max_speed_cap === pair.cap);
           if (pairCandsY.length > 0) {
-            const pFastY = [...pairCandsY].sort((a, b) => a.total_hours - b.total_hours).slice(0, 20);
-            pFastY.forEach(c => perPairTop.push(c));
+            candidateGroups.push(getDiverseTopCandidates(pairCandsY, kFast, c => c.total_hours));
+            candidateGroups.push(getDiverseTopCandidates(pairCandsY, kCheap, c => c.total_cost));
+            candidateGroups.push(getDiverseTopCandidates(pairCandsY, kBal, c => c.knee_dist_y || 0));
           }
         });
       }
 
-      // Deduplicate across all candidate buckets (unique sequences, per-pair fast, category leaders, corridors)
+      // Per-Corridor Representation: Ensure each active highway corridor is represented
+      activeRoutesData.forEach(r => {
+        const rcX = candidates_x.filter(c => c.route.id === r.id);
+        if (rcX.length > 0) {
+          candidateGroups.push(getDiverseTopCandidates(rcX, 4, c => c.total_hours));
+          candidateGroups.push(getDiverseTopCandidates(rcX, 3, c => c.total_cost));
+        }
+        const rcY = candidates_y.filter(c => c.route.id === r.id);
+        if (rcY.length > 0) {
+          candidateGroups.push(getDiverseTopCandidates(rcY, 4, c => c.total_hours));
+          candidateGroups.push(getDiverseTopCandidates(rcY, 3, c => c.total_cost));
+        }
+      });
+
+      // Deduplicate into final combinedTop pool (tight, elite pool of distinct route strategies)
       const combinedTop = [];
       const seenTopKeys = new Set();
-      const candidateGroups = [
-        bestPerSequenceX,
-        bestPerSequenceY,
-        perPairTop,
-        top_fastest_x, top_cheapest_x, top_balanced_x,
-        top_fastest_y, top_cheapest_y, top_balanced_y,
-        perCorridorTop
-      ];
       for (let g = 0; g < candidateGroups.length; g++) {
         const group = candidateGroups[g];
         for (let i = 0; i < group.length; i++) {
