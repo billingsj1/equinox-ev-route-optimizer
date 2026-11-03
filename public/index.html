@@ -13922,7 +13922,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // =========================================================================
       // STAGE 1: FORWARD STATE-SPACE SEARCH TREE (EXPANDED TARGETS & DYNAMIC PROGRAMMING)
       // =========================================================================
-      async function runStage1Search(min_mins, max_mins) {
+      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false) {
         const candidates = [];
 
         for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
@@ -14002,7 +14002,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const st = routeStations[j];
           startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph);
           const approx_stops = Math.floor(st.mile / 160.0);
-          const est_station_dep_clock = departure_hours + startToStationLegs[j].hours + (approx_stops * 0.45);
+          const est_station_dep_clock = timeAgnosticBaseline ? null : (departure_hours + startToStationLegs[j].hours + (approx_stops * 0.45));
           destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, route.speed_mph, est_station_dep_clock);
 
           if (st.is_decamilla) {
@@ -14117,7 +14117,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
-          if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
+          const maxAllowedDestMins = timeAgnosticBaseline ? (max_mins + 20.0) : max_mins;
+          if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= maxAllowedDestMins) {
             if (curr.stops.length === 0 || leg_to_dest_mins >= 30.0) {
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
@@ -14275,9 +14276,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (!legSim) continue;
             const leg_mins = legSim.hours * 60.0;
 
-            if (leg_mins > max_mins) continue;
+            const effectiveMaxMins = timeAgnosticBaseline ? (max_mins + 20.0) : max_mins;
+            const effectiveMinMins = timeAgnosticBaseline ? Math.max(10.0, min_mins - 15.0) : min_mins;
+            if (leg_mins > effectiveMaxMins) continue;
             // No minimum drive time constraint for legs to/from DeCamilla L2 stop (charger before/after DeCamilla can be as little as 1 min)
-            if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
+            if (!isToOrFromDecamilla && leg_mins < effectiveMinMins) continue;
 
             const stDetour = stationDetours[j];
             const isPlaza = stDetour.isPlaza;
@@ -14421,8 +14424,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
             const setup_mins = has_plug_and_go ? 1.0 : 3.0;
             const arrival_clock_decimal = departure_hours + curr.drive_hrs + curr.ch_hrs + total_leg_hrs;
-            const stage1Tariff = resolveStationTariff(st, arrival_clock_decimal, false);
-            const rate = stage1Tariff.rate;
+            const stage1Tariff = resolveStationTariff(st, timeAgnosticBaseline ? 12.0 : arrival_clock_decimal, false);
+            const rate = timeAgnosticBaseline ? (st.on || stage1Tariff.rate) : stage1Tariff.rate;
 
             const targetList = Array.from(targetSet).sort((a, b) => a - b);
             for (let tIdx = 0; tIdx < targetList.length; tIdx++) {
@@ -14442,16 +14445,18 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               }
               const frontier = paretoFrontier.get(stateKey);
               let dominated = false;
+              const tSlack = timeAgnosticBaseline ? 0.35 : 0.01;
+              const cSlack = timeAgnosticBaseline ? 4.00 : 0.05;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const prev = frontier[fIdx];
-                if (prev.t <= (leg_total_hrs + 0.01) && prev.c <= (leg_total_cost + 0.05)) {
+                if (prev.t <= (leg_total_hrs - tSlack) && prev.c <= (leg_total_cost - cSlack)) {
                   dominated = true;
                   break;
                 }
               }
               if (dominated) continue;
 
-              const filtered = frontier.filter(p => !(leg_total_hrs <= p.t && leg_total_cost <= p.c));
+              const filtered = frontier.filter(p => !(leg_total_hrs <= (p.t - tSlack) && leg_total_cost <= (p.c - cSlack)));
               filtered.push({ t: leg_total_hrs, c: leg_total_cost });
               paretoFrontier.set(stateKey, filtered);
 
@@ -14497,8 +14502,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         return candidates;
       }
 
-      // Run forward search strictly adhering to user's min/max stop spacing guidelines
-      const stage1_candidates = await runStage1Search(min_leg_mins, max_leg_mins);
+      const shouldOptimizeDep = document.getElementById('optimizeDepartureTime')?.checked;
+      // Run forward search strictly adhering to user's min/max stop spacing guidelines (time-agnostic baseline if optimize checked)
+      const stage1_candidates = await runStage1Search(min_leg_mins, max_leg_mins, shouldOptimizeDep);
       window.lastStage1Candidates = stage1_candidates;
 
       const alertBanner = document.getElementById('alertBanner');
@@ -14548,9 +14554,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const candidates_x = stage1_candidates.filter(c => c.stops.length === target_x);
       const candidates_y = stage1_candidates.filter(c => c.stops.length === target_y);
 
-      // Group X: Top 30 fastest, 30 cheapest, 30 Pareto
-      const top_fastest_x = [...candidates_x].sort((a, b) => a.total_hours - b.total_hours).slice(0, 30);
-      const top_cheapest_x = [...candidates_x].sort((a, b) => a.total_cost - b.total_cost).slice(0, 30);
+      // Broader candidate retention: expand pool when optimizing departure times across +/- 2 hours
+      const kTopPerCategory = shouldOptimizeDep ? 60 : 30;
+      const kTopPerCorridor = shouldOptimizeDep ? 10 : 5;
+
+      // Group X: Top fastest, cheapest, Pareto
+      const top_fastest_x = [...candidates_x].sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCategory);
+      const top_cheapest_x = [...candidates_x].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCategory);
       if (candidates_x.length > 0) {
         let min_t_x = Infinity, max_t_x = -Infinity, min_c_x = Infinity, max_c_x = -Infinity;
         candidates_x.forEach(c => {
@@ -14565,11 +14575,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           c.knee_dist_x = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
         });
       }
-      const top_balanced_x = [...candidates_x].sort((a, b) => (a.knee_dist_x || 0) - (b.knee_dist_x || 0)).slice(0, 30);
+      const top_balanced_x = [...candidates_x].sort((a, b) => (a.knee_dist_x || 0) - (b.knee_dist_x || 0)).slice(0, kTopPerCategory);
 
-      // Group Y: Top 30 fastest, 30 cheapest, 30 Pareto
-      const top_fastest_y = [...candidates_y].sort((a, b) => a.total_hours - b.total_hours).slice(0, 30);
-      const top_cheapest_y = [...candidates_y].sort((a, b) => a.total_cost - b.total_cost).slice(0, 30);
+      // Group Y: Top fastest, cheapest, Pareto
+      const top_fastest_y = [...candidates_y].sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCategory);
+      const top_cheapest_y = [...candidates_y].sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCategory);
       if (candidates_y.length > 0) {
         let min_t_y = Infinity, max_t_y = -Infinity, min_c_y = Infinity, max_c_y = -Infinity;
         candidates_y.forEach(c => {
@@ -14584,22 +14594,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           c.knee_dist_y = Math.sqrt(norm_t * norm_t + norm_c * norm_c);
         });
       }
-      const top_balanced_y = [...candidates_y].sort((a, b) => (a.knee_dist_y || 0) - (b.knee_dist_y || 0)).slice(0, 30);
+      const top_balanced_y = [...candidates_y].sort((a, b) => (a.knee_dist_y || 0) - (b.knee_dist_y || 0)).slice(0, kTopPerCategory);
 
       // Per-Corridor Diversity: ensure each active corridor has representation in both stop tiers
       const perCorridorTop = [];
       activeRoutesData.forEach(r => {
         const rcX = candidates_x.filter(c => c.route.id === r.id);
         if (rcX.length > 0) {
-          const rFastX = rcX.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, 5);
-          const rCheapX = rcX.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, 5);
+          const rFastX = rcX.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCorridor);
+          const rCheapX = rcX.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCorridor);
           rFastX.forEach(c => perCorridorTop.push(c));
           rCheapX.forEach(c => perCorridorTop.push(c));
         }
         const rcY = candidates_y.filter(c => c.route.id === r.id);
         if (rcY.length > 0) {
-          const rFastY = rcY.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, 5);
-          const rCheapY = rcY.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, 5);
+          const rFastY = rcY.slice().sort((a, b) => a.total_hours - b.total_hours).slice(0, kTopPerCorridor);
+          const rCheapY = rcY.slice().sort((a, b) => a.total_cost - b.total_cost).slice(0, kTopPerCorridor);
           rFastY.forEach(c => perCorridorTop.push(c));
           rCheapY.forEach(c => perCorridorTop.push(c));
         }
@@ -15040,7 +15050,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         };
       };
       const polishedCandidates = [];
-      const shouldOptimizeDep = document.getElementById('optimizeDepartureTime')?.checked;
       const depHourOffsets = shouldOptimizeDep
         ? [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]
         : [0.0];
