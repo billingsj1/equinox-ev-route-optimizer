@@ -12813,7 +12813,7 @@
       try {
         const resp = await fetch(`data/here_speed_limits.json?t=${ts}`);
         if (resp.ok) {
-          HERE_SPEED_LIMITS_DB = await resp.json();
+          HERE_SPEED_LIMITS_DB = await resp.json(); HERE_GRID = null; buildHereSpatialGrid();
           console.log(`Loaded ${HERE_SPEED_LIMITS_DB.length} exact legal speed limit segments from HERE database.`);
           return HERE_SPEED_LIMITS_DB;
         }
@@ -12824,7 +12824,7 @@
         const rawUrl = `https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/here_speed_limits.json?t=${ts}`;
         const resp2 = await fetch(rawUrl);
         if (resp2.ok) {
-          HERE_SPEED_LIMITS_DB = await resp2.json();
+          HERE_SPEED_LIMITS_DB = await resp2.json(); HERE_GRID = null; buildHereSpatialGrid();
           console.log(`Loaded ${HERE_SPEED_LIMITS_DB.length} exact legal speed limit segments from GitHub.`);
           return HERE_SPEED_LIMITS_DB;
         }
@@ -12834,32 +12834,55 @@
       return null;
     }
 
-    // Fast Spatial Matcher: Finds the exact HERE speed limit within ~1.2 miles of step mid-coordinate
+    // Spatial Grid Index for O(1) Instant HERE Speed Limit Lookups
+    let HERE_GRID = null;
+    function buildHereSpatialGrid() {
+      if (!HERE_SPEED_LIMITS_DB || HERE_GRID) return;
+      HERE_GRID = new Map();
+      HERE_SPEED_LIMITS_DB.forEach(seg => {
+        if (!seg.mid || !seg.speed_mph) return;
+        const gKey = `${Math.floor(seg.mid[0] * 10)}_${Math.floor(seg.mid[1] * 10)}`;
+        if (!HERE_GRID.has(gKey)) HERE_GRID.set(gKey, []);
+        HERE_GRID.get(gKey).push(seg);
+      });
+    }
+
+    // Fast Spatial Matcher: Finds the exact HERE speed limit within ~1.2 miles of step mid-coordinate in O(1) time
     function matchHereSpeedLimit(lat, lon, refStr, nameStr) {
       if (!HERE_SPEED_LIMITS_DB || HERE_SPEED_LIMITS_DB.length === 0) return null;
+      if (!HERE_GRID) buildHereSpatialGrid();
+
       let bestMatch = null;
       let minDistanceSq = 0.0004; // ~1.3 miles max search radius squared
 
       const normRef = (refStr || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const normName = (nameStr || '').toLowerCase();
 
-      for (let i = 0; i < HERE_SPEED_LIMITS_DB.length; i++) {
-        const seg = HERE_SPEED_LIMITS_DB[i];
-        if (!seg.mid || !seg.speed_mph) continue;
-        const dLat = seg.mid[0] - lat;
-        const dLon = seg.mid[1] - lon;
-        const distSq = (dLat * dLat) + (dLon * dLon);
-        if (distSq < minDistanceSq) {
-          // If street names or refs match, strongly prefer this segment
-          const segNames = (seg.names || []).join(' ').toLowerCase();
-          const nameMatches = normName && segNames.includes(normName);
-          const refMatches = normRef && segNames.replace(/[^a-z0-9]/g, '').includes(normRef);
-          if (nameMatches || refMatches) {
-            minDistanceSq = distSq;
-            bestMatch = seg;
-          } else if (!bestMatch) {
-            minDistanceSq = distSq;
-            bestMatch = seg;
+      // Check candidate grid cell plus immediate adjacent neighboring cells
+      const latG = Math.floor(lat * 10);
+      const lonG = Math.floor(lon * 10);
+      for (let dLatG = -1; dLatG <= 1; dLatG++) {
+        for (let dLonG = -1; dLonG <= 1; dLonG++) {
+          const gKey = `${latG + dLatG}_${lonG + dLonG}`;
+          const bucket = HERE_GRID.get(gKey);
+          if (!bucket) continue;
+          for (let i = 0; i < bucket.length; i++) {
+            const seg = bucket[i];
+            const dLat = seg.mid[0] - lat;
+            const dLon = seg.mid[1] - lon;
+            const distSq = (dLat * dLat) + (dLon * dLon);
+            if (distSq < minDistanceSq) {
+              const segNames = (seg.names || []).join(' ').toLowerCase();
+              const nameMatches = normName && segNames.includes(normName);
+              const refMatches = normRef && segNames.replace(/[^a-z0-9]/g, '').includes(normRef);
+              if (nameMatches || refMatches) {
+                minDistanceSq = distSq;
+                bestMatch = seg;
+              } else if (!bestMatch) {
+                minDistanceSq = distSq;
+                bestMatch = seg;
+              }
+            }
           }
         }
       }
@@ -14601,18 +14624,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               }
               const frontier = paretoFrontier.get(stateKey);
               let dominated = false;
-              const tSlack = timeAgnosticBaseline ? 0.03 : 0.01;
-              const cSlack = timeAgnosticBaseline ? 0.25 : 0.05;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const prev = frontier[fIdx];
-                if (prev.t <= (leg_total_hrs - tSlack) && prev.c <= (leg_total_cost - cSlack)) {
+                if (prev.t <= (leg_total_hrs + 0.01) && prev.c <= (leg_total_cost + 0.05)) {
                   dominated = true;
                   break;
                 }
               }
               if (dominated) continue;
 
-              const filtered = frontier.filter(p => !(leg_total_hrs <= (p.t - tSlack) && leg_total_cost <= (p.c - cSlack)));
+              const filtered = frontier.filter(p => !(leg_total_hrs <= p.t && leg_total_cost <= p.c));
               filtered.push({ t: leg_total_hrs, c: leg_total_cost });
               paretoFrontier.set(stateKey, filtered);
 
