@@ -182,7 +182,13 @@
           </div>
           <div>
             <div class="flex justify-between items-center text-[11px] text-slate-400 mb-1">
-              <span>Time</span>
+              <span class="flex items-center gap-1.5">
+                <span>Time</span>
+                <label class="inline-flex items-center gap-1 text-[10px] text-cyan-400 cursor-pointer font-sans select-none" title="Optimize across departure times &plusmn;2 hours in 30-min increments">
+                  <input type="checkbox" id="optimizeDepartureTime" onchange="onDepartureDateTimeChanged();" class="accent-cyan-500 rounded w-3 h-3 cursor-pointer">
+                  <span class="font-semibold">Optimize</span>
+                </label>
+              </span>
               <span id="departureTimeDisplay" class="font-mono text-emerald-400 text-[10px]">08:00 AM</span>
             </div>
             <input type="time" id="departureTime" value="08:00" onchange="updateDepartureTimeDisplay(); onDepartureDateTimeChanged();" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
@@ -796,6 +802,11 @@
                   </div>
                 </div>
                 <div class="text-2xl font-black text-white" id="fastestTime_x">--</div>
+                <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="fastestSchedule_x">
+                  <span>Dep: <b class="text-white" id="fastestDep_x">--</b></span>
+                  <span class="text-slate-500">&rarr;</span>
+                  <span>Arr: <b class="text-cyan-400" id="fastestArr_x">--</b></span>
+                </div>
                 <!-- Hidden compatibility nodes for existing automated test suites -->
                 <span id="fastestTime" class="hidden">--</span>
                 <span id="fastestCost" class="hidden">--</span>
@@ -821,6 +832,11 @@
                   </div>
                 </div>
                 <div class="text-2xl font-black text-white" id="cheapestTime_x">--</div>
+                <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="cheapestSchedule_x">
+                  <span>Dep: <b class="text-white" id="cheapestDep_x">--</b></span>
+                  <span class="text-slate-500">&rarr;</span>
+                  <span>Arr: <b class="text-cyan-400" id="cheapestArr_x">--</b></span>
+                </div>
                 <span id="cheapestTime" class="hidden">--</span>
                 <span id="cheapestCost" class="hidden">--</span>
                 <span id="cheapestMiles" class="hidden">--</span>
@@ -844,6 +860,11 @@
                   </div>
                 </div>
                 <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
+                <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="balancedSchedule_x">
+                  <span>Dep: <b class="text-white" id="balancedDep_x">--</b></span>
+                  <span class="text-slate-500">&rarr;</span>
+                  <span>Arr: <b class="text-cyan-400" id="balancedArr_x">--</b></span>
+                </div>
                 <span id="balancedTime" class="hidden">--</span>
                 <span id="balancedCost" class="hidden">--</span>
                 <span id="balancedMiles" class="hidden">--</span>
@@ -881,6 +902,11 @@
                   </div>
                 </div>
                 <div class="text-2xl font-black text-white" id="fastestTime_y">--</div>
+                <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="fastestSchedule_y">
+                  <span>Dep: <b class="text-white" id="fastestDep_y">--</b></span>
+                  <span class="text-slate-500">&rarr;</span>
+                  <span>Arr: <b class="text-cyan-400" id="fastestArr_y">--</b></span>
+                </div>
               </div>
               <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="fastestCost_y" class="text-slate-200">--</b></span>
@@ -899,6 +925,11 @@
                   </div>
                 </div>
                 <div class="text-2xl font-black text-white" id="cheapestTime_y">--</div>
+                <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="cheapestSchedule_y">
+                  <span>Dep: <b class="text-white" id="cheapestDep_y">--</b></span>
+                  <span class="text-slate-500">&rarr;</span>
+                  <span>Arr: <b class="text-cyan-400" id="cheapestArr_y">--</b></span>
+                </div>
               </div>
               <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="cheapestCost_y" class="text-emerald-400">--</b></span>
@@ -917,6 +948,11 @@
                   </div>
                 </div>
                 <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
+                <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="balancedSchedule_y">
+                  <span>Dep: <b class="text-white" id="balancedDep_y">--</b></span>
+                  <span class="text-slate-500">&rarr;</span>
+                  <span>Arr: <b class="text-cyan-400" id="balancedArr_y">--</b></span>
+                </div>
               </div>
               <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <span>Total Cost: <b id="balancedCost_y" class="text-blue-300">--</b></span>
@@ -12700,7 +12736,8 @@
       const maxT = document.getElementById('maxTimeSlider')?.value || "120";
       const decamilla = document.getElementById('decamillaStopDuration')?.value || "0";
       const profile = document.getElementById('trafficProfile')?.value || "typical";
-      return `${o}|${d}|${date}|${time}|${soc}|${offset}|${cap}|${minT}|${maxT}|${decamilla}|${profile}`;
+      const optDep = document.getElementById('optimizeDepartureTime')?.checked ? "1" : "0";
+      return `${o}|${d}|${date}|${time}|${soc}|${offset}|${cap}|${minT}|${maxT}|${decamilla}|${profile}|${optDep}`;
     }
 
     async function handleTomTomPrecisionSync() {
@@ -14712,7 +14749,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       // Re-polish candidates using true OSRM multi-waypoint geometry
-      const polishOne = (cand, trimSlack) => {
+      const polishOne = (cand, trimSlack, depHours = departure_hours) => {
         const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
         const osrmData = osrmResponses.get(seqKey);
 
@@ -14739,7 +14776,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let pack_temp = isPreheated ? Math.max(48.0, ambTemp0) : ambTemp0;
 
         const rawStops = [];
-        let current_leg_clock = departure_hours;
+        let current_leg_clock = depHours;
 
         for (let idx = 0; idx < cand.stops.length; idx++) {
           const sp = cand.stops[idx];
@@ -14795,7 +14832,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
 
           let target_soc, stop_mins, added_kwh, charge_mins, setup_mins;
-          const arr_clock_dec = departure_hours + total_drive_hrs + total_ch_hrs;
+          const arr_clock_dec = depHours + total_drive_hrs + total_ch_hrs;
 
           if (sp.is_decamilla) {
             const decamillaHrs = sp.station.decamilla_hours || 2.0;
@@ -14959,7 +14996,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const p_membership_fees = Math.round((p_ea_fee + p_tesla_fee) * 100) / 100;
         const total_time = total_drive_hrs + total_ch_hrs;
         const total_cost = Math.round((total_ch_cost + p_membership_fees + cand.route.toll) * 100) / 100;
-        const dest_arr_clock = formatClockTime(departure_hours + total_drive_hrs + total_ch_hrs);
+        const dest_arr_clock = formatClockTime(depHours + total_drive_hrs + total_ch_hrs);
+        const dep_clock = formatClockTime(depHours);
 
         return {
           ...cand,
@@ -14967,6 +15005,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           drive_hours: total_drive_hrs,
           ch_hours: total_ch_hrs,
           total_hours: total_time,
+          departure_hours: depHours,
+          departure_clock: dep_clock,
           dest_arr_clock: dest_arr_clock,
           final_leg_hrs: finalLegSim.hours,
           final_leg_mins: Math.round(finalLegSim.hours * 60.0),
@@ -15000,13 +15040,25 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         };
       };
       const polishedCandidates = [];
-      combinedTop.forEach(cand => {
-        const asChosen = polishOne(cand, false);
-        const trimmed = polishOne(cand, true);
-        if (asChosen) polishedCandidates.push(asChosen);
-        if (trimmed && (!asChosen || trimmed.stops.some((s, i) => s.tgt_soc !== asChosen.stops[i].tgt_soc))) {
-          polishedCandidates.push(trimmed);
-        }
+      const shouldOptimizeDep = document.getElementById('optimizeDepartureTime')?.checked;
+      const depHourOffsets = shouldOptimizeDep
+        ? [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]
+        : [0.0];
+
+      depHourOffsets.forEach(offsetHours => {
+        const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
+        combinedTop.forEach(cand => {
+          const asChosen = polishOne(cand, false, testDepHour);
+          const trimmed = polishOne(cand, true, testDepHour);
+          if (asChosen) {
+            asChosen.departure_offset_hrs = offsetHours;
+            polishedCandidates.push(asChosen);
+          }
+          if (trimmed && (!asChosen || trimmed.stops.some((s, i) => s.tgt_soc !== asChosen.stops[i].tgt_soc))) {
+            trimmed.departure_offset_hrs = offsetHours;
+            polishedCandidates.push(trimmed);
+          }
+        });
       });
 
       const finalPool = (polishedCandidates.length > 0) ? polishedCandidates : stage1_candidates;
@@ -15137,6 +15189,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const elM = document.getElementById('fastestMiles_x'); if (elM) elM.innerText = Math.round(fx.total_actual_miles || fx.route.distance) + ' mi' + (fx.total_detour_miles > 0.4 ? ' (+' + fx.total_detour_miles + ' mi)' : '');
         const elS = document.getElementById('fastestStopsBadge_x'); if (elS) elS.innerText = fx.stops.length + (fx.stops.length === 1 ? ' stop' : ' stops');
         const elA = document.getElementById('fastestArrivalBadge_x'); if (elA) elA.innerText = (fx.dest_arr_clock ? fx.dest_arr_clock + ' • ' : '') + fx.final_soc + '%';
+        const elDepFx = document.getElementById('fastestDep_x'); if (elDepFx) elDepFx.innerText = fx.departure_clock || formatClockTime(getDepartureHoursDecimal());
+        const elArrFx = document.getElementById('fastestArr_x'); if (elArrFx) elArrFx.innerText = fx.dest_arr_clock ? (fx.dest_arr_clock + ' (' + fx.final_soc + '%)') : '--';
 
         // Backward compatibility elements for automated tests
         const fTime = document.getElementById('fastestTime'); if (fTime) fTime.innerText = formatHours(fx.total_hours);
@@ -15152,6 +15206,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const elM = document.getElementById('cheapestMiles_x'); if (elM) elM.innerText = Math.round(cx.total_actual_miles || cx.route.distance) + ' mi' + (cx.total_detour_miles > 0.4 ? ' (+' + cx.total_detour_miles + ' mi)' : '');
         const elS = document.getElementById('cheapestStopsBadge_x'); if (elS) elS.innerText = cx.stops.length + (cx.stops.length === 1 ? ' stop' : ' stops');
         const elA = document.getElementById('cheapestArrivalBadge_x'); if (elA) elA.innerText = (cx.dest_arr_clock ? cx.dest_arr_clock + ' • ' : '') + cx.final_soc + '%';
+        const elDepCx = document.getElementById('cheapestDep_x'); if (elDepCx) elDepCx.innerText = cx.departure_clock || formatClockTime(getDepartureHoursDecimal());
+        const elArrCx = document.getElementById('cheapestArr_x'); if (elArrCx) elArrCx.innerText = cx.dest_arr_clock ? (cx.dest_arr_clock + ' (' + cx.final_soc + '%)') : '--';
 
         const cTime = document.getElementById('cheapestTime'); if (cTime) cTime.innerText = formatHours(cx.total_hours);
         const cCost = document.getElementById('cheapestCost'); if (cCost) cCost.innerText = '$' + cx.total_cost.toFixed(2);
@@ -15166,6 +15222,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const elM = document.getElementById('balancedMiles_x'); if (elM) elM.innerText = Math.round(bx.total_actual_miles || bx.route.distance) + ' mi' + (bx.total_detour_miles > 0.4 ? ' (+' + bx.total_detour_miles + ' mi)' : '');
         const elS = document.getElementById('balancedStopsBadge_x'); if (elS) elS.innerText = bx.stops.length + (bx.stops.length === 1 ? ' stop' : ' stops');
         const elA = document.getElementById('balancedArrivalBadge_x'); if (elA) elA.innerText = (bx.dest_arr_clock ? bx.dest_arr_clock + ' • ' : '') + bx.final_soc + '%';
+        const elDepBx = document.getElementById('balancedDep_x'); if (elDepBx) elDepBx.innerText = bx.departure_clock || formatClockTime(getDepartureHoursDecimal());
+        const elArrBx = document.getElementById('balancedArr_x'); if (elArrBx) elArrBx.innerText = bx.dest_arr_clock ? (bx.dest_arr_clock + ' (' + bx.final_soc + '%)') : '--';
 
         const bTime = document.getElementById('balancedTime'); if (bTime) bTime.innerText = formatHours(bx.total_hours);
         const bCost = document.getElementById('balancedCost'); if (bCost) bCost.innerText = '$' + bx.total_cost.toFixed(2);
@@ -15197,6 +15255,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const elM = document.getElementById('fastestMiles_y'); if (elM) elM.innerText = Math.round(fy.total_actual_miles || fy.route.distance) + ' mi' + (fy.total_detour_miles > 0.4 ? ' (+' + fy.total_detour_miles + ' mi)' : '');
         const elS = document.getElementById('fastestStopsBadge_y'); if (elS) elS.innerText = fy.stops.length + (fy.stops.length === 1 ? ' stop' : ' stops');
         const elA = document.getElementById('fastestArrivalBadge_y'); if (elA) elA.innerText = (fy.dest_arr_clock ? fy.dest_arr_clock + ' • ' : '') + fy.final_soc + '%';
+        const elDepFy = document.getElementById('fastestDep_y'); if (elDepFy) elDepFy.innerText = fy.departure_clock || formatClockTime(getDepartureHoursDecimal());
+        const elArrFy = document.getElementById('fastestArr_y'); if (elArrFy) elArrFy.innerText = fy.dest_arr_clock ? (fy.dest_arr_clock + ' (' + fy.final_soc + '%)') : '--';
 
         if (cy) {
           const elCT = document.getElementById('cheapestTime_y'); if (elCT) elCT.innerText = formatHours(cy.total_hours);
@@ -15204,6 +15264,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const elCM = document.getElementById('cheapestMiles_y'); if (elCM) elCM.innerText = Math.round(cy.total_actual_miles || cy.route.distance) + ' mi' + (cy.total_detour_miles > 0.4 ? ' (+' + cy.total_detour_miles + ' mi)' : '');
           const elCS = document.getElementById('cheapestStopsBadge_y'); if (elCS) elCS.innerText = cy.stops.length + (cy.stops.length === 1 ? ' stop' : ' stops');
           const elCA = document.getElementById('cheapestArrivalBadge_y'); if (elCA) elCA.innerText = (cy.dest_arr_clock ? cy.dest_arr_clock + ' • ' : '') + cy.final_soc + '%';
+          const elDepCy = document.getElementById('cheapestDep_y'); if (elDepCy) elDepCy.innerText = cy.departure_clock || formatClockTime(getDepartureHoursDecimal());
+          const elArrCy = document.getElementById('cheapestArr_y'); if (elArrCy) elArrCy.innerText = cy.dest_arr_clock ? (cy.dest_arr_clock + ' (' + cy.final_soc + '%)') : '--';
         }
 
         if (by) {
@@ -15212,6 +15274,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const elBM = document.getElementById('balancedMiles_y'); if (elBM) elBM.innerText = Math.round(by.total_actual_miles || by.route.distance) + ' mi' + (by.total_detour_miles > 0.4 ? ' (+' + by.total_detour_miles + ' mi)' : '');
           const elBS = document.getElementById('balancedStopsBadge_y'); if (elBS) elBS.innerText = by.stops.length + (by.stops.length === 1 ? ' stop' : ' stops');
           const elBA = document.getElementById('balancedArrivalBadge_y'); if (elBA) elBA.innerText = (by.dest_arr_clock ? by.dest_arr_clock + ' • ' : '') + by.final_soc + '%';
+          const elDepBy = document.getElementById('balancedDep_y'); if (elDepBy) elDepBy.innerText = by.departure_clock || formatClockTime(getDepartureHoursDecimal());
+          const elArrBy = document.getElementById('balancedArr_y'); if (elArrBy) elArrBy.innerText = by.dest_arr_clock ? (by.dest_arr_clock + ' (' + by.final_soc + '%)') : '--';
         }
       } else {
         // If Y stops not available, show clear informative banner instead of silently hiding Row 2
