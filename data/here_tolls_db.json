@@ -1,0 +1,740 @@
+{
+  "generated_at": "2026-11-04T01:16:13Z",
+  "source": "HERE Technologies Routing API v8",
+  "primary_routes": {
+    "columbus_to_marlton_direct": {
+      "toll_ez": 37.37,
+      "toll_cash": 74.74,
+      "toll_systems": [
+        "PA TURNPIKE 476"
+      ],
+      "fares_ez": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 32.14,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "New Stanton",
+            "Brecknock Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.94,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.72,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.57,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        }
+      ],
+      "fares_cash": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 64.28,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "New Stanton",
+            "Brecknock Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.88,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.44,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.14,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        }
+      ]
+    },
+    "marlton_to_columbus_direct": {
+      "toll_ez": 43.37,
+      "toll_cash": 80.74,
+      "toll_systems": [
+        "BENJAMIN FRANKLIN BRIDGE",
+        "PA TURNPIKE 476"
+      ],
+      "fares_ez": [
+        {
+          "name": "BENJAMIN FRANKLIN BRIDGE",
+          "cost": 6.0,
+          "system": "BENJAMIN FRANKLIN BRIDGE",
+          "payment": [
+            "cash",
+            "transponder"
+          ],
+          "locations": [
+            "Pyne Poynt"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.57,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.72,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.94,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 32.14,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Brecknock Twp",
+            "New Stanton"
+          ]
+        }
+      ],
+      "fares_cash": [
+        {
+          "name": "BENJAMIN FRANKLIN BRIDGE",
+          "cost": 6.0,
+          "system": "BENJAMIN FRANKLIN BRIDGE",
+          "payment": [
+            "cash",
+            "transponder"
+          ],
+          "locations": [
+            "Pyne Poynt"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.14,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.44,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.88,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 64.28,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Brecknock Twp",
+            "New Stanton"
+          ]
+        }
+      ]
+    },
+    "columbus_to_marlton_via_decamilla": {
+      "toll_ez": 37.37,
+      "toll_cash": 74.74,
+      "toll_systems": [
+        "PA TURNPIKE 476"
+      ],
+      "fares_ez": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 21.95,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "New Stanton",
+            "Upper Allen Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 10.19,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Upper Allen Twp",
+            "Brecknock Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.94,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.72,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.57,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        }
+      ],
+      "fares_cash": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 43.9,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "New Stanton",
+            "Upper Allen Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 20.38,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Upper Allen Twp",
+            "Brecknock Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.88,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.44,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.14,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        }
+      ]
+    },
+    "marlton_to_columbus_via_decamilla": {
+      "toll_ez": 43.37,
+      "toll_cash": 80.74,
+      "toll_systems": [
+        "BENJAMIN FRANKLIN BRIDGE",
+        "PA TURNPIKE 476"
+      ],
+      "fares_ez": [
+        {
+          "name": "BENJAMIN FRANKLIN BRIDGE",
+          "cost": 6.0,
+          "system": "BENJAMIN FRANKLIN BRIDGE",
+          "payment": [
+            "cash",
+            "transponder"
+          ],
+          "locations": [
+            "Pyne Poynt"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.57,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.72,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 1.94,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 10.19,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Brecknock Twp",
+            "Upper Allen Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 21.95,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Upper Allen Twp",
+            "New Stanton"
+          ]
+        }
+      ],
+      "fares_cash": [
+        {
+          "name": "BENJAMIN FRANKLIN BRIDGE",
+          "cost": 6.0,
+          "system": "BENJAMIN FRANKLIN BRIDGE",
+          "payment": [
+            "cash",
+            "transponder"
+          ],
+          "locations": [
+            "Pyne Poynt"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.14,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.44,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 3.88,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Philadelphia Metro Area"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 20.38,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Brecknock Twp",
+            "Upper Allen Twp"
+          ]
+        },
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 43.9,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Upper Allen Twp",
+            "New Stanton"
+          ]
+        }
+      ]
+    },
+    "columbus_to_dillsburg": {
+      "toll_ez": 21.95,
+      "toll_cash": 43.9,
+      "toll_systems": [
+        "PA TURNPIKE 476"
+      ],
+      "fares_ez": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 21.95,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "New Stanton",
+            "Upper Allen Twp"
+          ]
+        }
+      ],
+      "fares_cash": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 43.9,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "New Stanton",
+            "Upper Allen Twp"
+          ]
+        }
+      ]
+    },
+    "dillsburg_to_columbus": {
+      "toll_ez": 21.95,
+      "toll_cash": 43.9,
+      "toll_systems": [
+        "PA TURNPIKE 476"
+      ],
+      "fares_ez": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 21.95,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "transponder"
+          ],
+          "locations": [
+            "Upper Allen Twp",
+            "New Stanton"
+          ]
+        }
+      ],
+      "fares_cash": [
+        {
+          "name": "PA TURNPIKE 476",
+          "cost": 43.9,
+          "system": "PA TURNPIKE 476",
+          "payment": [
+            "videoToll"
+          ],
+          "locations": [
+            "Upper Allen Twp",
+            "New Stanton"
+          ]
+        }
+      ]
+    },
+    "columbus_to_sewickley": {
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": [],
+      "fares_ez": [],
+      "fares_cash": []
+    },
+    "sewickley_to_columbus": {
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": [],
+      "fares_ez": [],
+      "fares_cash": []
+    }
+  },
+  "bridges": {
+    "ben_franklin_bridge_east": {
+      "desc": "PA to NJ (Eastbound)",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": []
+    },
+    "ben_franklin_bridge_west": {
+      "desc": "NJ to PA (Westbound)",
+      "toll_ez": 6.0,
+      "toll_cash": 6.0,
+      "toll_systems": [
+        "BENJAMIN FRANKLIN BRIDGE"
+      ]
+    },
+    "walt_whitman_bridge_east": {
+      "desc": "PA to NJ (Eastbound)",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": []
+    },
+    "walt_whitman_bridge_west": {
+      "desc": "NJ to PA (Westbound)",
+      "toll_ez": 6.0,
+      "toll_cash": 6.0,
+      "toll_systems": [
+        "WALT WHITMAN BRIDGE"
+      ]
+    },
+    "delaware_memorial_bridge_east": {
+      "desc": "DE to NJ (Eastbound)",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": []
+    },
+    "delaware_memorial_bridge_west": {
+      "desc": "NJ to DE (Westbound)",
+      "toll_ez": 4.75,
+      "toll_cash": 8.5,
+      "toll_systems": [
+        "DELAWARE MEMORIAL BRIDGE"
+      ]
+    },
+    "tacony_palmyra_bridge_east": {
+      "desc": "PA to NJ (Eastbound)",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": []
+    },
+    "tacony_palmyra_bridge_west": {
+      "desc": "NJ to PA (Westbound)",
+      "toll_ez": 3.0,
+      "toll_cash": 4.0,
+      "toll_systems": [
+        "TACONY - PALMYRA BRIDGE"
+      ]
+    }
+  },
+  "turnpike_interchanges": {
+    "new_stanton_to_somerset": {
+      "direction": "eastbound",
+      "toll_ez": 4.82,
+      "toll_cash": 9.64
+    },
+    "somerset_to_new_stanton": {
+      "direction": "westbound",
+      "toll_ez": 4.82,
+      "toll_cash": 9.64
+    },
+    "somerset_to_bedford": {
+      "direction": "eastbound",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0
+    },
+    "bedford_to_somerset": {
+      "direction": "westbound",
+      "toll_ez": 5.99,
+      "toll_cash": 11.98
+    },
+    "bedford_to_fort_littleton": {
+      "direction": "eastbound",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0
+    },
+    "fort_littleton_to_bedford": {
+      "direction": "westbound",
+      "toll_ez": 4.75,
+      "toll_cash": 9.5
+    },
+    "fort_littleton_to_carlisle": {
+      "direction": "eastbound",
+      "toll_ez": 6.76,
+      "toll_cash": 13.52
+    },
+    "carlisle_to_fort_littleton": {
+      "direction": "westbound",
+      "toll_ez": 6.76,
+      "toll_cash": 13.52
+    },
+    "carlisle_to_harrisburg_west": {
+      "direction": "eastbound",
+      "toll_ez": 1.86,
+      "toll_cash": 3.72
+    },
+    "harrisburg_west_to_carlisle": {
+      "direction": "westbound",
+      "toll_ez": 1.86,
+      "toll_cash": 3.72
+    },
+    "harrisburg_west_to_downingtown": {
+      "direction": "eastbound",
+      "toll_ez": 10.55,
+      "toll_cash": 21.11
+    },
+    "downingtown_to_harrisburg_west": {
+      "direction": "westbound",
+      "toll_ez": 10.55,
+      "toll_cash": 21.11
+    },
+    "downingtown_to_valley_forge": {
+      "direction": "eastbound",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0
+    },
+    "valley_forge_to_downingtown": {
+      "direction": "westbound",
+      "toll_ez": 0.0,
+      "toll_cash": 0.0
+    }
+  },
+  "common_charger_patterns": {
+    "c2m_via_fort_littleton_and_chester_springs": {
+      "toll_ez": 34.07,
+      "toll_cash": 68.15
+    },
+    "m2c_via_chester_springs_and_fort_littleton": {
+      "toll_ez": 40.07,
+      "toll_cash": 74.15
+    },
+    "c2m_via_carlisle": {
+      "toll_ez": 37.37,
+      "toll_cash": 74.74
+    },
+    "m2c_via_carlisle": {
+      "toll_ez": 43.37,
+      "toll_cash": 80.74
+    }
+  }
+}
