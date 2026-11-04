@@ -736,5 +736,103 @@
       "toll_ez": 43.37,
       "toll_cash": 80.74
     }
+  },
+  "pa_turnpike_cumulative_exits": {
+    "75_new_stanton": {
+      "milepost": 75.4,
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "name": "New Stanton (I-70 / I-76 Merge)"
+    },
+    "91_donegal": {
+      "milepost": 90.7,
+      "toll_ez": 2.29,
+      "toll_cash": 4.58,
+      "name": "Donegal (PA-31)"
+    },
+    "110_somerset": {
+      "milepost": 112.3,
+      "toll_ez": 4.82,
+      "toll_cash": 9.64,
+      "name": "Somerset (Sheetz EA / EVgo)"
+    },
+    "146_bedford": {
+      "milepost": 146.3,
+      "toll_ez": 8.58,
+      "toll_cash": 17.16,
+      "name": "Bedford (US-220 / I-99)"
+    },
+    "180_fort_littleton": {
+      "milepost": 179.4,
+      "toll_ez": 13.33,
+      "toll_cash": 26.66,
+      "name": "Fort Littleton (Tesla Supercharger / CCS1)"
+    },
+    "201_blue_mountain": {
+      "milepost": 201.3,
+      "toll_ez": 15.12,
+      "toll_cash": 30.24,
+      "name": "Blue Mountain (PA-997)"
+    },
+    "226_carlisle": {
+      "milepost": 226.3,
+      "toll_ez": 20.09,
+      "toll_cash": 40.18,
+      "name": "Carlisle (EA / EVgo / I-81)"
+    },
+    "236_gettysburg_pike": {
+      "milepost": 236.2,
+      "toll_ez": 21.95,
+      "toll_cash": 43.9,
+      "name": "Gettysburg Pike (US-15 South to Dillsburg)"
+    },
+    "242_harrisburg_west": {
+      "milepost": 242.0,
+      "toll_ez": 21.95,
+      "toll_cash": 43.9,
+      "name": "Harrisburg West (US-15 North / DeCamilla Gateway)"
+    },
+    "247_harrisburg_east": {
+      "milepost": 247.4,
+      "toll_ez": 25.02,
+      "toll_cash": 50.04,
+      "name": "Harrisburg East (I-283)"
+    },
+    "266_lebanon_lancaster": {
+      "milepost": 266.5,
+      "toll_ez": 27.54,
+      "toll_cash": 55.08,
+      "name": "Lebanon-Lancaster (PA-72)"
+    },
+    "286_reading": {
+      "milepost": 286.1,
+      "toll_ez": 30.13,
+      "toll_cash": 60.26,
+      "name": "Reading (US-222)"
+    },
+    "298_morgantown": {
+      "milepost": 298.6,
+      "toll_ez": 32.14,
+      "toll_cash": 64.28,
+      "name": "Morgantown (I-176)"
+    },
+    "312_downingtown": {
+      "milepost": 312.0,
+      "toll_ez": 34.08,
+      "toll_cash": 68.16,
+      "name": "Downingtown / Chester Springs (IONNA Rechargery)"
+    },
+    "326_valley_forge": {
+      "milepost": 326.6,
+      "toll_ez": 37.37,
+      "toll_cash": 74.74,
+      "name": "Valley Forge / King of Prussia (I-76 / Schuylkill)"
+    },
+    "359_delaware_river": {
+      "milepost": 359.0,
+      "toll_ez": 45.24,
+      "toll_cash": 90.48,
+      "name": "Delaware River Bridge (PA/NJ Border)"
+    }
   }
 }
