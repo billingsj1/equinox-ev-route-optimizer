@@ -52,6 +52,9 @@ class DCFCTrackerAdapter(BaseNetworkAdapter):
                         addr = addr_match.group(1).strip() if addr_match else ""
                         power = float(kw_match.group(1)) if kw_match else 150.0
 
+                        stalls_match = re.search(r'>Stalls</p>\s*<p[^>]*>(\d+)</p>', card) or re.search(r'(\d+)\s*(?:DC\s+fast\s+)?stalls', card, re.I)
+                        stalls = int(stalls_match.group(1)) if stalls_match else 4
+
                         records.append({
                             "dcfc_id": sid,
                             "network": network,
@@ -60,6 +63,7 @@ class DCFCTrackerAdapter(BaseNetworkAdapter):
                             "state": st.upper(),
                             "price": price,
                             "power_kw": power,
+                            "stalls": stalls,
                             "url": f"https://dcfctracker.com/stations/{sid}"
                         })
                 except Exception as e:

@@ -10133,7 +10133,8 @@
       "lat": 40.37584813,
       "lon": -80.09864448,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/bridgeville/1297-washington-pike-15017/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/bridgeville/1297-washington-pike-15017/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10141,7 +10142,8 @@
       "lat": 39.9964278,
       "lon": -81.5741239,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10149,7 +10151,8 @@
       "lat": 39.9064618,
       "lon": -74.9741836,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/cherry-hill/1824-marlton-pike-e-08003/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/cherry-hill/1824-marlton-pike-e-08003/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10157,7 +10160,8 @@
       "lat": 40.0747563,
       "lon": -75.6859435,
       "price": 0.35,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/chester-springs/1800-ticonderoga-blvd-19425/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/chester-springs/1800-ticonderoga-blvd-19425/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10165,7 +10169,8 @@
       "lat": 40.2079907,
       "lon": -74.3543125,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/freehold-township/275-monmouth-rd-07728/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/freehold-township/275-monmouth-rd-07728/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10173,7 +10178,8 @@
       "lat": 39.1274008,
       "lon": -77.1829598,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/gaithersburg/16531-s-frederick-ave-20877/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/gaithersburg/16531-s-frederick-ave-20877/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10181,7 +10187,8 @@
       "lat": 40.5816245,
       "lon": -75.7080045,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/kutztown/2298-golden-key-rd-19530/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/kutztown/2298-golden-key-rd-19530/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10189,7 +10196,8 @@
       "lat": 40.7574261,
       "lon": -81.5157921,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/massillon/3544-erie-ave-sw-44646/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/massillon/3544-erie-ave-sw-44646/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10197,7 +10205,8 @@
       "lat": 39.4373033,
       "lon": -77.5290706,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/middletown/300-middletown-pkwy-21769/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/middletown/300-middletown-pkwy-21769/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10205,7 +10214,8 @@
       "lat": 39.8784834,
       "lon": -82.9316265,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/obetz/4375-alum-creek-dr-43207/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/obetz/4375-alum-creek-dr-43207/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10213,7 +10223,8 @@
       "lat": 40.3647856,
       "lon": -75.9162015,
       "price": 0.2,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/reading/1946-n-11th-st-19604/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/reading/1946-n-11th-st-19604/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10221,7 +10232,8 @@
       "lat": 39.9256259,
       "lon": -82.8320865,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/reynoldsburg/2727-brice-rd-43068/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/reynoldsburg/2727-brice-rd-43068/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10229,7 +10241,8 @@
       "lat": 39.895927,
       "lon": -83.720129,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/springfield/1751-titus-rd-45502/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/springfield/1751-titus-rd-45502/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10237,7 +10250,8 @@
       "lat": 41.6393258,
       "lon": -81.3719063,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/willoughby/4145-oh-306-44094/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/willoughby/4145-oh-306-44094/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10245,7 +10259,8 @@
       "lat": 40.8853316,
       "lon": -74.4636349,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/mountain-lakes/372-us-46-07046/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/mountain-lakes/372-us-46-07046/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10253,7 +10268,8 @@
       "lat": 40.1297621,
       "lon": -74.9239827,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/bensalem/2200-bristol-rd-19020/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/bensalem/2200-bristol-rd-19020/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10261,7 +10277,8 @@
       "lat": 39.418566,
       "lon": -77.4595613,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/frederick/1390-w-patrick-st-21703/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/frederick/1390-w-patrick-st-21703/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10269,7 +10286,8 @@
       "lat": 39.6425077,
       "lon": -75.5173383,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/pennsville/245-s-broadway-08070/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/pennsville/245-s-broadway-08070/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10277,7 +10295,8 @@
       "lat": 39.0473629,
       "lon": -77.0984986,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/rockville/4890-boiling-brook-pkwy-20852/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/rockville/4890-boiling-brook-pkwy-20852/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10285,7 +10304,8 @@
       "lat": 39.0566137,
       "lon": -76.6562516,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/gambrills/701-annapolis-rd-21054/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/gambrills/701-annapolis-rd-21054/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10293,7 +10313,8 @@
       "lat": 40.0934417,
       "lon": -75.3650834,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/king-of-prussia/145-w-dekalb-pike-19406/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/king-of-prussia/145-w-dekalb-pike-19406/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10301,7 +10322,8 @@
       "lat": 40.4328216,
       "lon": -74.5475973,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/south-brunswick/3222-rt-27-08824/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/south-brunswick/3222-rt-27-08824/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10309,7 +10331,8 @@
       "lat": 39.28742,
       "lon": -76.5352754,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/baltimore/6541-eastern-ave-21224/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/baltimore/6541-eastern-ave-21224/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10317,7 +10340,8 @@
       "lat": 40.931659,
       "lon": -74.71996,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/stanhope/75-route-206-07874/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/stanhope/75-route-206-07874/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10325,7 +10349,8 @@
       "lat": 38.889065,
       "lon": -76.720124,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/upper-marlboro/163-robert-s-crain-hwy-20774/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/upper-marlboro/163-robert-s-crain-hwy-20774/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10333,7 +10358,8 @@
       "lat": 40.6856028384579,
       "lon": -84.12833278210275,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/lima/1355-w-breese-rd-45806/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/lima/1355-w-breese-rd-45806/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10341,7 +10367,8 @@
       "lat": 39.65289043053055,
       "lon": -75.79127923522633,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/elkton/1657-elkton-rd-21921/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/elkton/1657-elkton-rd-21921/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10349,7 +10376,8 @@
       "lat": 39.8498069,
       "lon": -75.5370925,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/chadds-ford/721-naamans-creek-rd-19317/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/chadds-ford/721-naamans-creek-rd-19317/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10357,7 +10385,8 @@
       "lat": 41.381042,
       "lon": -81.734087,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/oh/parma/6767-ridge-rd-44129/"
+      "url": "https://www.ionna.com/ev-charging-stations/oh/parma/6767-ridge-rd-44129/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10365,7 +10394,8 @@
       "lat": 40.0402919,
       "lon": -75.0576467,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/philadelphia/7001-roosevelt-blvd-19149/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/philadelphia/7001-roosevelt-blvd-19149/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10373,7 +10403,8 @@
       "lat": 39.3642622,
       "lon": -76.6082975,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/baltimore/550-e-belvedere-ave-21212/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/baltimore/550-e-belvedere-ave-21212/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10381,7 +10412,8 @@
       "lat": 41.0410183,
       "lon": -74.0749595,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/woodcliff-lake/441-chestnut-ridge-rd-07677/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/woodcliff-lake/441-chestnut-ridge-rd-07677/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10389,7 +10421,8 @@
       "lat": 41.463763,
       "lon": -75.6507592,
       "price": 0.35,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/scranton/610-scranton-carbondale-hwy-18508/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/scranton/610-scranton-carbondale-hwy-18508/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10397,7 +10430,8 @@
       "lat": 39.7707865,
       "lon": -75.0462565,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/nj/sicklerville/2700-sicklerville-rd-08081/"
+      "url": "https://www.ionna.com/ev-charging-stations/nj/sicklerville/2700-sicklerville-rd-08081/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10405,7 +10439,8 @@
       "lat": 40.1061367,
       "lon": -75.1248018,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/pa/jenkintown/816-old-york-rd-19046/"
+      "url": "https://www.ionna.com/ev-charging-stations/pa/jenkintown/816-old-york-rd-19046/",
+      "stalls": 8
     },
     {
       "network": "IONNA",
@@ -10413,39 +10448,46 @@
       "lat": 39.38252,
       "lon": -77.2561533,
       "price": 0.39,
-      "url": "https://www.ionna.com/ev-charging-stations/md/new-market/5414-rotary-ave-21774/"
+      "url": "https://www.ionna.com/ev-charging-stations/md/new-market/5414-rotary-ave-21774/",
+      "stalls": 8
     }
   ],
   "mercedes": [
     {
       "network": "Mercedes-Benz",
       "url": "https://mercedesbenzhpc.com/charging-station/nj-roseland-roseland-commons/",
-      "price": 0.5
+      "price": 0.5,
+      "stalls": 4
     },
     {
       "network": "Mercedes-Benz",
       "url": "https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/",
-      "price": 0.44
+      "price": 0.44,
+      "stalls": 4
     },
     {
       "network": "Mercedes-Benz",
       "url": "https://mercedesbenzhpc.com/charging-station/oh-columbus-mercedes-benz-of-north-columbus/",
-      "price": 0.4
+      "price": 0.4,
+      "stalls": 4
     },
     {
       "network": "Mercedes-Benz",
       "url": "https://mercedesbenzhpc.com/charging-station/md-clarksburg-clarksburg-premium-outlets/",
-      "price": 0.44
+      "price": 0.44,
+      "stalls": 4
     },
     {
       "network": "Mercedes-Benz",
       "url": "https://mercedesbenzhpc.com/charging-station/nj-bridgewater-chimney-rock-east/",
-      "price": 0.5
+      "price": 0.5,
+      "stalls": 4
     },
     {
       "network": "Mercedes-Benz",
       "url": "https://mercedesbenzhpc.com/charging-station/oh-copley-twp-heritage-center/",
-      "price": 0.4
+      "price": 0.4,
+      "stalls": 4
     }
   ],
   "tesla": [
@@ -10492,7 +10534,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/15015"
+      "url": "https://www.tesla.com/findus/location/supercharger/15015",
+      "stalls": 12
     },
     {
       "id": "tesla-20521",
@@ -10537,7 +10580,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/20521"
+      "url": "https://www.tesla.com/findus/location/supercharger/20521",
+      "stalls": 20
     },
     {
       "id": "tesla-27409",
@@ -10582,7 +10626,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/27409"
+      "url": "https://www.tesla.com/findus/location/supercharger/27409",
+      "stalls": 12
     },
     {
       "id": "tesla-woodclifflakenjsupercharger",
@@ -10627,7 +10672,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/WoodcliffLakeNJsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/WoodcliffLakeNJsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-20627",
@@ -10672,7 +10718,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/20627"
+      "url": "https://www.tesla.com/findus/location/supercharger/20627",
+      "stalls": 8
     },
     {
       "id": "tesla-aston-pa",
@@ -10729,7 +10776,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/35027",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 8
     },
     {
       "id": "tesla-eastonmdsupercharger",
@@ -10774,7 +10822,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/eastonmdsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/eastonmdsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-457753",
@@ -10819,7 +10868,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/457753"
+      "url": "https://www.tesla.com/findus/location/supercharger/457753",
+      "stalls": 16
     },
     {
       "id": "tesla-409159",
@@ -10873,7 +10923,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/409159"
+      "url": "https://www.tesla.com/findus/location/supercharger/409159",
+      "stalls": 8
     },
     {
       "id": "tesla-waynesburg-pa",
@@ -10893,7 +10944,8 @@
       "tou_rates": [],
       "url": "https://www.tesla.com/findus/location/supercharger/401410",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 12
     },
     {
       "id": "tesla-shrewsbury-pa",
@@ -10941,7 +10993,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/36287",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 12
     },
     {
       "id": "tesla-26846",
@@ -10995,7 +11048,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26846"
+      "url": "https://www.tesla.com/findus/location/supercharger/26846",
+      "stalls": 8
     },
     {
       "id": "tesla-salisburysupercharger",
@@ -11040,7 +11094,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/salisburysupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/salisburysupercharger",
+      "stalls": 16
     },
     {
       "id": "tesla-fort-littleton-pa",
@@ -11060,7 +11115,8 @@
       "tou_rates": [],
       "url": "https://www.tesla.com/findus/location/supercharger/26674",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 8
     },
     {
       "id": "tesla-4007754",
@@ -11105,7 +11161,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/4007754"
+      "url": "https://www.tesla.com/findus/location/supercharger/4007754",
+      "stalls": 32
     },
     {
       "id": "tesla-lawnside-nj",
@@ -11153,7 +11210,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/402407",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 32
     },
     {
       "id": "tesla-woodlyn-pa",
@@ -11201,7 +11259,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/59209",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 12
     },
     {
       "id": "tesla-19520",
@@ -11218,7 +11277,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/19520"
+      "url": "https://www.tesla.com/findus/location/supercharger/19520",
+      "stalls": 16
     },
     {
       "id": "tesla-blackwood-nj",
@@ -11266,7 +11326,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/59126",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 16
     },
     {
       "id": "tesla-439816",
@@ -11311,7 +11372,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/439816"
+      "url": "https://www.tesla.com/findus/location/supercharger/439816",
+      "stalls": 12
     },
     {
       "id": "tesla-14696",
@@ -11356,7 +11418,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/14696"
+      "url": "https://www.tesla.com/findus/location/supercharger/14696",
+      "stalls": 8
     },
     {
       "id": "tesla-34872",
@@ -11401,7 +11464,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34872"
+      "url": "https://www.tesla.com/findus/location/supercharger/34872",
+      "stalls": 20
     },
     {
       "id": "tesla-avenelnjsupercharger",
@@ -11446,7 +11510,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/AvenelNJSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/AvenelNJSupercharger",
+      "stalls": 12
     },
     {
       "id": "tesla-462857",
@@ -11482,7 +11547,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/462857"
+      "url": "https://www.tesla.com/findus/location/supercharger/462857",
+      "stalls": 8
     },
     {
       "id": "tesla-littleferrynjq322",
@@ -11527,7 +11593,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/LittleFerryNJQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/LittleFerryNJQ322",
+      "stalls": 20
     },
     {
       "id": "tesla-perthamboynjq322",
@@ -11572,7 +11639,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/PerthAmboyNJQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/PerthAmboyNJQ322",
+      "stalls": 8
     },
     {
       "id": "tesla-4008208",
@@ -11608,7 +11676,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/4008208"
+      "url": "https://www.tesla.com/findus/location/supercharger/4008208",
+      "stalls": 8
     },
     {
       "id": "tesla-59230",
@@ -11662,7 +11731,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59230"
+      "url": "https://www.tesla.com/findus/location/supercharger/59230",
+      "stalls": 12
     },
     {
       "id": "tesla-26134",
@@ -11716,7 +11786,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26134"
+      "url": "https://www.tesla.com/findus/location/supercharger/26134",
+      "stalls": 8
     },
     {
       "id": "tesla-493954",
@@ -11761,7 +11832,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/493954"
+      "url": "https://www.tesla.com/findus/location/supercharger/493954",
+      "stalls": 4
     },
     {
       "id": "tesla-59145",
@@ -11797,7 +11869,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59145"
+      "url": "https://www.tesla.com/findus/location/supercharger/59145",
+      "stalls": 8
     },
     {
       "id": "tesla-35810",
@@ -11842,7 +11915,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/35810"
+      "url": "https://www.tesla.com/findus/location/supercharger/35810",
+      "stalls": 12
     },
     {
       "id": "tesla-4008768",
@@ -11887,7 +11961,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/4008768"
+      "url": "https://www.tesla.com/findus/location/supercharger/4008768",
+      "stalls": 20
     },
     {
       "id": "tesla-59149",
@@ -11923,7 +11998,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59149"
+      "url": "https://www.tesla.com/findus/location/supercharger/59149",
+      "stalls": 8
     },
     {
       "id": "tesla-eastrutherfordnjsupercharger",
@@ -11968,7 +12044,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/EastRutherfordNJSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/EastRutherfordNJSupercharger",
+      "stalls": 32
     },
     {
       "id": "tesla-45408",
@@ -12013,7 +12090,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/45408"
+      "url": "https://www.tesla.com/findus/location/supercharger/45408",
+      "stalls": 8
     },
     {
       "id": "tesla-summerdale-pa",
@@ -12070,7 +12148,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/33951",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 8
     },
     {
       "id": "tesla-453502",
@@ -12115,7 +12194,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/453502"
+      "url": "https://www.tesla.com/findus/location/supercharger/453502",
+      "stalls": 12
     },
     {
       "id": "tesla-19498",
@@ -12160,7 +12240,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19498"
+      "url": "https://www.tesla.com/findus/location/supercharger/19498",
+      "stalls": 12
     },
     {
       "id": "tesla-453452",
@@ -12205,7 +12286,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/453452"
+      "url": "https://www.tesla.com/findus/location/supercharger/453452",
+      "stalls": 12
     },
     {
       "id": "tesla-4008968",
@@ -12250,7 +12332,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/4008968"
+      "url": "https://www.tesla.com/findus/location/supercharger/4008968",
+      "stalls": 20
     },
     {
       "id": "tesla-33689",
@@ -12295,7 +12378,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33689"
+      "url": "https://www.tesla.com/findus/location/supercharger/33689",
+      "stalls": 8
     },
     {
       "id": "tesla-edisonnjsupercharger2",
@@ -12340,7 +12424,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/EdisonNJSupercharger2"
+      "url": "https://www.tesla.com/findus/location/supercharger/EdisonNJSupercharger2",
+      "stalls": 8
     },
     {
       "id": "tesla-mt-laurel-nj",
@@ -12388,7 +12473,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/406608",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 40
     },
     {
       "id": "tesla-425863",
@@ -12433,7 +12519,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/425863"
+      "url": "https://www.tesla.com/findus/location/supercharger/425863",
+      "stalls": 12
     },
     {
       "id": "tesla-hamilton-nj",
@@ -12481,7 +12568,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/424861",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 12
     },
     {
       "id": "tesla-406305",
@@ -12526,7 +12614,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/406305"
+      "url": "https://www.tesla.com/findus/location/supercharger/406305",
+      "stalls": 16
     },
     {
       "id": "tesla-maple-shade-nj",
@@ -12574,7 +12663,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/26769",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 12
     },
     {
       "id": "tesla-cherry-hill-nj",
@@ -12613,7 +12703,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 8
     },
     {
       "id": "tesla-26120",
@@ -12658,7 +12749,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26120"
+      "url": "https://www.tesla.com/findus/location/supercharger/26120",
+      "stalls": 8
     },
     {
       "id": "tesla-19511",
@@ -12703,7 +12795,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19511"
+      "url": "https://www.tesla.com/findus/location/supercharger/19511",
+      "stalls": 16
     },
     {
       "id": "tesla-31808",
@@ -12748,7 +12841,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/31808"
+      "url": "https://www.tesla.com/findus/location/supercharger/31808",
+      "stalls": 8
     },
     {
       "id": "tesla-32055",
@@ -12793,7 +12887,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32055"
+      "url": "https://www.tesla.com/findus/location/supercharger/32055",
+      "stalls": 12
     },
     {
       "id": "tesla-4160",
@@ -12838,7 +12933,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/4160"
+      "url": "https://www.tesla.com/findus/location/supercharger/4160",
+      "stalls": 16
     },
     {
       "id": "tesla-27400",
@@ -12883,7 +12979,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/27400"
+      "url": "https://www.tesla.com/findus/location/supercharger/27400",
+      "stalls": 12
     },
     {
       "id": "tesla-pittsburgh-freeport-pa",
@@ -12931,7 +13028,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/20506",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 16
     },
     {
       "id": "tesla-somerset-pa",
@@ -12951,7 +13049,8 @@
       "tou_rates": [],
       "url": "https://www.tesla.com/findus/location/supercharger/somersetsupercharger",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 10
     },
     {
       "id": "tesla-36228",
@@ -12996,7 +13095,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/36228"
+      "url": "https://www.tesla.com/findus/location/supercharger/36228",
+      "stalls": 16
     },
     {
       "id": "tesla-medford-nj",
@@ -13044,7 +13144,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/19516",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 12
     },
     {
       "id": "tesla-bridgewaternjsupercharger",
@@ -13089,7 +13190,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BridgewaterNJsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/BridgewaterNJsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-14427",
@@ -13134,7 +13236,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/14427"
+      "url": "https://www.tesla.com/findus/location/supercharger/14427",
+      "stalls": 8
     },
     {
       "id": "tesla-26759",
@@ -13179,7 +13282,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26759"
+      "url": "https://www.tesla.com/findus/location/supercharger/26759",
+      "stalls": 12
     },
     {
       "id": "tesla-northbergennjq322",
@@ -13224,7 +13328,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/NorthBergenNJQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/NorthBergenNJQ322",
+      "stalls": 8
     },
     {
       "id": "tesla-unioncitynjsupercharger",
@@ -13269,7 +13374,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/UnionCityNJsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/UnionCityNJsupercharger",
+      "stalls": 23
     },
     {
       "id": "tesla-timonium-md",
@@ -13326,7 +13432,8 @@
       ],
       "url": "https://www.tesla.com/findus/location/supercharger/33688",
       "verified": true,
-      "last_scraped": "2026-10-28"
+      "last_scraped": "2026-10-28",
+      "stalls": 12
     },
     {
       "id": "tesla-20974",
@@ -13371,7 +13478,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/20974"
+      "url": "https://www.tesla.com/findus/location/supercharger/20974",
+      "stalls": 12
     },
     {
       "id": "tesla-400651",
@@ -13416,7 +13524,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/400651"
+      "url": "https://www.tesla.com/findus/location/supercharger/400651",
+      "stalls": 8
     },
     {
       "id": "tesla-18487",
@@ -13433,7 +13542,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/18487"
+      "url": "https://www.tesla.com/findus/location/supercharger/18487",
+      "stalls": 8
     },
     {
       "id": "tesla-19507",
@@ -13478,7 +13588,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19507"
+      "url": "https://www.tesla.com/findus/location/supercharger/19507",
+      "stalls": 8
     },
     {
       "id": "tesla-lancasterpasupercharger",
@@ -13523,7 +13634,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/lancasterpasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/lancasterpasupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-412306",
@@ -13577,7 +13689,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/412306"
+      "url": "https://www.tesla.com/findus/location/supercharger/412306",
+      "stalls": 12
     },
     {
       "id": "tesla-33580",
@@ -13622,7 +13735,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33580"
+      "url": "https://www.tesla.com/findus/location/supercharger/33580",
+      "stalls": 12
     },
     {
       "id": "tesla-13542",
@@ -13676,7 +13790,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/13542"
+      "url": "https://www.tesla.com/findus/location/supercharger/13542",
+      "stalls": 7
     },
     {
       "id": "tesla-mapleshadenjsupercharger",
@@ -13721,7 +13836,8 @@
           "label": "Low Congestion (<20%)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/mapleshadenjsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/mapleshadenjsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-northwalespasupercharger",
@@ -13766,7 +13882,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/NorthWalesPASupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/NorthWalesPASupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-williamsportpasupercharger",
@@ -13783,7 +13900,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/williamsportpasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/williamsportpasupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-58815",
@@ -13828,7 +13946,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/58815"
+      "url": "https://www.tesla.com/findus/location/supercharger/58815",
+      "stalls": 12
     },
     {
       "id": "tesla-freeholdnjsupercharger",
@@ -13873,7 +13992,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/freeholdnjsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/freeholdnjsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-34939",
@@ -13909,7 +14029,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34939"
+      "url": "https://www.tesla.com/findus/location/supercharger/34939",
+      "stalls": 12
     },
     {
       "id": "tesla-whitemarshmdsupercharger",
@@ -13963,7 +14084,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/whitemarshmdsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/whitemarshmdsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-459273",
@@ -14008,7 +14130,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/459273"
+      "url": "https://www.tesla.com/findus/location/supercharger/459273",
+      "stalls": 8
     },
     {
       "id": "tesla-chillicotheohsupercharger",
@@ -14053,7 +14176,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/chillicotheohsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/chillicotheohsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-grovecitypasupercharger",
@@ -14098,7 +14222,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/grovecitypasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/grovecitypasupercharger",
+      "stalls": 6
     },
     {
       "id": "tesla-gettysburgpasupercharger",
@@ -14143,7 +14268,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/gettysburgpasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/gettysburgpasupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-oceancitymdsupercharger",
@@ -14188,7 +14314,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/oceancitymdsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/oceancitymdsupercharger",
+      "stalls": 6
     },
     {
       "id": "tesla-452152",
@@ -14242,7 +14369,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/452152"
+      "url": "https://www.tesla.com/findus/location/supercharger/452152",
+      "stalls": 16
     },
     {
       "id": "tesla-26773",
@@ -14259,7 +14387,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/26773"
+      "url": "https://www.tesla.com/findus/location/supercharger/26773",
+      "stalls": 16
     },
     {
       "id": "tesla-19533",
@@ -14313,7 +14442,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19533"
+      "url": "https://www.tesla.com/findus/location/supercharger/19533",
+      "stalls": 12
     },
     {
       "id": "tesla-hamburgpasupercharger",
@@ -14358,7 +14488,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/HamburgPAsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/HamburgPAsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-baltimoresupercharger",
@@ -14412,7 +14543,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/baltimoresupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/baltimoresupercharger",
+      "stalls": 12
     },
     {
       "id": "tesla-washingtonpasupercharger",
@@ -14457,7 +14589,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/washingtonpasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/washingtonpasupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-26702",
@@ -14502,7 +14635,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26702"
+      "url": "https://www.tesla.com/findus/location/supercharger/26702",
+      "stalls": 11
     },
     {
       "id": "tesla-439552",
@@ -14556,7 +14690,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/439552"
+      "url": "https://www.tesla.com/findus/location/supercharger/439552",
+      "stalls": 16
     },
     {
       "id": "tesla-437003",
@@ -14601,7 +14736,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/437003"
+      "url": "https://www.tesla.com/findus/location/supercharger/437003",
+      "stalls": 16
     },
     {
       "id": "tesla-407479",
@@ -14637,7 +14773,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/407479"
+      "url": "https://www.tesla.com/findus/location/supercharger/407479",
+      "stalls": 16
     },
     {
       "id": "tesla-26685",
@@ -14654,7 +14791,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/26685"
+      "url": "https://www.tesla.com/findus/location/supercharger/26685",
+      "stalls": 12
     },
     {
       "id": "tesla-26692",
@@ -14699,7 +14837,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26692"
+      "url": "https://www.tesla.com/findus/location/supercharger/26692",
+      "stalls": 12
     },
     {
       "id": "tesla-urbanamdsupercharger",
@@ -14753,7 +14892,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/UrbanaMDsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/UrbanaMDsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-58845",
@@ -14807,7 +14947,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/58845"
+      "url": "https://www.tesla.com/findus/location/supercharger/58845",
+      "stalls": 12
     },
     {
       "id": "tesla-27467",
@@ -14861,7 +15002,8 @@
           "label": "Evening Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/27467"
+      "url": "https://www.tesla.com/findus/location/supercharger/27467",
+      "stalls": 8
     },
     {
       "id": "tesla-4006212",
@@ -14906,7 +15048,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/4006212"
+      "url": "https://www.tesla.com/findus/location/supercharger/4006212",
+      "stalls": 12
     },
     {
       "id": "tesla-32909",
@@ -14923,7 +15066,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/32909"
+      "url": "https://www.tesla.com/findus/location/supercharger/32909",
+      "stalls": 12
     },
     {
       "id": "tesla-33715",
@@ -14968,7 +15112,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33715"
+      "url": "https://www.tesla.com/findus/location/supercharger/33715",
+      "stalls": 8
     },
     {
       "id": "tesla-waldorfmdsupercharger",
@@ -15022,7 +15167,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/WaldorfMDsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/WaldorfMDsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-glenmillspasupercharger",
@@ -15076,7 +15222,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/glenmillspasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/glenmillspasupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-rehobothbeachdesupercharger",
@@ -15121,7 +15268,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/rehobothbeachdesupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/rehobothbeachdesupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-clarksburgnjsupercharger",
@@ -15166,7 +15314,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/clarksburgnjsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/clarksburgnjsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-statecollegepasupercharger",
@@ -15183,7 +15332,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/statecollegepasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/statecollegepasupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-flemingtonnjsupercharger",
@@ -15228,7 +15378,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/FlemingtonNJsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/FlemingtonNJsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-californiamdsupercharger",
@@ -15282,7 +15433,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/CaliforniaMDsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/CaliforniaMDsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-edgewatermdsupercharger",
@@ -15336,7 +15488,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/EdgewaterMDsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/EdgewaterMDsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-towsonmdsupercharger",
@@ -15390,7 +15543,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/TowsonMDsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/TowsonMDsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-doylestownpasupercharger",
@@ -15435,7 +15589,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/DoylestownPAsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/DoylestownPAsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-19546",
@@ -15489,7 +15644,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19546"
+      "url": "https://www.tesla.com/findus/location/supercharger/19546",
+      "stalls": 4
     },
     {
       "id": "tesla-middletowndesupercharger",
@@ -15534,7 +15690,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/MiddletownDEsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/MiddletownDEsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-twinsburgohsupercharger",
@@ -15579,7 +15736,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/TwinsburgOHSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/TwinsburgOHSupercharger",
+      "stalls": 7
     },
     {
       "id": "tesla-cranfordnjsupercharger",
@@ -15624,7 +15782,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/CranfordNJSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/CranfordNJSupercharger",
+      "stalls": 12
     },
     {
       "id": "tesla-columbianjsupercharger",
@@ -15669,7 +15828,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/ColumbiaNJsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/ColumbiaNJsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-oldbridgenjsupercharger",
@@ -15714,7 +15874,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/OldBridgeNJSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/OldBridgeNJSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-newcastledesupercharger",
@@ -15759,7 +15920,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/NewCastleDESupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/NewCastleDESupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-belairmdsupercharger",
@@ -15813,7 +15975,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BelAirMDSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/BelAirMDSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-27521",
@@ -15858,7 +16021,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/27521"
+      "url": "https://www.tesla.com/findus/location/supercharger/27521",
+      "stalls": 12
     },
     {
       "id": "tesla-15343",
@@ -15875,7 +16039,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/15343"
+      "url": "https://www.tesla.com/findus/location/supercharger/15343",
+      "stalls": 8
     },
     {
       "id": "tesla-33752",
@@ -15920,7 +16085,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33752"
+      "url": "https://www.tesla.com/findus/location/supercharger/33752",
+      "stalls": 8
     },
     {
       "id": "tesla-16540",
@@ -15937,7 +16103,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/16540"
+      "url": "https://www.tesla.com/findus/location/supercharger/16540",
+      "stalls": 8
     },
     {
       "id": "tesla-17349",
@@ -15982,7 +16149,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/17349"
+      "url": "https://www.tesla.com/findus/location/supercharger/17349",
+      "stalls": 12
     },
     {
       "id": "tesla-malaganjsupercharger",
@@ -16027,7 +16195,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/malaganjsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/malaganjsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-26866",
@@ -16072,7 +16241,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26866"
+      "url": "https://www.tesla.com/findus/location/supercharger/26866",
+      "stalls": 8
     },
     {
       "id": "tesla-ephratapasupercharger",
@@ -16117,7 +16287,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/EphrataPASupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/EphrataPASupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-seaforddesupercharger",
@@ -16162,7 +16333,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/SeafordDESupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/SeafordDESupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-readingpasupercharger",
@@ -16207,7 +16379,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/ReadingPASupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/ReadingPASupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-monroetownshipnjsupercharger",
@@ -16252,7 +16425,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/MonroeTownshipNJSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/MonroeTownshipNJSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-beltsvillemdsupercharger",
@@ -16306,7 +16480,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BeltsvilleMDSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/BeltsvilleMDSupercharger",
+      "stalls": 12
     },
     {
       "id": "tesla-fairmontwvsupercharger",
@@ -16323,7 +16498,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/FairmontWVSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/FairmontWVSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-18952",
@@ -16368,7 +16544,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18952"
+      "url": "https://www.tesla.com/findus/location/supercharger/18952",
+      "stalls": 11
     },
     {
       "id": "tesla-girardohsupercharger",
@@ -16413,7 +16590,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/GirardOHSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/GirardOHSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-whiteplainsmdsupercharger",
@@ -16467,7 +16645,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/whiteplainsmdsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/whiteplainsmdsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-eastonpaq322",
@@ -16512,7 +16691,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/EastonPAQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/EastonPAQ322",
+      "stalls": 8
     },
     {
       "id": "tesla-langhornepasupercharger",
@@ -16557,7 +16737,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/LanghornePASupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/LanghornePASupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-11630",
@@ -16602,7 +16783,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/11630"
+      "url": "https://www.tesla.com/findus/location/supercharger/11630",
+      "stalls": 8
     },
     {
       "id": "tesla-27020",
@@ -16647,7 +16829,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/27020"
+      "url": "https://www.tesla.com/findus/location/supercharger/27020",
+      "stalls": 16
     },
     {
       "id": "tesla-18730",
@@ -16692,7 +16875,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18730"
+      "url": "https://www.tesla.com/findus/location/supercharger/18730",
+      "stalls": 8
     },
     {
       "id": "tesla-20549",
@@ -16737,7 +16921,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/20549"
+      "url": "https://www.tesla.com/findus/location/supercharger/20549",
+      "stalls": 16
     },
     {
       "id": "tesla-augustanjq322",
@@ -16782,7 +16967,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/AugustaNJQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/AugustaNJQ322",
+      "stalls": 8
     },
     {
       "id": "tesla-34290",
@@ -16836,7 +17022,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34290"
+      "url": "https://www.tesla.com/findus/location/supercharger/34290",
+      "stalls": 8
     },
     {
       "id": "tesla-34179",
@@ -16890,7 +17077,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34179"
+      "url": "https://www.tesla.com/findus/location/supercharger/34179",
+      "stalls": 8
     },
     {
       "id": "tesla-400678",
@@ -16935,7 +17123,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/400678"
+      "url": "https://www.tesla.com/findus/location/supercharger/400678",
+      "stalls": 8
     },
     {
       "id": "tesla-25936",
@@ -16989,7 +17178,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/25936"
+      "url": "https://www.tesla.com/findus/location/supercharger/25936",
+      "stalls": 8
     },
     {
       "id": "tesla-downingtownpaq322",
@@ -17043,7 +17233,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/DowningtownPAQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/DowningtownPAQ322",
+      "stalls": 8
     },
     {
       "id": "tesla-18647",
@@ -17088,7 +17279,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18647"
+      "url": "https://www.tesla.com/findus/location/supercharger/18647",
+      "stalls": 8
     },
     {
       "id": "tesla-459663",
@@ -17133,7 +17325,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/459663"
+      "url": "https://www.tesla.com/findus/location/supercharger/459663",
+      "stalls": 8
     },
     {
       "id": "tesla-southrivernjsupercharger",
@@ -17178,7 +17371,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/SouthRiverNJSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/SouthRiverNJSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-19506",
@@ -17223,7 +17417,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19506"
+      "url": "https://www.tesla.com/findus/location/supercharger/19506",
+      "stalls": 12
     },
     {
       "id": "tesla-28629",
@@ -17277,7 +17472,8 @@
           "label": "Evening Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/28629"
+      "url": "https://www.tesla.com/findus/location/supercharger/28629",
+      "stalls": 8
     },
     {
       "id": "tesla-18461",
@@ -17331,7 +17527,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18461"
+      "url": "https://www.tesla.com/findus/location/supercharger/18461",
+      "stalls": 8
     },
     {
       "id": "tesla-howelltownshipnjq322",
@@ -17376,7 +17573,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/HowellTownshipNJQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/HowellTownshipNJQ322",
+      "stalls": 12
     },
     {
       "id": "tesla-59210",
@@ -17421,7 +17619,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59210"
+      "url": "https://www.tesla.com/findus/location/supercharger/59210",
+      "stalls": 12
     },
     {
       "id": "tesla-19530",
@@ -17475,7 +17674,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19530"
+      "url": "https://www.tesla.com/findus/location/supercharger/19530",
+      "stalls": 8
     },
     {
       "id": "tesla-32869",
@@ -17529,7 +17729,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32869"
+      "url": "https://www.tesla.com/findus/location/supercharger/32869",
+      "stalls": 8
     },
     {
       "id": "tesla-32887",
@@ -17583,7 +17784,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32887"
+      "url": "https://www.tesla.com/findus/location/supercharger/32887",
+      "stalls": 8
     },
     {
       "id": "tesla-chesterspringspaq322",
@@ -17637,7 +17839,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/ChesterSpringsPAQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/ChesterSpringsPAQ322",
+      "stalls": 12
     },
     {
       "id": "tesla-pottstownpaq322",
@@ -17691,7 +17894,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/PottstownPAQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/PottstownPAQ322",
+      "stalls": 12
     },
     {
       "id": "tesla-33849",
@@ -17745,7 +17949,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33849"
+      "url": "https://www.tesla.com/findus/location/supercharger/33849",
+      "stalls": 16
     },
     {
       "id": "tesla-26777",
@@ -17790,7 +17995,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26777"
+      "url": "https://www.tesla.com/findus/location/supercharger/26777",
+      "stalls": 8
     },
     {
       "id": "tesla-19521",
@@ -17844,7 +18050,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19521"
+      "url": "https://www.tesla.com/findus/location/supercharger/19521",
+      "stalls": 8
     },
     {
       "id": "tesla-59020",
@@ -17889,7 +18096,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59020"
+      "url": "https://www.tesla.com/findus/location/supercharger/59020",
+      "stalls": 12
     },
     {
       "id": "tesla-32161",
@@ -17943,7 +18151,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32161"
+      "url": "https://www.tesla.com/findus/location/supercharger/32161",
+      "stalls": 16
     },
     {
       "id": "tesla-26776",
@@ -17979,7 +18188,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26776"
+      "url": "https://www.tesla.com/findus/location/supercharger/26776",
+      "stalls": 12
     },
     {
       "id": "tesla-19245",
@@ -18024,7 +18234,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19245"
+      "url": "https://www.tesla.com/findus/location/supercharger/19245",
+      "stalls": 12
     },
     {
       "id": "tesla-19514",
@@ -18069,7 +18280,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19514"
+      "url": "https://www.tesla.com/findus/location/supercharger/19514",
+      "stalls": 8
     },
     {
       "id": "tesla-26861",
@@ -18123,7 +18335,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26861"
+      "url": "https://www.tesla.com/findus/location/supercharger/26861",
+      "stalls": 12
     },
     {
       "id": "tesla-20505",
@@ -18168,7 +18381,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/20505"
+      "url": "https://www.tesla.com/findus/location/supercharger/20505",
+      "stalls": 8
     },
     {
       "id": "tesla-12795",
@@ -18213,7 +18427,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/12795"
+      "url": "https://www.tesla.com/findus/location/supercharger/12795",
+      "stalls": 6
     },
     {
       "id": "tesla-32911",
@@ -18267,7 +18482,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32911"
+      "url": "https://www.tesla.com/findus/location/supercharger/32911",
+      "stalls": 12
     },
     {
       "id": "tesla-hagerstownmdventuredrivesupercharger",
@@ -18321,7 +18537,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/hagerstownmdventuredrivesupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/hagerstownmdventuredrivesupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-claysburgpaq42022",
@@ -18338,7 +18555,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/ClaysburgPAQ42022"
+      "url": "https://www.tesla.com/findus/location/supercharger/ClaysburgPAQ42022",
+      "stalls": 8
     },
     {
       "id": "tesla-34555",
@@ -18392,7 +18610,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34555"
+      "url": "https://www.tesla.com/findus/location/supercharger/34555",
+      "stalls": 8
     },
     {
       "id": "tesla-17301",
@@ -18446,7 +18665,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/17301"
+      "url": "https://www.tesla.com/findus/location/supercharger/17301",
+      "stalls": 8
     },
     {
       "id": "tesla-487470",
@@ -18491,7 +18711,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/487470"
+      "url": "https://www.tesla.com/findus/location/supercharger/487470",
+      "stalls": 8
     },
     {
       "id": "tesla-blakesleepaq322",
@@ -18536,7 +18757,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BlakesleePAQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/BlakesleePAQ322",
+      "stalls": 12
     },
     {
       "id": "tesla-bartonsvillepasupercharger",
@@ -18581,7 +18803,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BartonsvillePASupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/BartonsvillePASupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-32729",
@@ -18635,7 +18858,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32729"
+      "url": "https://www.tesla.com/findus/location/supercharger/32729",
+      "stalls": 8
     },
     {
       "id": "tesla-438003",
@@ -18680,7 +18904,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/438003"
+      "url": "https://www.tesla.com/findus/location/supercharger/438003",
+      "stalls": 8
     },
     {
       "id": "tesla-439417",
@@ -18725,7 +18950,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/439417"
+      "url": "https://www.tesla.com/findus/location/supercharger/439417",
+      "stalls": 8
     },
     {
       "id": "tesla-405054",
@@ -18770,7 +18996,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/405054"
+      "url": "https://www.tesla.com/findus/location/supercharger/405054",
+      "stalls": 16
     },
     {
       "id": "tesla-417261",
@@ -18815,7 +19042,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/417261"
+      "url": "https://www.tesla.com/findus/location/supercharger/417261",
+      "stalls": 12
     },
     {
       "id": "tesla-407772",
@@ -18851,7 +19079,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/407772"
+      "url": "https://www.tesla.com/findus/location/supercharger/407772",
+      "stalls": 8
     },
     {
       "id": "tesla-26703",
@@ -18896,7 +19125,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26703"
+      "url": "https://www.tesla.com/findus/location/supercharger/26703",
+      "stalls": 8
     },
     {
       "id": "tesla-407617",
@@ -18941,7 +19171,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/407617"
+      "url": "https://www.tesla.com/findus/location/supercharger/407617",
+      "stalls": 20
     },
     {
       "id": "tesla-4005904",
@@ -18958,7 +19189,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/4005904"
+      "url": "https://www.tesla.com/findus/location/supercharger/4005904",
+      "stalls": 8
     },
     {
       "id": "tesla-450566",
@@ -19012,7 +19244,8 @@
           "label": "Evening Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/450566"
+      "url": "https://www.tesla.com/findus/location/supercharger/450566",
+      "stalls": 8
     },
     {
       "id": "tesla-18634",
@@ -19057,7 +19290,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18634"
+      "url": "https://www.tesla.com/findus/location/supercharger/18634",
+      "stalls": 8
     },
     {
       "id": "tesla-445652",
@@ -19102,7 +19336,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/445652"
+      "url": "https://www.tesla.com/findus/location/supercharger/445652",
+      "stalls": 12
     },
     {
       "id": "tesla-19525",
@@ -19147,7 +19382,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19525"
+      "url": "https://www.tesla.com/findus/location/supercharger/19525",
+      "stalls": 8
     },
     {
       "id": "tesla-442207",
@@ -19192,7 +19428,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/442207"
+      "url": "https://www.tesla.com/findus/location/supercharger/442207",
+      "stalls": 16
     },
     {
       "id": "tesla-26708",
@@ -19246,7 +19483,8 @@
           "label": "Evening Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26708"
+      "url": "https://www.tesla.com/findus/location/supercharger/26708",
+      "stalls": 8
     },
     {
       "id": "tesla-59229",
@@ -19300,7 +19538,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59229"
+      "url": "https://www.tesla.com/findus/location/supercharger/59229",
+      "stalls": 12
     },
     {
       "id": "tesla-28554",
@@ -19345,7 +19584,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/28554"
+      "url": "https://www.tesla.com/findus/location/supercharger/28554",
+      "stalls": 8
     },
     {
       "id": "tesla-33863",
@@ -19399,7 +19639,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33863"
+      "url": "https://www.tesla.com/findus/location/supercharger/33863",
+      "stalls": 12
     },
     {
       "id": "tesla-springfieldnjclevelandplacesupercharger",
@@ -19444,7 +19685,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/springfieldnjclevelandplacesupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/springfieldnjclevelandplacesupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-claymontdephiladelphiapikesupercharger",
@@ -19489,7 +19731,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/claymontdephiladelphiapikesupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/claymontdephiladelphiapikesupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-elkridgemdsupercharger",
@@ -19543,7 +19786,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/elkridgemdsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/elkridgemdsupercharger",
+      "stalls": 5
     },
     {
       "id": "tesla-26688",
@@ -19597,7 +19841,8 @@
           "label": "Evening Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26688"
+      "url": "https://www.tesla.com/findus/location/supercharger/26688",
+      "stalls": 12
     },
     {
       "id": "tesla-404653",
@@ -19642,7 +19887,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/404653"
+      "url": "https://www.tesla.com/findus/location/supercharger/404653",
+      "stalls": 12
     },
     {
       "id": "tesla-436854",
@@ -19687,7 +19933,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/436854"
+      "url": "https://www.tesla.com/findus/location/supercharger/436854",
+      "stalls": 16
     },
     {
       "id": "tesla-412310",
@@ -19741,7 +19988,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/412310"
+      "url": "https://www.tesla.com/findus/location/supercharger/412310",
+      "stalls": 12
     },
     {
       "id": "tesla-26836",
@@ -19795,7 +20043,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26836"
+      "url": "https://www.tesla.com/findus/location/supercharger/26836",
+      "stalls": 12
     },
     {
       "id": "tesla-409196",
@@ -19840,7 +20089,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/409196"
+      "url": "https://www.tesla.com/findus/location/supercharger/409196",
+      "stalls": 8
     },
     {
       "id": "tesla-59091",
@@ -19885,7 +20135,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59091"
+      "url": "https://www.tesla.com/findus/location/supercharger/59091",
+      "stalls": 12
     },
     {
       "id": "tesla-32750",
@@ -19939,7 +20190,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32750"
+      "url": "https://www.tesla.com/findus/location/supercharger/32750",
+      "stalls": 12
     },
     {
       "id": "tesla-westamptonnjrancocasrdsupercharger",
@@ -19984,7 +20236,8 @@
           "label": "Low Congestion (<20%)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/westamptonnjrancocasrdsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/westamptonnjrancocasrdsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-32677",
@@ -20029,7 +20282,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32677"
+      "url": "https://www.tesla.com/findus/location/supercharger/32677",
+      "stalls": 8
     },
     {
       "id": "tesla-abingdonmdsupercharger",
@@ -20083,7 +20337,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/AbingdonMDsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/AbingdonMDsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-triadelphiawvsupercharger",
@@ -20100,7 +20355,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/TriadelphiaWVsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/TriadelphiaWVsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-36332",
@@ -20145,7 +20401,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/36332"
+      "url": "https://www.tesla.com/findus/location/supercharger/36332",
+      "stalls": 16
     },
     {
       "id": "tesla-26859",
@@ -20199,7 +20456,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26859"
+      "url": "https://www.tesla.com/findus/location/supercharger/26859",
+      "stalls": 8
     },
     {
       "id": "tesla-morgantownwvsupercharger",
@@ -20216,7 +20474,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/MorgantownWVSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/MorgantownWVSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-19536",
@@ -20233,7 +20492,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/19536"
+      "url": "https://www.tesla.com/findus/location/supercharger/19536",
+      "stalls": 8
     },
     {
       "id": "tesla-laurelmdsupercharger2",
@@ -20287,7 +20547,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/LaurelMDSupercharger2"
+      "url": "https://www.tesla.com/findus/location/supercharger/LaurelMDSupercharger2",
+      "stalls": 6
     },
     {
       "id": "tesla-abingdonmdsupercharger2",
@@ -20341,7 +20602,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/AbingdonMDsupercharger2"
+      "url": "https://www.tesla.com/findus/location/supercharger/AbingdonMDsupercharger2",
+      "stalls": 8
     },
     {
       "id": "tesla-genoaohnbsupercharger",
@@ -20386,7 +20648,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/genoaohnbsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/genoaohnbsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-laurelmdsupercharger",
@@ -20440,7 +20703,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/LaurelMDSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/LaurelMDSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-frederickmdsupercharger2",
@@ -20494,7 +20758,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/FrederickMDSupercharger2"
+      "url": "https://www.tesla.com/findus/location/supercharger/FrederickMDSupercharger2",
+      "stalls": 8
     },
     {
       "id": "tesla-salisburymdsupercharger",
@@ -20539,7 +20804,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/SalisburyMDSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/SalisburyMDSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-genoaohsupercharger",
@@ -20584,7 +20850,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/GenoaOHSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/GenoaOHSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-19540",
@@ -20638,7 +20905,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19540"
+      "url": "https://www.tesla.com/findus/location/supercharger/19540",
+      "stalls": 8
     },
     {
       "id": "tesla-18682",
@@ -20683,7 +20951,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18682"
+      "url": "https://www.tesla.com/findus/location/supercharger/18682",
+      "stalls": 12
     },
     {
       "id": "tesla-32690",
@@ -20728,7 +20997,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32690"
+      "url": "https://www.tesla.com/findus/location/supercharger/32690",
+      "stalls": 12
     },
     {
       "id": "tesla-breezewoodpasupercharger",
@@ -20745,7 +21015,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/BreezewoodPASupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/BreezewoodPASupercharger",
+      "stalls": 12
     },
     {
       "id": "tesla-18707",
@@ -20790,7 +21061,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18707"
+      "url": "https://www.tesla.com/findus/location/supercharger/18707",
+      "stalls": 16
     },
     {
       "id": "tesla-27491",
@@ -20835,7 +21107,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/27491"
+      "url": "https://www.tesla.com/findus/location/supercharger/27491",
+      "stalls": 12
     },
     {
       "id": "tesla-26863",
@@ -20880,7 +21153,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26863"
+      "url": "https://www.tesla.com/findus/location/supercharger/26863",
+      "stalls": 12
     },
     {
       "id": "tesla-20520",
@@ -20925,7 +21199,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/20520"
+      "url": "https://www.tesla.com/findus/location/supercharger/20520",
+      "stalls": 8
     },
     {
       "id": "tesla-26620",
@@ -20970,7 +21245,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26620"
+      "url": "https://www.tesla.com/findus/location/supercharger/26620",
+      "stalls": 8
     },
     {
       "id": "tesla-cranberrytownshippaq322",
@@ -21015,7 +21291,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/CranberryTownshipPAQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/CranberryTownshipPAQ322",
+      "stalls": 12
     },
     {
       "id": "tesla-32910",
@@ -21069,7 +21346,8 @@
           "label": "Evening Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32910"
+      "url": "https://www.tesla.com/findus/location/supercharger/32910",
+      "stalls": 12
     },
     {
       "id": "tesla-59304",
@@ -21123,7 +21401,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59304"
+      "url": "https://www.tesla.com/findus/location/supercharger/59304",
+      "stalls": 8
     },
     {
       "id": "tesla-32906",
@@ -21168,7 +21447,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/32906"
+      "url": "https://www.tesla.com/findus/location/supercharger/32906",
+      "stalls": 8
     },
     {
       "id": "tesla-438546",
@@ -21222,7 +21502,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/438546"
+      "url": "https://www.tesla.com/findus/location/supercharger/438546",
+      "stalls": 12
     },
     {
       "id": "tesla-452652",
@@ -21276,7 +21557,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/452652"
+      "url": "https://www.tesla.com/findus/location/supercharger/452652",
+      "stalls": 20
     },
     {
       "id": "tesla-19510",
@@ -21321,7 +21603,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19510"
+      "url": "https://www.tesla.com/findus/location/supercharger/19510",
+      "stalls": 12
     },
     {
       "id": "tesla-20029",
@@ -21375,7 +21658,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/20029"
+      "url": "https://www.tesla.com/findus/location/supercharger/20029",
+      "stalls": 12
     },
     {
       "id": "tesla-beardeq322",
@@ -21420,7 +21704,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BearDEQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/BearDEQ322",
+      "stalls": 8
     },
     {
       "id": "tesla-philadelphiapasupercharger",
@@ -21465,7 +21750,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/philadelphiapasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/philadelphiapasupercharger",
+      "stalls": 20
     },
     {
       "id": "tesla-bowiemdsupercharger",
@@ -21519,7 +21805,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BowieMDsupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/BowieMDsupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-bensalempasupercharger",
@@ -21564,7 +21851,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/bensalempasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/bensalempasupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-18646",
@@ -21609,7 +21897,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18646"
+      "url": "https://www.tesla.com/findus/location/supercharger/18646",
+      "stalls": 8
     },
     {
       "id": "tesla-33713",
@@ -21654,7 +21943,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33713"
+      "url": "https://www.tesla.com/findus/location/supercharger/33713",
+      "stalls": 12
     },
     {
       "id": "tesla-34052",
@@ -21699,7 +21989,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34052"
+      "url": "https://www.tesla.com/findus/location/supercharger/34052",
+      "stalls": 12
     },
     {
       "id": "tesla-18460",
@@ -21744,7 +22035,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18460"
+      "url": "https://www.tesla.com/findus/location/supercharger/18460",
+      "stalls": 8
     },
     {
       "id": "tesla-34183",
@@ -21762,7 +22054,8 @@
       "mem_off": 0.41,
       "tou_rates": [],
       "url": "https://www.tesla.com/findus/location/supercharger/34183",
-      "is_tou": false
+      "is_tou": false,
+      "stalls": 8
     },
     {
       "id": "tesla-36131",
@@ -21807,7 +22100,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/36131"
+      "url": "https://www.tesla.com/findus/location/supercharger/36131",
+      "stalls": 16
     },
     {
       "id": "tesla-16610",
@@ -21852,7 +22146,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/16610"
+      "url": "https://www.tesla.com/findus/location/supercharger/16610",
+      "stalls": 8
     },
     {
       "id": "tesla-18484",
@@ -21906,7 +22201,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18484"
+      "url": "https://www.tesla.com/findus/location/supercharger/18484",
+      "stalls": 8
     },
     {
       "id": "tesla-18737",
@@ -21951,7 +22247,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18737"
+      "url": "https://www.tesla.com/findus/location/supercharger/18737",
+      "stalls": 12
     },
     {
       "id": "tesla-allentownshantzpasupercharger",
@@ -21996,7 +22293,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/allentownshantzpasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/allentownshantzpasupercharger",
+      "stalls": 12
     },
     {
       "id": "tesla-bethelparkpaq322",
@@ -22041,7 +22339,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BethelParkPAQ322"
+      "url": "https://www.tesla.com/findus/location/supercharger/BethelParkPAQ322",
+      "stalls": 8
     },
     {
       "id": "tesla-millhallpasupercharger",
@@ -22058,7 +22357,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/millhallpasupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/millhallpasupercharger",
+      "stalls": 12
     },
     {
       "id": "tesla-19499",
@@ -22094,7 +22394,8 @@
           "label": "Peak (8am-12am)"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19499"
+      "url": "https://www.tesla.com/findus/location/supercharger/19499",
+      "stalls": 12
     },
     {
       "id": "tesla-26763",
@@ -22139,7 +22440,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26763"
+      "url": "https://www.tesla.com/findus/location/supercharger/26763",
+      "stalls": 8
     },
     {
       "id": "tesla-18683",
@@ -22184,7 +22486,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18683"
+      "url": "https://www.tesla.com/findus/location/supercharger/18683",
+      "stalls": 8
     },
     {
       "id": "tesla-18630",
@@ -22229,7 +22532,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18630"
+      "url": "https://www.tesla.com/findus/location/supercharger/18630",
+      "stalls": 8
     },
     {
       "id": "tesla-broadviewheightsohsupercharger",
@@ -22274,7 +22578,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/BroadviewHeightsOHSupercharger"
+      "url": "https://www.tesla.com/findus/location/supercharger/BroadviewHeightsOHSupercharger",
+      "stalls": 8
     },
     {
       "id": "tesla-19515",
@@ -22319,7 +22624,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/19515"
+      "url": "https://www.tesla.com/findus/location/supercharger/19515",
+      "stalls": 12
     },
     {
       "id": "tesla-18684",
@@ -22364,7 +22670,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/18684"
+      "url": "https://www.tesla.com/findus/location/supercharger/18684",
+      "stalls": 8
     },
     {
       "id": "tesla-59071",
@@ -22409,7 +22716,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59071"
+      "url": "https://www.tesla.com/findus/location/supercharger/59071",
+      "stalls": 12
     },
     {
       "id": "tesla-26760",
@@ -22454,7 +22762,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/26760"
+      "url": "https://www.tesla.com/findus/location/supercharger/26760",
+      "stalls": 8
     },
     {
       "id": "tesla-59079",
@@ -22499,7 +22808,8 @@
           "label": "Mid-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/59079"
+      "url": "https://www.tesla.com/findus/location/supercharger/59079",
+      "stalls": 16
     },
     {
       "id": "tesla-19491",
@@ -22516,7 +22826,8 @@
       "mem_on": 0.41,
       "mem_off": 0.41,
       "tou_rates": [],
-      "url": "https://www.tesla.com/findus/location/supercharger/19491"
+      "url": "https://www.tesla.com/findus/location/supercharger/19491",
+      "stalls": 10
     },
     {
       "id": "tesla-27531",
@@ -22561,7 +22872,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/27531"
+      "url": "https://www.tesla.com/findus/location/supercharger/27531",
+      "stalls": 12
     },
     {
       "id": "tesla-34256",
@@ -22615,7 +22927,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/34256"
+      "url": "https://www.tesla.com/findus/location/supercharger/34256",
+      "stalls": 12
     },
     {
       "id": "tesla-36222",
@@ -22660,7 +22973,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/36222"
+      "url": "https://www.tesla.com/findus/location/supercharger/36222",
+      "stalls": 12
     },
     {
       "id": "tesla-33777",
@@ -22714,7 +23028,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/33777"
+      "url": "https://www.tesla.com/findus/location/supercharger/33777",
+      "stalls": 15
     },
     {
       "id": "tesla-3520",
@@ -22759,7 +23074,8 @@
           "label": "Off-Peak"
         }
       ],
-      "url": "https://www.tesla.com/findus/location/supercharger/3520"
+      "url": "https://www.tesla.com/findus/location/supercharger/3520",
+      "stalls": 8
     }
   ]
 }

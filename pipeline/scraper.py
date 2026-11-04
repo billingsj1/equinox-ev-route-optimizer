@@ -408,6 +408,13 @@ class PricingScraperPipeline:
             is_verified = (verified_price is not None)
             rate_val = verified_price if is_verified else None
 
+            # Extract stall count
+            num_stalls = item.get("NumberOfPoints")
+            if not num_stalls:
+                conns = item.get("Connections", [])
+                total_q = sum(c.get("Quantity") or 0 for c in conns if isinstance(c, dict))
+                num_stalls = total_q if total_q > 0 else 4
+
             new_station = {
                 "id": st_id,
                 "name": f"{network} - {title}",
@@ -417,6 +424,7 @@ class PricingScraperPipeline:
                 "latitude": round(lat, 5),
                 "longitude": round(lon, 5),
                 "power_kw": max_kw,
+                "stalls": num_stalls,
                 "connectors": ["CCS1"],
                 "rate_regular": {
                     "off_peak": rate_val,

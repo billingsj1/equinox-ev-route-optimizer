@@ -9,9 +9,12 @@ import urllib.request
 import websockets
 import sys
 
-PORT = 8794
-CDP = 9294
-USER_DATA_DIR = r"C:\temp\chrome_full_suite_test"
+import sys
+sys.stdout.reconfigure(line_buffering=True)
+
+PORT = 8788
+CDP = 9288
+USER_DATA_DIR = r"C:\temp\chrome_full_suite_88"
 
 class SilentHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args): pass
