@@ -1076,27 +1076,27 @@
   <script>
     // --- VERIFIED CHARGING NETWORK DATABASE (CCS1 / >= 100 kW) ---
     let ALL_STATIONS = [
-      {"id":"ionna-cambridge-oh","name":"IONNA - Cambridge, OH","network":"IONNA","lat":40.0345,"lon":-81.5833,"kw":400,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/454141","stalls":8},
+      {"id":"ionna-cambridge-oh","name":"IONNA - IONNA Rechargery (Cambridge, OH)","network":"IONNA","lat":39.9964,"lon":-81.5741,"city":"Cambridge","state":"OH","kw":400,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/","ocm_id":480313,"stalls":8},
       {"id":"evgo-pilot-belmont-oh","name":"EVgo - Pilot Travel Center - Belmont, OH","network":"EVgo","lat":40.0578,"lon":-81.0507,"city":"Belmont","state":"OH","kw":350,"off":0.53,"on":0.53,"gm":false,"gm_pct":0.0,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/306630","ocm_id":306630,"stalls":4},
       {"id":"mb-washington-pa","name":"Mercedes-Benz HPC - Washington, PA","network":"Mercedes-Benz","lat":40.1740,"lon":-80.2462,"kw":400,"off":0.44,"on":0.44,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/","stalls":4},
       {"id":"ea-belle-vernon-pa","name":"Electrify America - Belle Vernon, PA","network":"Electrify America","lat":40.1265,"lon":-79.8695,"kw":150,"off":0.40,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/237974","stalls":4},
       {"id":"ea-new-stanton-pa","name":"Sheetz / EA - New Stanton, PA","network":"Electrify America","lat":40.2187,"lon":-79.6103,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/451444","stalls":6},
       {"id":"ag-somerset-pa","name":"Applegreen - Somerset, PA (PA Turnpike)","network":"Applegreen","lat":40.0150,"lon":-79.0700,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/421314","stalls":4},
       {"id":"tesla-somerset-pa","name":"Tesla Supercharger (+CCS1) - Somerset, PA","network":"Tesla CCS1","lat":40.0084,"lon":-79.0781,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/somersetsupercharger","stalls":10},
-      {"id":"tesla-mt-laurel-nj","name":"Tesla Supercharger (+CCS1) - Mt Laurel, NJ","network":"Tesla CCS1","lat":39.9337,"lon":-74.9635,"city":"Mt Laurel","state":"NJ","kw":250,"off":0.35,"on":0.51,"gm":false,"ea_pass":false,"mem_off":0.26,"mem_on":0.38,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/406608","tou_rates":[{"start":"00:00","end":"10:00","on":0.35,"off":0.35,"mem_on":0.26,"mem_off":0.26,"label":"Off-Peak","stalls":40},{"start":"10:00","end":"22:00","on":0.51,"off":0.51,"mem_on":0.38,"mem_off":0.38,"label":"Peak"},{"start":"22:00","end":"24:00","on":0.35,"off":0.35,"mem_on":0.26,"mem_off":0.26,"label":"Off-Peak"}]},
-      {"id":"tesla-woodlyn-pa","name":"Tesla Supercharger (+CCS1) - Woodlyn, PA","network":"Tesla CCS1","lat":39.8699,"lon":-75.3530,"city":"Woodlyn","state":"PA","kw":250,"off":0.32,"on":0.62,"gm":false,"ea_pass":false,"mem_off":0.23,"mem_on":0.44,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/59209","tou_rates":[{"start":"00:00","end":"08:00","on":0.32,"off":0.32,"mem_on":0.23,"mem_off":0.23,"label":"Off-Peak","stalls":12},{"start":"08:00","end":"20:00","on":0.62,"off":0.62,"mem_on":0.44,"mem_off":0.44,"label":"Peak"},{"start":"20:00","end":"24:00","on":0.43,"off":0.43,"mem_on":0.31,"mem_off":0.31,"label":"Mid-Peak"}]},
-      {"id":"tesla-cherry-hill-nj","name":"Tesla Supercharger (+CCS1) - Cherry Hill, NJ","network":"Tesla CCS1","lat":39.9259,"lon":-75.0324,"city":"Cherry Hill","state":"NJ","kw":250,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger","tou_rates":[{"start":"00:00","end":"08:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":8},{"start":"08:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"}]},
-      {"id":"tesla-maple-shade-nj","name":"Tesla Supercharger (+CCS1) - Maple Shade, NJ","network":"Tesla CCS1","lat":39.9434,"lon":-74.9694,"city":"Maple Shade","state":"NJ","kw":250,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/26769","tou_rates":[{"start":"00:00","end":"12:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":12},{"start":"12:00","end":"20:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"},{"start":"20:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)"}]},
-            {"id":"tesla-pittsburgh-freeport-pa","name":"Tesla Supercharger (+CCS1) - Pittsburgh (Freeport Rd), PA","network":"Tesla CCS1","lat":40.5374,"lon":-79.8382,"city":"Pittsburgh","state":"PA","kw":250,"off":0.3,"on":0.59,"gm":false,"ea_pass":false,"mem_off":0.22,"mem_on":0.44,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/20506","tou_rates":[{"start": "00:00", "end": "09:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak","stalls":16}, {"start": "09:00", "end": "22:00", "on": 0.59, "off": 0.59, "mem_on": 0.44, "mem_off": 0.44, "label": "Peak"}, {"start": "22:00", "end": "24:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak"}]},
-      {"id":"tesla-summerdale-pa","name":"Tesla Supercharger (+CCS1) - Summerdale / Enola, PA","network":"Tesla CCS1","lat":40.3099,"lon":-76.9246,"city":"Summerdale","state":"PA","kw":325,"off":0.28,"on":0.55,"gm":false,"ea_pass":false,"mem_off":0.21,"mem_on":0.4,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/33951","tou_rates":[{"start": "00:00", "end": "04:00", "on": 0.28, "off": 0.28, "mem_on": 0.21, "mem_off": 0.21, "label": "Night Off-Peak","stalls":8}, {"start": "04:00", "end": "09:00", "on": 0.34, "off": 0.34, "mem_on": 0.25, "mem_off": 0.25, "label": "Morning Off-Peak"}, {"start": "09:00", "end": "20:00", "on": 0.55, "off": 0.55, "mem_on": 0.4, "mem_off": 0.4, "label": "Peak"}, {"start": "20:00", "end": "24:00", "on": 0.46, "off": 0.46, "mem_on": 0.34, "mem_off": 0.34, "label": "Evening Mid-Peak"}]},
-      {"id":"tesla-lawnside-nj","name":"Tesla Supercharger (+CCS1) - Lawnside, NJ","network":"Tesla CCS1","lat":39.8704,"lon":-75.0184,"city":"Lawnside","state":"NJ","kw":325,"off":0.34,"on":0.49,"gm":false,"ea_pass":false,"mem_off":0.25,"mem_on":0.36,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/402407","tou_rates":[{"start": "00:00", "end": "09:00", "on": 0.34, "off": 0.34, "mem_on": 0.25, "mem_off": 0.25, "label": "Off-Peak","stalls":32}, {"start": "09:00", "end": "22:00", "on": 0.49, "off": 0.49, "mem_on": 0.36, "mem_off": 0.36, "label": "Peak"}, {"start": "22:00", "end": "24:00", "on": 0.34, "off": 0.34, "mem_on": 0.25, "mem_off": 0.25, "label": "Off-Peak"}]},
-      {"id":"tesla-aston-pa","name":"Tesla Supercharger (+CCS1) - Aston, PA","network":"Tesla CCS1","lat":39.8435,"lon":-75.4261,"city":"Aston","state":"PA","kw":250,"off":0.28,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.2,"mem_on":0.4,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/35027","tou_rates":[{"start": "00:00", "end": "04:00", "on": 0.28, "off": 0.28, "mem_on": 0.2, "mem_off": 0.2, "label": "Night Off-Peak","stalls":8}, {"start": "04:00", "end": "08:00", "on": 0.4, "off": 0.4, "mem_on": 0.28, "mem_off": 0.28, "label": "Morning Off-Peak"}, {"start": "08:00", "end": "20:00", "on": 0.56, "off": 0.56, "mem_on": 0.4, "mem_off": 0.4, "label": "Peak"}, {"start": "20:00", "end": "24:00", "on": 0.4, "off": 0.4, "mem_on": 0.28, "mem_off": 0.28, "label": "Evening Off-Peak"}]},
-      {"id":"tesla-shrewsbury-pa","name":"Tesla Supercharger (+CCS1) - Shrewsbury, PA","network":"Tesla CCS1","lat":39.7688,"lon":-76.6698,"city":"Shrewsbury","state":"PA","kw":325,"off":0.3,"on":0.68,"gm":false,"ea_pass":false,"mem_off":0.22,"mem_on":0.49,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/36287","tou_rates":[{"start": "00:00", "end": "08:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak","stalls":12}, {"start": "08:00", "end": "22:00", "on": 0.68, "off": 0.68, "mem_on": 0.49, "mem_off": 0.49, "label": "Peak"}, {"start": "22:00", "end": "24:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak"}]},
-      {"id":"tesla-timonium-md","name":"Tesla Supercharger (+CCS1) - Timonium, MD","network":"Tesla CCS1","lat":39.4559,"lon":-76.6365,"city":"Timonium","state":"MD","kw":325,"off":0.38,"on":0.6,"gm":false,"ea_pass":false,"mem_off":0.27,"mem_on":0.43,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/33688","tou_rates":[{"start": "00:00", "end": "08:00", "on": 0.38, "off": 0.38, "mem_on": 0.27, "mem_off": 0.27, "label": "Off-Peak","stalls":12}, {"start": "08:00", "end": "19:00", "on": 0.6, "off": 0.6, "mem_on": 0.43, "mem_off": 0.43, "label": "Day Peak"}, {"start": "19:00", "end": "23:00", "on": 0.53, "off": 0.53, "mem_on": 0.38, "mem_off": 0.38, "label": "Evening Mid-Peak"}, {"start": "23:00", "end": "24:00", "on": 0.38, "off": 0.38, "mem_on": 0.27, "mem_off": 0.27, "label": "Off-Peak"}]},
+      {"id":"tesla-mt-laurel-nj","name":"Tesla Supercharger (+CCS1) - Mt Laurel, NJ","network":"Tesla CCS1","lat":39.9337,"lon":-74.9635,"city":"Mt Laurel","state":"NJ","kw":250,"stalls":40,"off":0.35,"on":0.51,"gm":false,"ea_pass":false,"mem_off":0.26,"mem_on":0.38,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/406608","tou_rates":[{"start":"00:00","end":"10:00","on":0.35,"off":0.35,"mem_on":0.26,"mem_off":0.26,"label":"Off-Peak","stalls":40},{"start":"10:00","end":"22:00","on":0.51,"off":0.51,"mem_on":0.38,"mem_off":0.38,"label":"Peak"},{"start":"22:00","end":"24:00","on":0.35,"off":0.35,"mem_on":0.26,"mem_off":0.26,"label":"Off-Peak"}]},
+      {"id":"tesla-woodlyn-pa","name":"Tesla Supercharger (+CCS1) - Woodlyn, PA","network":"Tesla CCS1","lat":39.8699,"lon":-75.3530,"city":"Woodlyn","state":"PA","kw":250,"stalls":12,"off":0.32,"on":0.62,"gm":false,"ea_pass":false,"mem_off":0.23,"mem_on":0.44,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/59209","tou_rates":[{"start":"00:00","end":"08:00","on":0.32,"off":0.32,"mem_on":0.23,"mem_off":0.23,"label":"Off-Peak","stalls":12},{"start":"08:00","end":"20:00","on":0.62,"off":0.62,"mem_on":0.44,"mem_off":0.44,"label":"Peak"},{"start":"20:00","end":"24:00","on":0.43,"off":0.43,"mem_on":0.31,"mem_off":0.31,"label":"Mid-Peak"}]},
+      {"id":"tesla-cherry-hill-nj","name":"Tesla Supercharger (+CCS1) - Cherry Hill, NJ","network":"Tesla CCS1","lat":39.9259,"lon":-75.0324,"city":"Cherry Hill","state":"NJ","kw":250,"stalls":8,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger","tou_rates":[{"start":"00:00","end":"08:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":8},{"start":"08:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"}]},
+      {"id":"tesla-maple-shade-nj","name":"Tesla Supercharger (+CCS1) - Maple Shade, NJ","network":"Tesla CCS1","lat":39.9434,"lon":-74.9694,"city":"Maple Shade","state":"NJ","kw":250,"stalls":12,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/26769","tou_rates":[{"start":"00:00","end":"12:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":12},{"start":"12:00","end":"20:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"},{"start":"20:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)"}]},
+            {"id":"tesla-pittsburgh-freeport-pa","name":"Tesla Supercharger (+CCS1) - Pittsburgh (Freeport Rd), PA","network":"Tesla CCS1","lat":40.5374,"lon":-79.8382,"city":"Pittsburgh","state":"PA","kw":250,"stalls":8,"off":0.3,"on":0.59,"gm":false,"ea_pass":false,"mem_off":0.22,"mem_on":0.44,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/20506","tou_rates":[{"start": "00:00", "end": "09:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak","stalls":16}, {"start": "09:00", "end": "22:00", "on": 0.59, "off": 0.59, "mem_on": 0.44, "mem_off": 0.44, "label": "Peak"}, {"start": "22:00", "end": "24:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak"}]},
+      {"id":"tesla-summerdale-pa","name":"Tesla Supercharger (+CCS1) - Summerdale / Enola, PA","network":"Tesla CCS1","lat":40.3099,"lon":-76.9246,"city":"Summerdale","state":"PA","kw":325,"stalls":8,"off":0.28,"on":0.55,"gm":false,"ea_pass":false,"mem_off":0.21,"mem_on":0.4,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/33951","tou_rates":[{"start": "00:00", "end": "04:00", "on": 0.28, "off": 0.28, "mem_on": 0.21, "mem_off": 0.21, "label": "Night Off-Peak","stalls":8}, {"start": "04:00", "end": "09:00", "on": 0.34, "off": 0.34, "mem_on": 0.25, "mem_off": 0.25, "label": "Morning Off-Peak"}, {"start": "09:00", "end": "20:00", "on": 0.55, "off": 0.55, "mem_on": 0.4, "mem_off": 0.4, "label": "Peak"}, {"start": "20:00", "end": "24:00", "on": 0.46, "off": 0.46, "mem_on": 0.34, "mem_off": 0.34, "label": "Evening Mid-Peak"}]},
+      {"id":"tesla-lawnside-nj","name":"Tesla Supercharger (+CCS1) - Lawnside, NJ","network":"Tesla CCS1","lat":39.8704,"lon":-75.0184,"city":"Lawnside","state":"NJ","kw":325,"stalls":8,"off":0.34,"on":0.49,"gm":false,"ea_pass":false,"mem_off":0.25,"mem_on":0.36,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/402407","tou_rates":[{"start": "00:00", "end": "09:00", "on": 0.34, "off": 0.34, "mem_on": 0.25, "mem_off": 0.25, "label": "Off-Peak","stalls":32}, {"start": "09:00", "end": "22:00", "on": 0.49, "off": 0.49, "mem_on": 0.36, "mem_off": 0.36, "label": "Peak"}, {"start": "22:00", "end": "24:00", "on": 0.34, "off": 0.34, "mem_on": 0.25, "mem_off": 0.25, "label": "Off-Peak"}]},
+      {"id":"tesla-aston-pa","name":"Tesla Supercharger (+CCS1) - Aston, PA","network":"Tesla CCS1","lat":39.8435,"lon":-75.4261,"city":"Aston","state":"PA","kw":250,"stalls":8,"off":0.28,"on":0.56,"gm":false,"ea_pass":false,"mem_off":0.2,"mem_on":0.4,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/35027","tou_rates":[{"start": "00:00", "end": "04:00", "on": 0.28, "off": 0.28, "mem_on": 0.2, "mem_off": 0.2, "label": "Night Off-Peak","stalls":8}, {"start": "04:00", "end": "08:00", "on": 0.4, "off": 0.4, "mem_on": 0.28, "mem_off": 0.28, "label": "Morning Off-Peak"}, {"start": "08:00", "end": "20:00", "on": 0.56, "off": 0.56, "mem_on": 0.4, "mem_off": 0.4, "label": "Peak"}, {"start": "20:00", "end": "24:00", "on": 0.4, "off": 0.4, "mem_on": 0.28, "mem_off": 0.28, "label": "Evening Off-Peak"}]},
+      {"id":"tesla-shrewsbury-pa","name":"Tesla Supercharger (+CCS1) - Shrewsbury, PA","network":"Tesla CCS1","lat":39.7688,"lon":-76.6698,"city":"Shrewsbury","state":"PA","kw":325,"stalls":8,"off":0.3,"on":0.68,"gm":false,"ea_pass":false,"mem_off":0.22,"mem_on":0.49,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/36287","tou_rates":[{"start": "00:00", "end": "08:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak","stalls":12}, {"start": "08:00", "end": "22:00", "on": 0.68, "off": 0.68, "mem_on": 0.49, "mem_off": 0.49, "label": "Peak"}, {"start": "22:00", "end": "24:00", "on": 0.3, "off": 0.3, "mem_on": 0.22, "mem_off": 0.22, "label": "Off-Peak"}]},
+      {"id":"tesla-timonium-md","name":"Tesla Supercharger (+CCS1) - Timonium, MD","network":"Tesla CCS1","lat":39.4559,"lon":-76.6365,"city":"Timonium","state":"MD","kw":325,"stalls":8,"off":0.38,"on":0.6,"gm":false,"ea_pass":false,"mem_off":0.27,"mem_on":0.43,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/33688","tou_rates":[{"start": "00:00", "end": "08:00", "on": 0.38, "off": 0.38, "mem_on": 0.27, "mem_off": 0.27, "label": "Off-Peak","stalls":12}, {"start": "08:00", "end": "19:00", "on": 0.6, "off": 0.6, "mem_on": 0.43, "mem_off": 0.43, "label": "Day Peak"}, {"start": "19:00", "end": "23:00", "on": 0.53, "off": 0.53, "mem_on": 0.38, "mem_off": 0.38, "label": "Evening Mid-Peak"}, {"start": "23:00", "end": "24:00", "on": 0.38, "off": 0.38, "mem_on": 0.27, "mem_off": 0.27, "label": "Off-Peak"}]},
       {"id":"tesla-waynesburg-pa","name":"Tesla Supercharger (+CCS1) - Waynesburg, PA","network":"Tesla CCS1","lat":39.8978,"lon":-80.1345,"city":"Waynesburg","state":"PA","kw":325,"off":0.57,"on":0.57,"gm":false,"ea_pass":false,"mem_off":0.41,"mem_on":0.41,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/401410","stalls":12},
-      {"id":"tesla-medford-nj","name":"Tesla Supercharger (+CCS1) - Medford, NJ","network":"Tesla CCS1","lat":39.9046,"lon":-74.8051,"city":"Medford","state":"NJ","kw":250,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/19516","tou_rates":[{"start":"00:00","end":"17:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":12},{"start":"17:00","end":"19:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"},{"start":"19:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)"}]},
-      {"id":"tesla-hamilton-nj","name":"Tesla Supercharger (+CCS1) - Hamilton Township, NJ","network":"Tesla CCS1","lat":40.1923,"lon":-74.6467,"city":"Hamilton Township","state":"NJ","kw":325,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/424861","tou_rates":[{"start":"00:00","end":"08:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":12},{"start":"08:00","end":"23:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"},{"start":"23:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)"}]},
-      {"id":"tesla-blackwood-nj","name":"Tesla Supercharger (+CCS1) - Blackwood, NJ","network":"Tesla CCS1","lat":39.7866,"lon":-75.0546,"city":"Blackwood","state":"NJ","kw":250,"off":0.38,"on":0.73,"gm":false,"ea_pass":false,"mem_off":0.27,"mem_on":0.52,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/59126","tou_rates":[{"start":"00:00","end":"08:00","on":0.38,"off":0.38,"mem_on":0.27,"mem_off":0.27,"label":"Off-Peak","stalls":16},{"start":"08:00","end":"23:00","on":0.73,"off":0.73,"mem_on":0.52,"mem_off":0.52,"label":"Peak"},{"start":"23:00","end":"24:00","on":0.38,"off":0.38,"mem_on":0.27,"mem_off":0.27,"label":"Off-Peak"}]},
+      {"id":"tesla-medford-nj","name":"Tesla Supercharger (+CCS1) - Medford, NJ","network":"Tesla CCS1","lat":39.9046,"lon":-74.8051,"city":"Medford","state":"NJ","kw":250,"stalls":8,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/19516","tou_rates":[{"start":"00:00","end":"17:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":12},{"start":"17:00","end":"19:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"},{"start":"19:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)"}]},
+      {"id":"tesla-hamilton-nj","name":"Tesla Supercharger (+CCS1) - Hamilton Township, NJ","network":"Tesla CCS1","lat":40.1923,"lon":-74.6467,"city":"Hamilton Township","state":"NJ","kw":325,"stalls":12,"off":0.72,"on":0.72,"gm":false,"ea_pass":false,"mem_off":0.34,"mem_on":0.48,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/424861","tou_rates":[{"start":"00:00","end":"08:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)","stalls":12},{"start":"08:00","end":"23:00","on":0.72,"off":0.72,"mem_on":0.48,"mem_off":0.48,"label":"Normal Congestion (20-60%)"},{"start":"23:00","end":"24:00","on":0.72,"off":0.72,"mem_on":0.34,"mem_off":0.34,"label":"Low Congestion (<20%)"}]},
+      {"id":"tesla-blackwood-nj","name":"Tesla Supercharger (+CCS1) - Blackwood, NJ","network":"Tesla CCS1","lat":39.7866,"lon":-75.0546,"city":"Blackwood","state":"NJ","kw":250,"stalls":8,"off":0.38,"on":0.73,"gm":false,"ea_pass":false,"mem_off":0.27,"mem_on":0.52,"price_verified":true,"plug":"https://www.tesla.com/findus/location/supercharger/59126","tou_rates":[{"start":"00:00","end":"08:00","on":0.38,"off":0.38,"mem_on":0.27,"mem_off":0.27,"label":"Off-Peak","stalls":16},{"start":"08:00","end":"23:00","on":0.73,"off":0.73,"mem_on":0.52,"mem_off":0.52,"label":"Peak"},{"start":"23:00","end":"24:00","on":0.38,"off":0.38,"mem_on":0.27,"mem_off":0.27,"label":"Off-Peak"}]},
       {"id":"cp-frostburg-md","name":"ChargePoint - Frostburg, MD (I-68)","network":"ChargePoint","lat":39.6582,"lon":-78.9284,"kw":125,"off":0.34,"on":0.34,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/338694","stalls":2},
       {"id":"ea-bedford-pa","name":"Electrify America - Sheetz 352 - Bedford, PA","network":"Electrify America","lat":40.0535,"lon":-78.5105,"kw":150,"off":0.60,"on":0.60,"gm":false,"ea_pass":true,"price_verified":true,"ocm_id":142118,"plug":"https://dcfctracker.com/stations/167187","stalls":6},
       {"id":"ag-bedford-pa","name":"Applegreen - Bedford, PA (PA Turnpike)","network":"Applegreen","lat":40.0210,"lon":-78.4980,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/1820129","stalls":4},
@@ -1107,11 +1107,11 @@
       {"id":"ea-hagerstown-md","name":"Electrify America - Hagerstown, MD (I-68/I-70)","network":"Electrify America","lat":39.6418,"lon":-77.7200,"kw":150,"off":0.56,"on":0.56,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/170350","stalls":4},
       {"id":"fe-newburg-pa","name":"Francis Energy - Newburg, PA","network":"Francis Energy","lat":40.1340,"lon":-77.5560,"kw":150,"off":0.54,"on":0.54,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/446568","stalls":4},
       {"id":"ag-newburg-pa","name":"Applegreen - Newburg, PA (PA Turnpike)","network":"Applegreen","lat":40.1350,"lon":-77.5500,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/743932","stalls":4},
-      {"id":"ionna-frederick-md","name":"IONNA - Frederick, MD (I-70)","network":"IONNA","lat":39.4143,"lon":-77.4105,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/462541","stalls":8},
+      {"id":"ionna-frederick-md","name":"IONNA - IONNA Rechargery (Frederick, MD)","network":"IONNA","lat":39.4186,"lon":-77.4596,"city":"Frederick","state":"MD","kw":400,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.ionna.com/ev-charging-stations/md/frederick/1390-w-patrick-st-21703/","stalls":8},
       {"id":"ea-carlisle-pa","name":"Electrify America - Carlisle, PA","network":"Electrify America","lat":40.2014,"lon":-77.1889,"kw":150,"off":0.44,"on":0.64,"gm":false,"ea_pass":true,"price_verified":true,"plug":"https://dcfctracker.com/stations/121756","stalls":4},
       {"id":"ag-middletown-pa","name":"Applegreen - Middletown, PA (PA Turnpike)","network":"Applegreen","lat":40.1989,"lon":-76.7314,"kw":150,"off":0.59,"on":0.59,"gm":false,"ea_pass":false,"price_verified":true,"plug":"https://www.plugshare.com/location/631745","stalls":4},
-      {"id":"ionna-elkton-md","name":"IONNA - Elkton, MD","network":"IONNA","lat":39.6068,"lon":-75.8333,"kw":150,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/448358","stalls":10},
-      {"id":"ionna-chester-springs-pa","name":"IONNA - Chester Springs, PA","network":"IONNA","lat":40.0934,"lon":-75.6268,"kw":400,"off":0.35,"on":0.35,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/448302","stalls":8},
+      {"id":"ionna-elkton-md","name":"IONNA - IONNA Rechargery (Elkton, MD)","network":"IONNA","lat":39.6529,"lon":-75.7913,"city":"Elkton","state":"MD","kw":400,"off":0.39,"on":0.39,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.ionna.com/ev-charging-stations/md/elkton/1657-elkton-rd-21921/","ocm_id":478547,"stalls":8},
+      {"id":"ionna-chester-springs-pa","name":"IONNA - IONNA Rechargery (Chester Springs, PA)","network":"IONNA","lat":40.0748,"lon":-75.6859,"city":"Chester Springs","state":"PA","kw":400,"off":0.35,"on":0.35,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://www.ionna.com/ev-charging-stations/pa/chester-springs/1800-ticonderoga-blvd-19425/","ocm_id":471938,"stalls":8},
       {"id":"evgo-pilot-marengo-oh","name":"EVgo - Pilot Travel Center - Marengo, OH","network":"EVgo","lat":40.3713,"lon":-82.8309,"city":"Marengo","state":"OH","kw":350,"off":0.69,"on":0.69,"gm":false,"gm_pct":0.0,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/347668","ocm_id":306512,"stalls":6},
       {"id":"evgo-farley-nj","name":"EVgo - Farley Travel Plaza, NJ","network":"EVgo","lat":39.5507,"lon":-74.7349,"city":"Hammonton","state":"NJ","kw":350,"off":0.66,"on":0.66,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/228536","ocm_id":225139,"stalls":4},
       {"id":"evgo-hollinswood-md","name":"EVgo - Hollinswood Shopping Center, MD","network":"EVgo","lat":39.2503,"lon":-76.6434,"city":"Baltimore","state":"MD","kw":350,"off":0.61,"on":0.61,"gm":true,"gm_pct":0.10,"ea_pass":false,"price_verified":true,"plug":"https://dcfctracker.com/stations/322293","ocm_id":294317,"stalls":6},
@@ -20647,7 +20647,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     }
 
         // Blacklisted stations (e.g. non-existent fake OCM stations, closed sites, or excluded locations)
-    const BLOCKED_OCM_IDS = [307653, 285227, 307817]; 
+    const BLOCKED_OCM_IDS = [307653, 285227, 307817];
+    // Inaccurate DCFC Tracker station IDs (centroids / stale duplicates superseded by official feeds)
+    const BLOCKED_DCFC_IDS = [454141, 448302, 448358, 462541]; 
     // 307653 = Fake IONNA Huber Heights
     // 285227 = Menlo Park Mall closed EVgo
     // 307817 = Myerstown EVgo GM Energy (excluded)
@@ -20658,6 +20660,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // Check OCM ID
       const rawId = st.ocm_id || st.ID || (typeof st.id === 'string' && st.id.startsWith('ocm-') ? st.id.replace('ocm-', '') : null);
       if (rawId && BLOCKED_OCM_IDS.some(id => String(id) === String(rawId))) return true;
+
+      // Check DCFC Tracker ID and blocked DCFC URLs
+      const rawDcfcId = st.dcfc_id || (typeof st.id === 'string' && st.id.startsWith('dcfc-') ? st.id.replace('dcfc-', '') : null);
+      if (rawDcfcId && BLOCKED_DCFC_IDS.some(id => String(id) === String(rawDcfcId))) return true;
+      if (st.plug && BLOCKED_DCFC_IDS.some(id => st.plug.includes(`/stations/${id}`))) return true;
+      if (st.name === 'IONNA - Cambridge, OH' || st.name === 'IONNA - Chester Springs, PA') return true;
 
       // Check all possible text fields
       const addr = st.AddressInfo || {};
@@ -20716,6 +20724,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       }
 
+      // 1b. Specific cleanup of obsolete DCFC duplicate variants of IONNA
+      for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
+        const s = ALL_STATIONS[i];
+        if (s.name === 'IONNA - Cambridge, OH' || (s.plug && s.plug.includes('454141'))) {
+          ALL_STATIONS.splice(i, 1);
+        } else if (s.name === 'IONNA - Chester Springs, PA' || (s.plug && s.plug.includes('448302'))) {
+          ALL_STATIONS.splice(i, 1);
+        }
+      }
+
       // 2. Specific fix for duplicate Bedford EA
       const eaSheetzBedford = ALL_STATIONS.find(s => s.ocm_id === 142118 || (s.name && s.name.toLowerCase().includes('sheetz 352') && s.network === 'Electrify America'));
       for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
@@ -20739,13 +20757,23 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const b = ALL_STATIONS[j];
           if (a.network === b.network) {
             const dist = haversineMiles(a.lat, a.lon, b.lat, b.lon);
-            if (dist < 0.35) {
-              if (a.price_verified && !b.price_verified) {
+            const maxDupDist = (a.network === 'IONNA') ? 3.5 : 0.35;
+            if (dist < maxDupDist) {
+              // Prefer official ionna.com plug URL and exact coords
+              if (a.plug && a.plug.includes('ionna.com') && (!b.plug || !b.plug.includes('ionna.com'))) {
+                b.name = a.name;
+                b.lat = a.lat;
+                b.lon = a.lon;
+                b.plug = a.plug;
+                b.kw = a.kw || b.kw;
+                b.stalls = a.stalls || b.stalls;
+                b.price_verified = true;
+              } else if (a.price_verified && !b.price_verified) {
                 b.on = a.on; b.off = a.off; b.mem_on = a.mem_on; b.mem_off = a.mem_off;
                 b.price_verified = true; b.plug = a.plug;
               }
               if (a.ocm_id && !b.ocm_id) b.ocm_id = a.ocm_id;
-              if (a.name.length > b.name.length) b.name = a.name;
+              if (a.name.length > b.name.length && !b.name.includes('Rechargery')) b.name = a.name;
               ALL_STATIONS.splice(i, 1);
               break;
             }
@@ -20810,7 +20838,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       'cp-hancock-md': { on: 0.40, off: 0.40, url: 'https://driver.chargepoint.com/stations/13210691', verified: true },
       'ag-waterfall-pa': { on: 0.55, off: 0.55, url: 'https://dcfctracker.com/stations/451875', verified: true },
       'ea-belle-vernon-pa': { on: 0.60, off: 0.40, url: 'https://dcfctracker.com/stations/237974', verified: true },
-      'ionna-cambridge-oh': { on: 0.39, off: 0.39, url: 'https://dcfctracker.com/stations/454141', verified: true },
+      'ionna-cambridge-oh': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/', verified: true },
+      'ionna-chester-springs-pa': { on: 0.35, off: 0.35, url: 'https://www.ionna.com/ev-charging-stations/pa/chester-springs/1800-ticonderoga-blvd-19425/', verified: true },
+      'ionna-frederick-md': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/md/frederick/1390-w-patrick-st-21703/', verified: true },
+      'ionna-elkton-md': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/md/elkton/1657-elkton-rd-21921/', verified: true },
       'evgo-pilot-belmont-oh': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
       'ocm-306630': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
       'mb-washington-pa': { on: 0.44, off: 0.44, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
@@ -20909,7 +20940,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // 3. Check IONNA real scraped stations
       if (station.network === 'IONNA' && db && db.ionna && station.lat && station.lon) {
         for (const ion of db.ionna) {
-          if (haversineMiles(station.lat, station.lon, ion.lat, ion.lon) < 1.0) {
+          if (haversineMiles(station.lat, station.lon, ion.lat, ion.lon) < 2.5) {
             return {
               on: ion.price,
               off: ion.price,
@@ -20917,6 +20948,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               mem_off: Math.round(ion.price * 0.90 * 100) / 100,
               gm: true,
               gm_pct: 0.10,
+              stalls: ion.stalls || 8,
               url: ion.url,
               verified: true
             };
@@ -20924,8 +20956,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       }
 
-      // 3. Check DCFC Tracker real scraped stations (network + state + address / name match)
-      if (db && db.dcfc && Array.isArray(db.dcfc)) {
+      // 4. Check DCFC Tracker real scraped stations (network + state + address / name match)
+      // Never match IONNA stations against DCFC tracker (scraped directly from ionna.com)
+      if (station.network !== 'IONNA' && !((station.name || '').toLowerCase().includes('ionna')) && db && db.dcfc && Array.isArray(db.dcfc)) {
         const netLower = (station.network || '').toLowerCase();
         const stUpper = (station.state || '').trim().toUpperCase();
         const stTitle = (station.name || station.title || '').toLowerCase();
@@ -21176,8 +21209,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
 
                   const exists = ALL_STATIONS.some(s =>
-                    (s.ocm_id && poi.ID && s.ocm_id === poi.ID) ||
-                    (s.network === network && haversineMiles(s.lat, s.lon, lat, lon) < 0.5) ||
+                    (s.ocm_id && poi.ID && String(s.ocm_id) === String(poi.ID)) ||
+                    (s.network === network && haversineMiles(s.lat, s.lon, lat, lon) < (network === 'IONNA' ? 3.5 : 0.5)) ||
                     haversineMiles(s.lat, s.lon, lat, lon) < 0.35
                   );
 

@@ -50,6 +50,12 @@ class DCFCTrackerAdapter(BaseNetworkAdapter):
                         network = net_match.group(1).strip() if net_match else "Other"
                         name = name_match.group(1).strip() if name_match else "DCFC Station"
                         addr = addr_match.group(1).strip() if addr_match else ""
+
+                        # Never scrape IONNA from DCFC Tracker (approximate centroids & stale rates).
+                        # IONNA is scraped directly via IONNAAdapter from ionna.com.
+                        if network.upper() == "IONNA" or "IONNA" in name.upper() or "IONNA" in addr.upper():
+                            continue
+
                         power = float(kw_match.group(1)) if kw_match else 150.0
 
                         stalls_match = re.search(r'>Stalls</p>\s*<p[^>]*>(\d+)</p>', card) or re.search(r'(\d+)\s*(?:DC\s+fast\s+)?stalls', card, re.I)

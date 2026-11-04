@@ -118,15 +118,6 @@
       "url": "https://dcfctracker.com/stations/102386"
     },
     {
-      "dcfc_id": "457624",
-      "network": "IONNA",
-      "name": "Bensalem, PA Rechargery Relay - Bristol Road",
-      "address": "2200 Bristol Road, 19020",
-      "state": "PA",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/457624"
-    },
-    {
       "dcfc_id": "421303",
       "network": "Tesla",
       "name": "Bensalem, PA - Bristol Pike - Tesla Supercharger",
@@ -260,15 +251,6 @@
       "state": "PA",
       "price": 0.58,
       "url": "https://dcfctracker.com/stations/222805"
-    },
-    {
-      "dcfc_id": "448339",
-      "network": "IONNA",
-      "name": "Bridgeville, PA Rechargery @ Sheetz - Washington Pike",
-      "address": "1297 Washington Pike, 15017",
-      "state": "PA",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/448339"
     },
     {
       "dcfc_id": "322285",
@@ -449,15 +431,6 @@
       "state": "PA",
       "price": 0.58,
       "url": "https://dcfctracker.com/stations/416451"
-    },
-    {
-      "dcfc_id": "448302",
-      "network": "IONNA",
-      "name": "Chester Springs, PA Rechargery Relay @ Wawa - Ticonderoga Blvd",
-      "address": "1800 Ticonderoga Blvd, 19425",
-      "state": "PA",
-      "price": 0.35,
-      "url": "https://dcfctracker.com/stations/448302"
     },
     {
       "dcfc_id": "237635",
@@ -1216,15 +1189,6 @@
       "url": "https://dcfctracker.com/stations/121758"
     },
     {
-      "dcfc_id": "460715",
-      "network": "IONNA",
-      "name": "King of Prussia, PA Rechargery Relay @ Wawa - W DeKalb Pike.",
-      "address": "145 W DeKalb Pike, 19406",
-      "state": "PA",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/460715"
-    },
-    {
       "dcfc_id": "396216",
       "network": "Rivian",
       "name": "King of Prussia, PA",
@@ -1241,15 +1205,6 @@
       "state": "PA",
       "price": 0.44,
       "url": "https://dcfctracker.com/stations/190476"
-    },
-    {
-      "dcfc_id": "421815",
-      "network": "IONNA",
-      "name": "Kutztown, PA Rechargery @ Sheetz - Golden Key Rd",
-      "address": "2298 Golden Key Rd, 19530",
-      "state": "PA",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/421815"
     },
     {
       "dcfc_id": "388234",
@@ -2296,15 +2251,6 @@
       "url": "https://dcfctracker.com/stations/405696"
     },
     {
-      "dcfc_id": "449286",
-      "network": "IONNA",
-      "name": "Reading, PA Rechargery Relay @ Wawa - N 11th St.",
-      "address": "1946 N 11th St, 19604",
-      "state": "PA",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/449286"
-    },
-    {
       "dcfc_id": "206270",
       "network": "Tesla",
       "name": "Reading, PA - Tesla Supercharger",
@@ -2366,15 +2312,6 @@
       "state": "PA",
       "price": 0.56,
       "url": "https://dcfctracker.com/stations/202564"
-    },
-    {
-      "dcfc_id": "390097",
-      "network": "IONNA",
-      "name": "Scranton, PA Rechargery @ Sheetz - Scranton Carbondale Hwy",
-      "address": "610 Scranton Carbondale Highway, 18508",
-      "state": "PA",
-      "price": 0.35,
-      "url": "https://dcfctracker.com/stations/390097"
     },
     {
       "dcfc_id": "353788",
@@ -3230,15 +3167,6 @@
       "state": "OH",
       "price": 0.48,
       "url": "https://dcfctracker.com/stations/121759"
-    },
-    {
-      "dcfc_id": "454141",
-      "network": "IONNA",
-      "name": "Cambridge, OH Rechargery Relay - Southgate Rd",
-      "address": "61600 Southgate Rd, 43725",
-      "state": "OH",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/454141"
     },
     {
       "dcfc_id": "102353",
@@ -4366,15 +4294,6 @@
       "url": "https://dcfctracker.com/stations/389363"
     },
     {
-      "dcfc_id": "454179",
-      "network": "IONNA",
-      "name": "Lima, OH Rechargery Relay @ Wawa - W Breese Rd",
-      "address": "1355 W Breese Rd, 45804",
-      "state": "OH",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/454179"
-    },
-    {
       "dcfc_id": "102357",
       "network": "Tesla",
       "name": "Lima, OH - Tesla Supercharger",
@@ -4472,15 +4391,6 @@
       "state": "OH",
       "price": 0.5,
       "url": "https://dcfctracker.com/stations/225964"
-    },
-    {
-      "dcfc_id": "404843",
-      "network": "IONNA",
-      "name": "Massillon, OH Rechargery @ Sheetz - Erie Ave SW",
-      "address": "3544 Erie Ave SW, 44646",
-      "state": "OH",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/404843"
     },
     {
       "dcfc_id": "391241",
@@ -4762,15 +4672,6 @@
       "url": "https://dcfctracker.com/stations/356060"
     },
     {
-      "dcfc_id": "398339",
-      "network": "IONNA",
-      "name": "Obetz, OH Rechargery @ Sheetz - Alum Creek Dr",
-      "address": "4375 Alum Creek Dr, 43207",
-      "state": "OH",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/398339"
-    },
-    {
       "dcfc_id": "422192",
       "network": "Tesla",
       "name": "Meijer - Tesla Supercharger",
@@ -4823,15 +4724,6 @@
       "state": "OH",
       "price": 0.3,
       "url": "https://dcfctracker.com/stations/144139"
-    },
-    {
-      "dcfc_id": "390196",
-      "network": "IONNA",
-      "name": "Reynoldsburg, OH Rechargery - Brice Rd",
-      "address": "2727 Brice Road, 43232",
-      "state": "OH",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/390196"
     },
     {
       "dcfc_id": "311989",
@@ -4913,15 +4805,6 @@
       "state": "OH",
       "price": 0.58,
       "url": "https://dcfctracker.com/stations/355166"
-    },
-    {
-      "dcfc_id": "390099",
-      "network": "IONNA",
-      "name": "Springfield, OH Rechargery @ Sheetz - Titus Rd",
-      "address": "1751 Titus Rd, 45502",
-      "state": "OH",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/390099"
     },
     {
       "dcfc_id": "259318",
@@ -5147,15 +5030,6 @@
       "state": "OH",
       "price": 0.65,
       "url": "https://dcfctracker.com/stations/261472"
-    },
-    {
-      "dcfc_id": "390098",
-      "network": "IONNA",
-      "name": "Willoughby, OH Rechargery @ Sheetz - OH 306",
-      "address": "4145 OH 306, 44094",
-      "state": "OH",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/390098"
     },
     {
       "dcfc_id": "327425",
@@ -5968,15 +5842,6 @@
       "url": "https://dcfctracker.com/stations/387078"
     },
     {
-      "dcfc_id": "448358",
-      "network": "IONNA",
-      "name": "Elkton, MD Rechargery Relay @ Wawa - Elkton Rd",
-      "address": "1657 Elkton Rd, 21921",
-      "state": "MD",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/448358"
-    },
-    {
       "dcfc_id": "445848",
       "network": "Pilot Flying J",
       "name": "Flying J 875",
@@ -6067,15 +5932,6 @@
       "url": "https://dcfctracker.com/stations/170007"
     },
     {
-      "dcfc_id": "462541",
-      "network": "IONNA",
-      "name": "Frederick, MD Rechargery Relay - W Patrick St",
-      "address": "1390 W Patrick St, 21703",
-      "state": "MD",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/462541"
-    },
-    {
       "dcfc_id": "330977",
       "network": "Tesla",
       "name": "Frederick, MD - Ballenger Creek Pike - Tesla Supercharger",
@@ -6155,15 +6011,6 @@
       "state": "MD",
       "price": 0.61,
       "url": "https://dcfctracker.com/stations/228784"
-    },
-    {
-      "dcfc_id": "448404",
-      "network": "IONNA",
-      "name": "Gaithersburg, MD Rechargery Relay - S Frederick Ave",
-      "address": "16529 S Frederick Ave, 20877",
-      "state": "MD",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/448404"
     },
     {
       "dcfc_id": "102208",
@@ -6578,15 +6425,6 @@
       "state": "MD",
       "price": 0.54,
       "url": "https://dcfctracker.com/stations/296731"
-    },
-    {
-      "dcfc_id": "428658",
-      "network": "IONNA",
-      "name": "Middletown, MD Rechargery Relay - Middletown Pkwy",
-      "address": "300 Middletown Pkwy, 21769",
-      "state": "MD",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/428658"
     },
     {
       "dcfc_id": "308779",
@@ -7435,15 +7273,6 @@
       "url": "https://dcfctracker.com/stations/149262"
     },
     {
-      "dcfc_id": "454145",
-      "network": "IONNA",
-      "name": "Cherry Hill, NJ Rechargery @ Wawa - Marlton Pike East",
-      "address": "1824 Marlton Pike E, 08003",
-      "state": "NJ",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/454145"
-    },
-    {
       "dcfc_id": "190474",
       "network": "Tesla",
       "name": "Cherry Hill, NJ - Haddonfield Road - Tesla Supercharger",
@@ -7919,15 +7748,6 @@
       "state": "NJ",
       "price": 0.29,
       "url": "https://dcfctracker.com/stations/260994"
-    },
-    {
-      "dcfc_id": "449294",
-      "network": "IONNA",
-      "name": "Freehold Township, NJ Rechargery @ Wawa - Monmouth Rd",
-      "address": "275 Monmouth Rd, 07728",
-      "state": "NJ",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/449294"
     },
     {
       "dcfc_id": "469603",
@@ -8558,15 +8378,6 @@
       "state": "NJ",
       "price": 0.59,
       "url": "https://dcfctracker.com/stations/237071"
-    },
-    {
-      "dcfc_id": "456877",
-      "network": "IONNA",
-      "name": "Mountain Lakes, NJ Rechargery Relay @ Wawa - US-46",
-      "address": "370 US-46, 07046",
-      "state": "NJ",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/456877"
     },
     {
       "dcfc_id": "353824",
@@ -9242,15 +9053,6 @@
       "state": "NJ",
       "price": 0.73,
       "url": "https://dcfctracker.com/stations/346183"
-    },
-    {
-      "dcfc_id": "463477",
-      "network": "IONNA",
-      "name": "South Brunswick, NJ Rechargery Relay @ Wawa - Rt 27",
-      "address": "3222 Rt 27, 08824",
-      "state": "NJ",
-      "price": 0.39,
-      "url": "https://dcfctracker.com/stations/463477"
     },
     {
       "dcfc_id": "327220",
