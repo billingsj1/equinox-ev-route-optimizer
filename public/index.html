@@ -257,9 +257,9 @@
                     </span>
                   </span>
                 </span>
-                <span id="targetArrivalDisplay" class="font-mono text-cyan-400 font-semibold text-xs">20% (17.0 kWh)</span>
+                <span id="targetArrivalDisplay" class="font-mono text-cyan-400 font-semibold text-xs">15% (12.8 kWh)</span>
               </div>
-              <input type="range" id="targetArrivalSlider" min="5" max="80" value="20" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
+              <input type="range" id="targetArrivalSlider" min="5" max="80" value="15" step="5" oninput="document.getElementById('targetArrivalDisplay').innerText = this.value + '% (' + (this.value * 0.85).toFixed(1) + ' kWh)'" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
             </div>
           </div>
 
@@ -292,9 +292,9 @@
                     </span>
                   </span>
                 </span>
-                <span id="minChargePctDisplay" class="font-mono text-emerald-400 font-semibold text-xs">15% (~12.8 kWh / ~12 min)</span>
+                <span id="minChargePctDisplay" class="font-mono text-emerald-400 font-semibold text-xs">10% (~8.5 kWh / ~9 min)</span>
               </div>
-              <input type="range" id="minChargePctSlider" min="5" max="40" value="15" step="5" oninput="handleMinChargePctChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
+              <input type="range" id="minChargePctSlider" min="5" max="40" value="10" step="5" oninput="handleMinChargePctChange(this.value)" class="w-full accent-emerald-500 h-1 bg-slate-800 rounded cursor-pointer">
             </div>
           </div>
 
@@ -327,9 +327,9 @@
                     </span>
                   </span>
                 </span>
-                <span id="maxTimeDisplay" class="font-mono text-cyan-400 font-semibold text-xs">120 mins (~150 mi)</span>
+                <span id="maxTimeDisplay" class="font-mono text-cyan-400 font-semibold text-xs">130 mins (~163 mi)</span>
               </div>
-              <input type="range" id="maxTimeSlider" min="90" max="240" value="120" step="10" autocomplete="off" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
+              <input type="range" id="maxTimeSlider" min="90" max="240" value="130" step="10" autocomplete="off" oninput="handleMaxTimeChange(this.value)" class="w-full accent-cyan-500 h-1 bg-slate-800 rounded cursor-pointer">
             </div>
           </div>
 
@@ -1259,7 +1259,7 @@
 
     function updateSpeedAndGaps() {
       const minVal = parseInt(document.getElementById('minTimeSlider').value) || 70;
-      const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 120;
+      const maxVal = parseInt(document.getElementById('maxTimeSlider').value) || 130;
       updateTimeGapDisplays(minVal, maxVal);
     }
 
@@ -1287,7 +1287,7 @@
     }
 
     function handleMinChargePctChange(val) {
-      const pct = parseInt(val) || 15;
+      const pct = parseInt(val) || 10;
       const kwh = (pct * 0.85).toFixed(1);
       const approx_mins = Math.max(5, Math.round((pct * 0.85 / 70.0) * 60 + 2));
       const disp = document.getElementById('minChargePctDisplay');
@@ -17390,7 +17390,7 @@
       const offset = document.getElementById('speedOffset')?.value || "10";
       const cap = document.getElementById('maxSpeedCap')?.value || "75";
       const minT = document.getElementById('minTimeSlider')?.value || "70";
-      const maxT = document.getElementById('maxTimeSlider')?.value || "120";
+      const maxT = document.getElementById('maxTimeSlider')?.value || "130";
       const decamilla = document.getElementById('decamillaStopDuration')?.value || "0";
       const profile = document.getElementById('trafficProfile')?.value || "typical";
       const optDep = document.getElementById('optimizeDepartureTime')?.checked ? "1" : "0";
@@ -18477,8 +18477,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const speed_offset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
       const max_cap = parseFloat(document.getElementById('maxSpeedCap').value);
       const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 70);
-      const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 120);
-      const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 15) / 100.0;
+      const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 130);
+      const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 10) / 100.0;
       const departure_hours = getDepartureHoursDecimal();
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
@@ -21818,18 +21818,34 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     function initStopGapsDefault() {
       const minSlider = document.getElementById('minTimeSlider');
       const maxSlider = document.getElementById('maxTimeSlider');
-      // If uninitialized or lingering at legacy 45 from browser session cache, reset to default 75
+      // If uninitialized or lingering at legacy 45 from browser session cache, reset to default 70
       if (minSlider && (!minSlider.value || parseInt(minSlider.value) === 45 || minSlider.value === "45" || minSlider.value === "75")) {
         minSlider.value = "70";
         minSlider.defaultValue = "70";
       }
-      if (maxSlider && (!maxSlider.value || parseInt(maxSlider.value) < 90)) {
-        maxSlider.value = "120";
-        maxSlider.defaultValue = "120";
+      if (maxSlider && (!maxSlider.value || parseInt(maxSlider.value) < 90 || maxSlider.value === "120")) {
+        maxSlider.value = "130";
+        maxSlider.defaultValue = "130";
       }
       const minVal = parseInt(minSlider?.value) || 70;
-      const maxVal = parseInt(maxSlider?.value) || 120;
+      const maxVal = parseInt(maxSlider?.value) || 130;
       updateTimeGapDisplays(minVal, maxVal);
+
+      // Handle legacy session cache for targetArrivalSlider and minChargePctSlider
+      const targetArrivalSlider = document.getElementById('targetArrivalSlider');
+      if (targetArrivalSlider && (!targetArrivalSlider.value || targetArrivalSlider.value === "20")) {
+        targetArrivalSlider.value = "15";
+        targetArrivalSlider.defaultValue = "15";
+        const disp = document.getElementById('targetArrivalDisplay');
+        if (disp) disp.innerText = "15% (12.8 kWh)";
+      }
+
+      const minChargeSlider = document.getElementById('minChargePctSlider');
+      if (minChargeSlider && (!minChargeSlider.value || minChargeSlider.value === "15")) {
+        minChargeSlider.value = "10";
+        minChargeSlider.defaultValue = "10";
+        handleMinChargePctChange(10);
+      }
     }
 
     document.addEventListener('DOMContentLoaded', initStopGapsDefault);
@@ -21880,7 +21896,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const speedOffset = parseFloat(document.getElementById('speedOffset')?.value) || 10;
         const maxCap = parseFloat(document.getElementById('maxSpeedCap')?.value) || 75;
         const minTime = parseFloat(document.getElementById('minTimeSlider')?.value) || 70;
-        const maxTime = parseFloat(document.getElementById('maxTimeSlider')?.value) || 120;
+        const maxTime = parseFloat(document.getElementById('maxTimeSlider')?.value) || 130;
         const decamillaDur = document.getElementById('decamillaStopDuration')?.value || "0";
         const trafficProfile = document.getElementById('trafficProfile')?.value || "typical";
         const preheated = document.getElementById('scheduledDeparturePreheat')?.checked ?? true;
