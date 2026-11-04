@@ -17143,6 +17143,8 @@
 
     // Fast O(1) Toll Resolver: Combines HERE Tolls Database, Directional Bridge Fares,
     // and Charging Stop Off-Turnpike Exits
+    window.resolveCandidateToll = resolveCandidateToll;
+    window.calculateAccurateRouteToll = calculateAccurateRouteToll;
     function resolveCandidateToll(origGeo, destGeo, routeObj, candidateStops = [], has_ezpass = null) {
       if (has_ezpass === null) {
         has_ezpass = (typeof document !== 'undefined' && document.getElementById('hasEzPass')?.checked) ?? true;
@@ -17189,6 +17191,29 @@
         return sName.includes('chester springs') || sName.includes('ionna') || (sLon > -75.70 && sLon < -75.55);
       });
 
+      // Count off-turnpike charging stops along the PA Turnpike ticketed corridor (Exit 75 to Exit 326)
+      // Under PA Turnpike 2026 schedule, exiting and re-entering creates a separate transaction and incurs
+      // an additional fixed segment fee ($1.13 for E-ZPass / $2.26 for Toll-by-Plate).
+      // On-pike travel plazas (Applegreen) do not exit the turnpike and incur $0 extra.
+      const onPikePlazaIds = new Set(['ag-somerset-pa', 'ag-bedford-pa', 'ag-sideling-hill-pa', 'ag-waterfall-pa', 'ag-newburg-pa', 'ag-middletown-pa']);
+      let offPikeTurnpikeStops = 0;
+      if (candidateStops && candidateStops.length > 0) {
+        candidateStops.forEach(st => {
+          const sId = st.id || st.station?.id || '';
+          const sName = (st.name || st.station?.name || '').toLowerCase();
+          const sLon = (st.lon != null) ? st.lon : (st.station?.lon || 0);
+          if (sLon >= -79.65 && sLon <= -75.40) {
+            const isOnPike = onPikePlazaIds.has(sId) || sName.includes('travel plaza') || sName.includes('service plaza') || sName.includes('(pa turnpike)');
+            const isChester = sId === 'ionna-chester-springs-pa' || sName.includes('chester springs');
+            if (!isOnPike && !isChester) {
+              offPikeTurnpikeStops++;
+            }
+          }
+        });
+      }
+      const segmentFee = has_ezpass ? 1.13 : 2.26;
+      const extraOffPikeToll = offPikeTurnpikeStops * segmentFee;
+
       // 1. Sewickley
       if (isSewickley || isSewickleyReturn) {
         return { total: 0.00, subtitle: "Toll-Free Route ($0.00)", source: "HERE DB (Sewickley Toll-Free)" };
@@ -17199,9 +17224,11 @@
         if (usesI68 && !usesTurnpike) {
           return { total: 0.00, subtitle: "Maryland I-68 / US-15 Toll-Free Route ($0.00)", source: "HERE DB" };
         }
-        const t = has_ezpass ? 21.95 : 43.90;
+        const base = has_ezpass ? 21.95 : 43.90;
+        const t = Math.round((base + extraOffPikeToll) * 100) / 100;
         const tag = has_ezpass ? "E-ZPass" : "Toll-by-Plate";
-        return { total: t, subtitle: `PA Turnpike Exit 75 to Exit 242 ($${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
+        const extraNote = offPikeTurnpikeStops > 0 ? ` + ${offPikeTurnpikeStops} Off-Pike Exit/Re-entry (+$${extraOffPikeToll.toFixed(2)})` : '';
+        return { total: t, subtitle: `PA Turnpike Exit 75 to Exit 242 ($${base.toFixed(2)}${extraNote} = $${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
       }
 
       // 3. Marlton / Philadelphia (Eastbound)
@@ -17210,13 +17237,17 @@
           return { total: 0.00, subtitle: "I-68 &bull; Delaware Memorial Bridge Eastbound into NJ ($0.00 Free)", source: "HERE DB" };
         }
         if (stopsAtChesterSprings) {
-          const t = has_ezpass ? 34.07 : 68.15;
+          const base = has_ezpass ? 34.07 : 68.15;
+          const t = Math.round((base + extraOffPikeToll) * 100) / 100;
           const tag = has_ezpass ? "E-ZPass" : "Toll-by-Plate";
-          return { total: t, subtitle: `PA Turnpike Exit 75 to Chester Springs Exit 312 ($${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
+          const extraNote = offPikeTurnpikeStops > 0 ? ` + ${offPikeTurnpikeStops} Off-Pike Exit/Re-entry (+$${extraOffPikeToll.toFixed(2)})` : '';
+          return { total: t, subtitle: `PA Turnpike Exit 75 to Chester Springs Exit 312 ($${base.toFixed(2)}${extraNote} = $${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
         }
-        const t = has_ezpass ? 37.37 : 74.74;
+        const base = has_ezpass ? 37.37 : 74.74;
+        const t = Math.round((base + extraOffPikeToll) * 100) / 100;
         const tag = has_ezpass ? "E-ZPass" : "Toll-by-Plate";
-        return { total: t, subtitle: `PA Turnpike Mainline Eastbound ($${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
+        const extraNote = offPikeTurnpikeStops > 0 ? ` + ${offPikeTurnpikeStops} Off-Pike Exit/Re-entry (+$${extraOffPikeToll.toFixed(2)})` : '';
+        return { total: t, subtitle: `PA Turnpike Mainline Eastbound ($${base.toFixed(2)}${extraNote} = $${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
       }
 
       // 4. Marlton / Philadelphia (Westbound / Return trip)
@@ -17227,13 +17258,17 @@
           return { total: t, subtitle: `Delaware Memorial Bridge Westbound into DE ($${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
         }
         if (stopsAtChesterSprings) {
-          const t = has_ezpass ? 40.07 : 74.15;
+          const base = has_ezpass ? 40.07 : 74.15;
+          const t = Math.round((base + extraOffPikeToll) * 100) / 100;
           const tag = has_ezpass ? "E-ZPass" : "Toll-by-Plate";
-          return { total: t, subtitle: `Ben Franklin Bridge ($6.00) + PA Turnpike via Exit 312 ($${(t-6).toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
+          const extraNote = offPikeTurnpikeStops > 0 ? ` + ${offPikeTurnpikeStops} Off-Pike Exit/Re-entry (+$${extraOffPikeToll.toFixed(2)})` : '';
+          return { total: t, subtitle: `Ben Franklin Bridge ($6.00) + PA Turnpike via Exit 312 ($${(base-6).toFixed(2)}${extraNote} = $${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
         }
-        const t = has_ezpass ? 43.37 : 80.74;
+        const base = has_ezpass ? 43.37 : 80.74;
+        const t = Math.round((base + extraOffPikeToll) * 100) / 100;
         const tag = has_ezpass ? "E-ZPass" : "Toll-by-Plate";
-        return { total: t, subtitle: `Ben Franklin Bridge ($6.00) + PA Turnpike Westbound ($${(t-6).toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
+        const extraNote = offPikeTurnpikeStops > 0 ? ` + ${offPikeTurnpikeStops} Off-Pike Exit/Re-entry (+$${extraOffPikeToll.toFixed(2)})` : '';
+        return { total: t, subtitle: `Ben Franklin Bridge ($6.00) + PA Turnpike Westbound ($${(base-6).toFixed(2)}${extraNote} = $${t.toFixed(2)} ${tag} • HERE Technologies)`, source: "HERE DB" };
       }
 
       // 5. Check if cached from Live HERE API
