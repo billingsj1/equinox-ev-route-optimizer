@@ -15091,7 +15091,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const nextLeg = osrmData.legs[idx + 1];
           const nextSim = simulateLegFromSteps(nextLeg.steps, 0, nextLeg.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, testSpeedOffset, testMaxCap, cand.route.speed_mph, current_leg_clock);
-          const needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
+          let needed_next_buffer = (idx === cand.stops.length - 1) ? target_arrival_soc : min_buffer_soc;
+          if (idx + 1 < cand.stops.length && cand.stops[idx + 1].is_decamilla) {
+            const decStop = cand.stops[idx + 1];
+            const decHrs = decStop.station.decamilla_hours || 2.0;
+            const decAddedSoc = decHrs * 0.0813;
+            if (idx + 2 < osrmData.legs.length) {
+              const legAfterDec = osrmData.legs[idx + 2];
+              const simAfterDec = simulateLegFromSteps(legAfterDec.steps, 0, legAfterDec.distance_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, testSpeedOffset, testMaxCap, cand.route.speed_mph, current_leg_clock);
+              const neededAfterDec = (idx + 2 === cand.stops.length) ? target_arrival_soc : min_buffer_soc;
+              const minDepFromDec = (simAfterDec.kwh / 85.0) + neededAfterDec;
+              needed_next_buffer = Math.max(min_buffer_soc, minDepFromDec - decAddedSoc);
+            }
+          }
           const min_safe_departure = (nextSim.kwh / 85.0) + needed_next_buffer;
 
           if (min_safe_departure > 0.95) {
