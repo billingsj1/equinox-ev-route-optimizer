@@ -1354,7 +1354,7 @@
     const TOPOGRAPHIC_ELEVATION_POINTS = [
       [-83.0750, 39.9512, 230.0], // Columbus, OH (750 ft)
       [-82.0132, 39.9403, 215.0], // Zanesville, OH
-      [-81.5833, 40.0345, 245.0], // Cambridge, OH
+      [-81.5741, 39.9964, 245.0], // Cambridge, OH
       [-80.7209, 40.0639, 200.0], // Wheeling, WV (Ohio River)
       [-80.2462, 40.1740, 310.0], // Washington, PA (1,017 ft)
       [-79.8695, 40.1265, 290.0], // Belle Vernon, PA
@@ -1370,7 +1370,7 @@
       [-76.8867, 40.2732, 105.0], // Harrisburg, PA (Susquehanna Valley)
       [-76.7314, 40.1989, 110.0], // Middletown, PA
       [-76.0000, 40.1500, 190.0], // Bowmansville / Welsh Mountain
-      [-75.6268, 40.0934, 120.0], // Chester Springs / Valley Forge
+      [-75.6859, 40.0748, 120.0], // Chester Springs / Valley Forge
       [-75.1652, 39.9526, 15.0],  // Philadelphia, PA
       [-74.9218, 39.8912, 15.0],  // Marlton, NJ (50 ft)
       // Maryland I-68 / I-70 Corridor Points
@@ -1381,9 +1381,9 @@
       [-78.1797, 39.6998, 140.0], // Hancock, MD
       [-77.7200, 39.6418, 170.0], // Hagerstown, MD
       [-77.5500, 39.5000, 380.0], // South Mountain Pass, MD (1,246 ft)
-      [-77.4105, 39.4143, 90.0],  // Frederick, MD
+      [-77.4596, 39.4186, 90.0],  // Frederick, MD
       [-76.6122, 39.2904, 30.0],  // Baltimore, MD
-      [-75.8333, 39.6068, 25.0]   // Elkton, MD
+      [-75.7913, 39.6529, 25.0]   // Elkton, MD
     ];
 
     function getTopographicElevation(lon, lat) {
@@ -15915,10 +15915,12 @@
       const decamillaStopVal = (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) ? document.getElementById('decamillaStopDuration').value : '0';
       const clockKey = (start_clock_hours != null) ? start_clock_hours.toFixed(2) : depVal;
       const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${depDateVal}_${clockKey}_${decamillaStopVal}_${weatherKey}`;
-      if (!steps._lut || steps._lutKey !== lutKey) {
-        steps._lut = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, start_clock_hours);
-        steps._lutKey = lutKey;
+      steps._luts = steps._luts || {};
+      if (!steps._luts[lutKey]) {
+        steps._luts[lutKey] = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, start_clock_hours);
       }
+      steps._lut = steps._luts[lutKey];
+      steps._lutKey = lutKey;
 
       const res = queryStepsPhysicsLUT(steps._lut, start_mile, end_mile);
       let total_hours = res.hours;
@@ -16203,7 +16205,7 @@
       st_onge: [
         { name: "West High School (Columbus, OH)", lat: 39.9512, lon: -83.0750, elev_ft: 760, dist_mi: 0.0, speed_mph: 65 },
         { name: "Zanesville, OH (I-70)", lat: 39.9403, lon: -82.0132, elev_ft: 710, dist_mi: 56.5, speed_mph: 70 },
-        { name: "Cambridge, OH (I-70)", lat: 40.0345, lon: -81.5833, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
+        { name: "Cambridge, OH (I-70)", lat: 39.9964, lon: -81.5741, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
         { name: "St. Clairsville, OH (I-70)", lat: 40.0812, lon: -80.9015, elev_ft: 1220, dist_mi: 117.2, speed_mph: 70 },
         { name: "Wheeling, WV (I-70 / Ohio River)", lat: 40.0639, lon: -80.7209, elev_ft: 680, dist_mi: 128.5, speed_mph: 60 },
         { name: "Washington, PA (I-70 / I-79)", lat: 40.1740, lon: -80.2462, elev_ft: 1040, dist_mi: 159.0, speed_mph: 65 },
@@ -16212,13 +16214,13 @@
         { name: "Breezewood, PA (PA Turnpike Gateway)", lat: 40.0017, lon: -78.2383, elev_ft: 1020, dist_mi: 284.2, speed_mph: 70 },
         { name: "Fort Littleton, PA (PA Turnpike 180)", lat: 40.0461, lon: -77.9622, elev_ft: 850, dist_mi: 304.5, speed_mph: 70 },
         { name: "Carlisle, PA (PA Turnpike Exit 226)", lat: 40.2015, lon: -77.1889, elev_ft: 480, dist_mi: 348.0, speed_mph: 70 },
-        { name: "Chester Springs, PA (PA Turnpike 312)", lat: 40.0934, lon: -75.6268, elev_ft: 340, dist_mi: 412.3, speed_mph: 68 },
+        { name: "Chester Springs, PA (PA Turnpike 312)", lat: 40.0748, lon: -75.6859, elev_ft: 340, dist_mi: 412.3, speed_mph: 68 },
         { name: "St. Onge Residence (Marlton, NJ)", lat: 39.8912, lon: -74.9218, elev_ft: 70, dist_mi: 441.5, speed_mph: 45 }
       ],
       billings: [
         { name: "West High School (Columbus, OH)", lat: 39.9512, lon: -83.0750, elev_ft: 760, dist_mi: 0.0, speed_mph: 65 },
         { name: "Zanesville, OH (I-70)", lat: 39.9403, lon: -82.0132, elev_ft: 710, dist_mi: 56.5, speed_mph: 70 },
-        { name: "Cambridge, OH (I-70 / US-22)", lat: 40.0345, lon: -81.5833, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
+        { name: "Cambridge, OH (I-70 / US-22)", lat: 39.9964, lon: -81.5741, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
         { name: "Cadiz / Steubenville, OH (US-22)", lat: 40.3634, lon: -80.6137, elev_ft: 980, dist_mi: 132.0, speed_mph: 60 },
         { name: "Weirton, WV / PA Line (US-22)", lat: 40.4087, lon: -80.5284, elev_ft: 820, dist_mi: 146.5, speed_mph: 60 },
         { name: "Billings Residence (Sewickley, PA)", lat: 40.5401, lon: -80.1834, elev_ft: 780, dist_mi: 162.2, speed_mph: 45 }
@@ -16226,7 +16228,7 @@
       decamilla: [
         { name: "West High School (Columbus, OH)", lat: 39.9512, lon: -83.0750, elev_ft: 760, dist_mi: 0.0, speed_mph: 65 },
         { name: "Zanesville, OH (I-70)", lat: 39.9403, lon: -82.0132, elev_ft: 710, dist_mi: 56.5, speed_mph: 70 },
-        { name: "Cambridge, OH (I-70)", lat: 40.0345, lon: -81.5833, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
+        { name: "Cambridge, OH (I-70)", lat: 39.9964, lon: -81.5741, elev_ft: 810, dist_mi: 80.8, speed_mph: 70 },
         { name: "St. Clairsville, OH (I-70)", lat: 40.0812, lon: -80.9015, elev_ft: 1220, dist_mi: 117.2, speed_mph: 70 },
         { name: "Wheeling, WV (I-70 / Ohio River)", lat: 40.0639, lon: -80.7209, elev_ft: 680, dist_mi: 128.5, speed_mph: 60 },
         { name: "Washington, PA (I-70)", lat: 40.1740, lon: -80.2462, elev_ft: 1040, dist_mi: 159.0, speed_mph: 65 },
@@ -16798,17 +16800,19 @@
         }
       }
 
-      let rate = st.on;
+      let rate = (st.on != null) ? st.on : (st.off != null ? st.off : null);
       let badge = "";
       if (isTesla) {
-        if (is_member && st.mem_on) {
+        if (is_member && st.mem_on != null) {
           rate = st.mem_on;
           badge = "Member";
         }
       } else if (isGmDiscountEligible(st)) {
-        rate *= (1.0 - (st.gm_pct || 0.10));
-        badge = "10% GM";
-      } else if (is_member && st.mem_on) {
+        if (rate != null) {
+          rate *= (1.0 - (st.gm_pct || 0.10));
+          badge = "10% GM";
+        }
+      } else if (is_member && st.mem_on != null) {
         rate = st.mem_on;
         badge = "Member";
       }
@@ -18204,7 +18208,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               [-77.5500, 40.1350], // Newburg
               [-77.1889, 40.2014], // Carlisle
               [-76.7314, 40.1989], // Middletown
-              [-75.6268, 40.0934], // Chester Springs
+              [-75.6859, 40.0748], // Chester Springs
               [-75.1652, 39.9526], // Philadelphia
               [destGeo.lon, destGeo.lat]
             ],
@@ -18240,7 +18244,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               [-77.5500, 40.1350], // Newburg
               [-77.1889, 40.2014], // Carlisle
               [-76.7314, 40.1989], // Middletown
-              [-75.6268, 40.0934], // Chester Springs
+              [-75.6859, 40.0748], // Chester Springs
               [-74.7431, 40.1195], // NJ Turnpike Exit 6
               [-74.9256, 39.9723], // Mount Laurel
               [destGeo.lon, destGeo.lat]
@@ -18657,9 +18661,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         for (let j = 0; j < routeStations.length; j++) {
           const st = routeStations[j];
           startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-          const approx_stops = Math.floor(st.mile / 160.0);
-          const est_station_dep_clock = timeAgnosticBaseline ? null : (departure_hours + startToStationLegs[j].hours + (approx_stops * 0.45));
-          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph, est_station_dep_clock);
+          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
 
           if (st.is_decamilla) {
             stationDetours[j] = {
@@ -20422,8 +20424,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           </td>
           <td class="py-2.5 px-3 font-mono">
             <div class="relative group cursor-pointer inline-flex flex-col">
-              <div class="text-emerald-400 font-bold text-xs">
-                $${s.cost.toFixed(2)}
+              <div class="text-emerald-400 font-bold text-xs flex items-center gap-1">
+                <span>$${s.cost.toFixed(2)}</span>
+                ${(s.station && s.station.manually_verified && !s.is_decamilla) ? `
+                  <span class="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-950/70 px-1 py-0.5 rounded border border-amber-800/80 font-sans font-semibold" title="Manually verified on ${s.station.verified_date || 'prior date'}. Click station link to re-verify if needed.">
+                    <i data-lucide="user-check" class="w-2.5 h-2.5 text-amber-400"></i>
+                    <span>Manual (${s.station.verified_date || 'Saved'})</span>
+                  </span>
+                ` : ''}
               </div>
               <div class="text-[10px] text-slate-400">
                 ${rateSub}
@@ -20495,13 +20503,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const tfoot = document.getElementById('stopsTableFoot');
       if (tfoot) {
         let feeLabels = [];
-        if (itin.memberships.ea.active && !itin.memberships.ea.pre_owned) feeLabels.push('EA Pass+ (+$3.50)');
-        if (itin.memberships.tesla.active && !itin.memberships.tesla.pre_owned) feeLabels.push('Tesla Member (+$6.50)');
+        if (itin.memberships && itin.memberships.ea && itin.memberships.ea.active && !itin.memberships.ea.pre_owned) feeLabels.push('EA Pass+ (+$3.50)');
+        if (itin.memberships && itin.memberships.tesla && itin.memberships.tesla.active && !itin.memberships.tesla.pre_owned) feeLabels.push('Tesla Member (+$6.50)');
 
         tfoot.innerHTML = `
           <tr class="border-t border-slate-700 bg-slate-950/60 font-mono text-xs">
             <td colspan="6" class="py-2.5 px-3 text-right text-slate-400 font-sans">Charging Subtotal:</td>
-            <td colspan="2" class="py-2.5 px-3 text-white font-semibold">$${itin.ch_cost.toFixed(2)}</td>
+            <td colspan="2" class="py-2.5 px-3 text-white font-semibold">$${(itin.ch_cost != null ? itin.ch_cost : (itin.stops.reduce((a, s) => a + (s.cost || 0), 0))).toFixed(2)}</td>
           </tr>
           ${itin.membership_fees > 0 ? `
           <tr class="bg-slate-950/60 font-mono text-xs">
@@ -20519,12 +20527,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 return `<div>${tollTitle}</div><div class="text-[10px] text-slate-500 font-normal">${tollSubtitle}</div>`;
               })()}
             </td>
-            <td colspan="2" class="py-1.5 px-3 text-slate-300 font-semibold align-top">$${itin.toll_cost.toFixed(2)}</td>
+            <td colspan="2" class="py-1.5 px-3 text-slate-300 font-semibold align-top">$${(itin.toll_cost || 0).toFixed(2)}</td>
           </tr>
           <tr class="text-sm font-bold border-t border-slate-800 bg-slate-900/80">
             <td colspan="6" class="py-2.5 px-3 text-right text-emerald-400 font-sans">Trip Total Cost:</td>
             <td colspan="2" class="py-2.5 px-3 text-emerald-400 text-base font-mono">
-              $${itin.total_cost.toFixed(2)}
+              $${(itin.total_cost || 0).toFixed(2)}
               ${itin.memberships.ea.active && !itin.memberships.ea.pre_owned && itin.memberships.ea.net > 0 ? `<span class="block text-[11px] text-emerald-300 font-sans font-normal">(Net Pass+ Savings: $${itin.memberships.ea.net.toFixed(2)})</span>` : ''}
             </td>
           </tr>
@@ -21014,6 +21022,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         if (bestMatch) {
+          const isOutlier = (bestMatch.price == null || bestMatch.price < 0.15 || bestMatch.price > 0.95);
+          if (isOutlier) {
+            return {
+              on: null,
+              off: null,
+              mem_on: null,
+              mem_off: null,
+              stalls: bestMatch.stalls || 4,
+              url: bestMatch.url,
+              verified: false,
+              outlier: true
+            };
+          }
           const ea = netLower.includes('electrify') || (bestMatch.network || '').toLowerCase().includes('electrify');
           const isPilotSite = isPilot || isPilotStation(bestMatch);
           const gmEligible = (netLower.includes('evgo') || netLower.includes('ionna')) && !isPilotSite;
@@ -21025,6 +21046,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             mem_off: ea ? Math.round(bestMatch.price * 0.75 * 100) / 100 : bestMatch.price,
             gm: gmEligible,
             gm_pct: gmEligible ? 0.10 : 0.0,
+            stalls: bestMatch.stalls || 4,
             url: bestMatch.url,
             verified: true
           };
@@ -21036,7 +21058,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const m = uc.match(/\$?(\d+\.\d{2})/);
       if (m) {
         const val = parseFloat(m[1]);
-        if (val >= 0.10 && val <= 1.50) {
+        if (val >= 0.15 && val <= 0.95) {
           const ea = (station.network || '').toLowerCase().includes('electrify');
           const isPilotSite = isPilotStation(station);
           const gmEligible = ((station.network || '').toLowerCase().includes('evgo') || (station.network || '').toLowerCase().includes('ionna')) && !isPilotSite;
@@ -21096,6 +21118,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Load real scraped station database to match any unverified stations
       const db = await loadScrapedDatabase();
+      let manualDb = {};
+      try {
+        manualDb = JSON.parse(localStorage.getItem('USER_MANUAL_PRICES') || '{}');
+      } catch (e) {}
+
       if (db) {
         ALL_STATIONS.forEach(s => {
           if (s.name) {
@@ -21103,6 +21130,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
           const hasOverride = Boolean(MANUALLY_VERIFIED_OVERRIDES[s.id]);
           const isTesla = isTeslaNetwork(s.network);
+          const manual = manualDb[s.id];
+
           if (!s.price_verified || s.on == null || s.on <= 0 || hasOverride || isTesla) {
             const res = matchStationToScrapedData(s, db);
             if (res.verified) {
@@ -21115,7 +21144,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               if (res.gm_pct !== undefined) s.gm_pct = res.gm_pct;
               if (res.url) s.plug = res.url;
               s.price_verified = true;
+              s.manually_verified = false;
+            } else if (manual && manual.on != null && manual.on > 0) {
+              s.on = manual.on;
+              s.off = manual.off != null ? manual.off : manual.on;
+              s.price_verified = true;
+              s.manually_verified = true;
+              s.verified_date = manual.verified_date || s.verified_date;
             }
+          } else if (manual && manual.on != null && manual.on > 0) {
+            s.manually_verified = true;
+            s.verified_date = manual.verified_date || s.verified_date;
           }
           if (isPilotStation(s)) {
             s.gm = false;
@@ -21499,6 +21538,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let verifiedCount = 0;
         let changedStations = [];
 
+        let manualDb = {};
+        try {
+          manualDb = JSON.parse(localStorage.getItem('USER_MANUAL_PRICES') || '{}');
+        } catch (e) {}
+
         ALL_STATIONS.forEach(s => {
           const prevVerified = s.price_verified === true;
           const prevOn = s.on;
@@ -21543,8 +21587,27 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (res.tou_rates && res.tou_rates.length > 0) s.tou_rates = res.tou_rates;
             if (res.url) s.plug = res.url;
             s.price_verified = true;
+            s.manually_verified = false; // verified by fresh official scrape
           } else if (res.blocked) {
             s.price_verified = false;
+          } else {
+            // Fresh scraper did NOT find a verified rate (or it was an outlier/unverified).
+            // Fall back to saved manual price if user previously verified this station!
+            const manual = manualDb[s.id] || (s.manually_verified ? { on: s.on, off: s.off, verified_date: s.verified_date } : null);
+            if (manual && manual.on != null && manual.on > 0) {
+              s.on = manual.on;
+              s.off = manual.off != null ? manual.off : manual.on;
+              s.price_verified = true;
+              s.manually_verified = true;
+              // Crucial: preserve original verification date, NOT the timestamp of this refresh!
+              s.verified_date = manual.verified_date || s.verified_date || new Date().toISOString().split('T')[0];
+              verifiedCount++;
+              unchangedCount++;
+            } else {
+              s.price_verified = false;
+              s.on = null;
+              s.off = null;
+            }
           }
         });
 
@@ -21764,9 +21827,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       const st = ALL_STATIONS.find(s => s.id === stationId);
       if (st) {
-        st.on = Math.round(val * 100) / 100;
-        st.off = Math.round(val * 100) / 100;
+        const today = new Date().toISOString().split('T')[0];
+        const pVal = Math.round(val * 100) / 100;
+        st.on = pVal;
+        st.off = pVal;
         st.price_verified = true;
+        st.manually_verified = true;
+        st.verified_date = today;
+
+        let manualDb = {};
+        try {
+          manualDb = JSON.parse(localStorage.getItem('USER_MANUAL_PRICES') || '{}');
+        } catch (e) {}
+        manualDb[stationId] = {
+          on: pVal,
+          off: pVal,
+          verified_date: today
+        };
+        try {
+          localStorage.setItem('USER_MANUAL_PRICES', JSON.stringify(manualDb));
+        } catch (e) {}
         saveStationsToStorage();
 
         try {

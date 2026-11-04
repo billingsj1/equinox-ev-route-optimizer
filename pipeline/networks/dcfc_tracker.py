@@ -56,22 +56,38 @@ class DCFCTrackerAdapter(BaseNetworkAdapter):
                         if network.upper() == "IONNA" or "IONNA" in name.upper() or "IONNA" in addr.upper():
                             continue
 
+                        # Never scrape Tesla from DCFC Tracker (flat synthetic rates & missing TOU).
+                        # Tesla Superchargers are scraped directly via TeslaSuperchargerAdapter with live TOU & Magic Dock.
+                        if network.upper() == "TESLA" or "TESLA" in name.upper():
+                            continue
+
                         power = float(kw_match.group(1)) if kw_match else 150.0
 
                         stalls_match = re.search(r'>Stalls</p>\s*<p[^>]*>(\d+)</p>', card) or re.search(r'(\d+)\s*(?:DC\s+fast\s+)?stalls', card, re.I)
                         stalls = int(stalls_match.group(1)) if stalls_match else 4
 
-                        records.append({
+                        # Outlier rates (< $0.15 parking/valet fees or > $0.95 extreme fees)
+                        # are flagged as unverified so user can inspect and verify manually.
+                        is_outlier = (price < 0.15 or price > 0.95)
+                        record_price = None if is_outlier else price
+                        verified = not is_outlier
+
+                        record = {
                             "dcfc_id": sid,
                             "network": network,
                             "name": name,
                             "address": addr,
                             "state": st.upper(),
-                            "price": price,
+                            "price": record_price,
+                            "verified": verified,
                             "power_kw": power,
                             "stalls": stalls,
                             "url": f"https://dcfctracker.com/stations/{sid}"
-                        })
+                        }
+                        if is_outlier:
+                            record["raw_outlier_price"] = price
+
+                        records.append(record)
                 except Exception as e:
                     logger.warning(f"Error scraping DCFC Tracker for state {st}: {e}")
 

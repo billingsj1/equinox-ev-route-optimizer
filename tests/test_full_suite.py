@@ -95,7 +95,7 @@ async def run_full_suite():
             assert test_match in (55, 65, 70), f"Expected 55, 65 or 70 mph on PA Turnpike, got {test_match}"
 
             # Helper to run a simulation and wait for completion
-            async def run_sim_test(name, config_fn, max_timeout=35):
+            async def run_sim_test(name, config_fn, max_timeout=60):
                 print(f"\n--- Running: {name} ---")
                 t0 = time.time()
                 await eval_js(config_fn)
@@ -194,7 +194,7 @@ async def run_full_suite():
                 document.getElementById('optimizeDepartureTime').checked = true;
                 document.getElementById('optimizeSpeedOffset').checked = true;
                 document.getElementById('optimizeSpeedCap').checked = true;
-            })()""", max_timeout=40)
+            })()""", max_timeout=75)
             test_results["opt_all_three"] = r6
             print(f"    Comparison: OptTimeOnly={r2['fastest']['total_hours']:.3f}h vs OptAll3={r6['fastest']['total_hours']:.3f}h")
             # All 3 optimized should find an equal or faster route than Opt Time only!

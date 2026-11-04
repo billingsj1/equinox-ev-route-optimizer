@@ -43,8 +43,8 @@ class OptimizationRequest(BaseModel):
     # Origin & Destination (default Washington PA to Chester Springs / Philly)
     start_lon: float = -80.2462
     start_lat: float = 40.1740
-    end_lon: float = -75.6268
-    end_lat: float = 40.0934
+    end_lon: float = -75.6859
+    end_lat: float = 40.0748
     
     # Payload toggles
     payload_josh: bool = True
@@ -58,7 +58,7 @@ class OptimizationRequest(BaseModel):
     max_speed_cap_mph: float = 75.0
     initial_soc_pct: float = 100.0
     min_safety_buffer_pct: float = 10.0
-    target_arrival_soc_pct: float = 20.0 # Ideal ending charge state (default 20%)
+    target_arrival_soc_pct: float = 15.0 # Ideal ending charge state (default 15%)
     ideal_time_min_minutes: float = 90.0
     ideal_time_max_minutes: float = 150.0
 
