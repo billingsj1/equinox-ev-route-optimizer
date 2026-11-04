@@ -14844,9 +14844,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       } else {
         // Multi-parameter optimization: Partition slots fairly across each speed/cap pair
         // so higher speed caps (shorter drive times) cannot crowd out lower speed caps.
-        const kFast = Math.max(8, Math.floor(32 / stage1Pairs.length));
-        const kCheap = Math.max(5, Math.floor(20 / stage1Pairs.length));
-        const kBal = Math.max(8, Math.floor(32 / stage1Pairs.length));
+        const kFast = Math.max(22, Math.floor(64 / stage1Pairs.length));
+        const kCheap = Math.max(14, Math.floor(40 / stage1Pairs.length));
+        const kBal = Math.max(18, Math.floor(52 / stage1Pairs.length));
 
         stage1Pairs.forEach(pair => {
           const pairCandsX = candidates_x.filter(c => c.speed_offset === pair.off && c.max_speed_cap === pair.cap);
@@ -14868,13 +14868,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       activeRoutesData.forEach(r => {
         const rcX = candidates_x.filter(c => c.route.id === r.id);
         if (rcX.length > 0) {
-          candidateGroups.push(getDiverseTopCandidates(rcX, 4, c => c.total_hours));
-          candidateGroups.push(getDiverseTopCandidates(rcX, 3, c => c.total_cost));
+          candidateGroups.push(getDiverseTopCandidates(rcX, 6, c => c.total_hours));
+          candidateGroups.push(getDiverseTopCandidates(rcX, 4, c => c.total_cost));
         }
         const rcY = candidates_y.filter(c => c.route.id === r.id);
         if (rcY.length > 0) {
-          candidateGroups.push(getDiverseTopCandidates(rcY, 4, c => c.total_hours));
-          candidateGroups.push(getDiverseTopCandidates(rcY, 3, c => c.total_cost));
+          candidateGroups.push(getDiverseTopCandidates(rcY, 6, c => c.total_hours));
+          candidateGroups.push(getDiverseTopCandidates(rcY, 4, c => c.total_cost));
         }
       });
 
