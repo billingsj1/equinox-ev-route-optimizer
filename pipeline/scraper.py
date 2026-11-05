@@ -11,6 +11,7 @@ import os
 import sqlite3
 import logging
 from typing import List, Dict, Any, Optional
+from datetime import date
 import math
 import re
 
@@ -638,6 +639,31 @@ class PricingScraperPipeline:
         return final_list
 
     def update_single_station_price(self, station_id: str, new_price: float) -> Optional[Dict[str, Any]]:
+        # Update scraped_prices.json if present (e.g. for dcfc stations)
+        dcfc_result = None
+        if os.path.exists(SCRAPED_PRICES_JSON):
+            try:
+                with open(SCRAPED_PRICES_JSON, "r", encoding="utf-8") as f:
+                    scraped_data = json.load(f)
+                dcfc_id_str = station_id.replace("dcfc-", "")
+                for d in scraped_data.get("dcfc", []):
+                    if str(d.get("dcfc_id")) == dcfc_id_str or str(d.get("id")) == station_id:
+                        d["price"] = new_price
+                        d["verified"] = True
+                        d["manually_verified"] = True
+                        d["verified_date"] = date.today().isoformat()
+                        dcfc_result = d
+                        break
+                if dcfc_result:
+                    with open(SCRAPED_PRICES_JSON, "w", encoding="utf-8") as f:
+                        json.dump(scraped_data, f, indent=2)
+                    public_scraped = os.path.join(os.path.dirname(os.path.dirname(SCRAPED_PRICES_JSON)), "public", "data", "scraped_prices.json")
+                    if os.path.exists(os.path.dirname(public_scraped)):
+                        with open(public_scraped, "w", encoding="utf-8") as f:
+                            json.dump(scraped_data, f, indent=2)
+            except Exception as e:
+                logger.warning(f"Could not update {SCRAPED_PRICES_JSON}: {e}")
+
         existing = self.load_existing_stations()
         if station_id in existing:
             st = existing[station_id]
@@ -656,7 +682,7 @@ class PricingScraperPipeline:
                 json.dump(final_list, f, indent=2)
             self._save_to_sqlite(final_list)
             return st
-        return None
+        return dcfc_result
 
 
 if __name__ == "__main__":

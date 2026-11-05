@@ -1645,6 +1645,10 @@
         if (!isNetworkEnabled(s.network)) {
           return;
         }
+        // Strictly require >= 100 kW for road trip candidate stops
+        if (!s.is_decamilla && s.network !== 'Private' && (s.kw || 0) < 100) {
+          return;
+        }
         if (s.lat < b_lat_min || s.lat > b_lat_max || s.lon < b_lon_min || s.lon > b_lon_max) {
           return;
         }
@@ -20720,7 +20724,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // 0. Remove any public charging stations below 100 kW (restricted to >= 100 kW minimum)
       for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
         const s = ALL_STATIONS[i];
-        if (!s.is_decamilla && s.network !== 'Private' && (s.kw || 0) < 100) {
+        if (!s.is_decamilla && s.network !== 'Private' && s.price_verified !== false && (s.kw || 0) < 100) {
           ALL_STATIONS.splice(i, 1);
         }
       }
@@ -21093,7 +21097,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             parsed.forEach(savedSt => {
               if (isStationBlocked(savedSt)) return;
-              if (!savedSt.is_decamilla && savedSt.network !== 'Private' && (savedSt.kw || 0) < 100) return;
+              if (!savedSt.is_decamilla && savedSt.network !== 'Private' && savedSt.price_verified !== false && (savedSt.kw || 0) < 100) return;
               if (savedSt.network === 'Tesla') {
                 savedSt.network = 'Tesla CCS1';
               }
@@ -21124,6 +21128,38 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       } catch (e) {}
 
       if (db) {
+        // Register any unverified stations from db.dcfc that have coordinates into ALL_STATIONS
+        if (Array.isArray(db.dcfc)) {
+          db.dcfc.forEach(d => {
+            if (d.verified === false && d.lat != null && d.lon != null) {
+              const id = `dcfc-${d.dcfc_id}`;
+              const exists = ALL_STATIONS.some(s => s.id === id || (s.dcfc_id && String(s.dcfc_id) === String(d.dcfc_id)) || (s.lat && s.lon && haversineMiles(s.lat, s.lon, d.lat, d.lon) < 0.1));
+              if (!exists) {
+                ALL_STATIONS.push({
+                  id: id,
+                  dcfc_id: d.dcfc_id,
+                  name: `${d.network || 'Fast Charger'} - ${d.name}`,
+                  network: d.network || "Other",
+                  lat: Math.round(d.lat * 10000) / 10000,
+                  lon: Math.round(d.lon * 10000) / 10000,
+                  city: d.city || '',
+                  state: d.state || '',
+                  kw: d.power_kw || 100,
+                  stalls: d.stalls || 2,
+                  off: null,
+                  on: null,
+                  gm: false,
+                  gm_pct: 0.0,
+                  ea_pass: false,
+                  plug: d.url || `https://dcfctracker.com/stations/${d.dcfc_id}`,
+                  price_verified: false,
+                  manually_verified: false,
+                  raw_outlier_price: d.raw_outlier_price
+                });
+              }
+            }
+          });
+        }
         ALL_STATIONS.forEach(s => {
           if (s.name) {
             s.name = s.name.replace(/,\s*([A-Z]{2}),\s*\1\b/g, ', $1');
@@ -21442,10 +21478,44 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           console.warn("Error querying supercharge.info for Tesla Superchargers:", tErr);
         }
 
+        // 3. Register any unverified stations from DCFC tracker that have coordinates
+        if (db && Array.isArray(db.dcfc)) {
+          db.dcfc.forEach(d => {
+            if (d.verified === false && d.lat != null && d.lon != null) {
+              const id = `dcfc-${d.dcfc_id}`;
+              const exists = ALL_STATIONS.some(s => s.id === id || (s.dcfc_id && String(s.dcfc_id) === String(d.dcfc_id)) || (s.lat && s.lon && haversineMiles(s.lat, s.lon, d.lat, d.lon) < 0.1));
+              if (!exists) {
+                ALL_STATIONS.push({
+                  id: id,
+                  dcfc_id: d.dcfc_id,
+                  name: `${d.network || 'Fast Charger'} - ${d.name}`,
+                  network: d.network || "Other",
+                  lat: Math.round(d.lat * 10000) / 10000,
+                  lon: Math.round(d.lon * 10000) / 10000,
+                  city: d.city || '',
+                  state: d.state || '',
+                  kw: d.power_kw || 100,
+                  stalls: d.stalls || 2,
+                  off: null,
+                  on: null,
+                  gm: false,
+                  gm_pct: 0.0,
+                  ea_pass: false,
+                  plug: d.url || `https://dcfctracker.com/stations/${d.dcfc_id}`,
+                  price_verified: false,
+                  manually_verified: false,
+                  raw_outlier_price: d.raw_outlier_price
+                });
+                newlyAdded++;
+              }
+            }
+          });
+        }
         saveStationsToStorage();
         renderNetworkFilters();
         updateStationManagerBadge();
 
+        const unverifiedCount = ALL_STATIONS.filter(s => !s.price_verified || s.on == null || s.on <= 0).length;
         if (statusBox) {
           const headline = (newlyAdded === 0)
             ? `Station Discovery Complete: All stations are already up to date!`
@@ -21456,7 +21526,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               <span>${headline}</span>
             </div>
             <div class="text-[11px] text-slate-300">
-              Database: <b>${ALL_STATIONS.length} total stations</b> (${newlyVerified} verified from scrapers). Unverified stations are listed below.
+              Database: <b>${ALL_STATIONS.length} total stations</b> (${newlyVerified} verified from scrapers). ${unverifiedCount > 0 ? `<span class="text-amber-400 font-medium">${unverifiedCount} unverified stations listed below.</span>` : 'All stations priced.'}
             </div>
           `;
           if (window.lucide) lucide.createIcons();
@@ -21767,7 +21837,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (!container) {
         container = document.createElement('div');
         container.id = 'unverifiedListContainer';
-        container.className = 'space-y-2 mt-2 pt-2 border-t border-slate-800';
+        container.className = statusBox.children.length > 0 ? 'space-y-2 mt-2 pt-2 border-t border-slate-800' : 'space-y-2';
         statusBox.appendChild(container);
       }
 
@@ -21783,12 +21853,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       `;
 
       unverified.forEach(st => {
+        const rawNote = st.raw_outlier_price != null ? `<span class="text-[10px] text-amber-400 font-mono">Flagged scraper rate: $${Number(st.raw_outlier_price).toFixed(2)}/kWh</span>` : '';
         cardsHtml += `
           <div id="unverified-${st.id}" class="p-2 rounded bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
             <div class="flex items-start justify-between gap-1">
               <div>
                 <div class="font-medium text-slate-200 text-[11px] leading-tight">${st.name}</div>
-                <div class="text-[10px] text-slate-400">${st.city ? st.city + ', ' : ''}${st.state || ''} &bull; ${st.kw} kW</div>
+                <div class="text-[10px] text-slate-400">${st.city ? st.city + ', ' : ''}${st.state || ''} &bull; ${st.kw} kW &bull; ${st.stalls || 2} stalls</div>
+                ${rawNote ? `<div class="mt-0.5">${rawNote}</div>` : ''}
               </div>
               <a href="${st.plug}" target="_blank" class="shrink-0 text-[10px] font-semibold text-cyan-400 hover:text-cyan-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-700 flex items-center gap-1">
                 <span>Inspect URL</span>
