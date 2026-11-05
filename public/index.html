@@ -19872,6 +19872,39 @@
       return null;
     }
 
+    let CORRIDOR_ROUTES_CACHE = null;
+
+    async function loadCorridorRoutesCache() {
+      if (CORRIDOR_ROUTES_CACHE) return CORRIDOR_ROUTES_CACHE;
+      const ts = Date.now();
+      try {
+        const resp = await fetch(`data/corridor_routes_cache.json?t=${ts}`);
+        if (resp.ok) {
+          const db = await resp.json();
+          CORRIDOR_ROUTES_CACHE = db;
+          window.CORRIDOR_ROUTES_CACHE = db;
+          console.log(`Loaded offline corridor routes cache (${Object.keys(db).length} primary route bundles).`);
+          return db;
+        }
+      } catch (e) {
+        console.warn("Could not load local data/corridor_routes_cache.json, trying GitHub raw:", e);
+      }
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/corridor_routes_cache.json?t=${ts}`;
+        const resp2 = await fetch(rawUrl);
+        if (resp2.ok) {
+          const db = await resp2.json();
+          CORRIDOR_ROUTES_CACHE = db;
+          window.CORRIDOR_ROUTES_CACHE = db;
+          console.log("Loaded corridor routes cache from GitHub raw.");
+          return db;
+        }
+      } catch (e2) {
+        console.warn("Could not load corridor routes cache from GitHub:", e2);
+      }
+      return null;
+    }
+
     let HERE_TOLLS_DB = null;
     const HERE_TOLL_CACHE = new Map();
 
@@ -20755,15 +20788,69 @@ async function handleSearchRoute() {
         // Fetch Live Road Route via OSRM with full steps & speed metadata
         profiler.startStage("OSRM Corridors Fetch");
         let routesFound = false;
-        try {
-          let osrmUrl;
-          if (useDecamillaStop) {
-            // Route through DeCamilla (1185 Gettysburg Pike, Dillsburg, PA: -77.0156, 40.1413)
-            osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};-77.0156,40.1413;${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
-          } else {
-            osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&alternatives=true&steps=true&annotations=speed,distance`;
+
+        // Check offline corridor routes cache first
+        let cacheKey = null;
+        const originLower = (originText || "").toLowerCase();
+        const isColumbusOrigin = originLower.includes('columbus') || originLower.includes('43215') || originLower === '' || (Math.abs(originGeo.lat - 39.9612) < 0.25 && Math.abs(originGeo.lon - (-82.9988)) < 0.25);
+
+        if (isColumbusOrigin) {
+          const destLower = destText.toLowerCase();
+          if (destLower.includes('marlton') || destLower.includes('conestoga') || destLower.includes('st. onge') || destLower.includes('st onge')) {
+            cacheKey = useDecamillaStop ? 'marlton_decamilla' : 'marlton_direct';
+          } else if (destLower.includes('sewickley')) {
+            cacheKey = 'sewickley';
+          } else if (destLower.includes('philadelphia')) {
+            cacheKey = 'philadelphia';
           }
-          const osrmResp = await fetch(osrmUrl);
+        }
+
+        if (!CORRIDOR_ROUTES_CACHE) {
+          await loadCorridorRoutesCache();
+        }
+
+        if (cacheKey && CORRIDOR_ROUTES_CACHE && CORRIDOR_ROUTES_CACHE[cacheKey]) {
+          const cachedCorridors = CORRIDOR_ROUTES_CACHE[cacheKey];
+          activeRoutesData = cachedCorridors.map((r, idx) => {
+            const clone = JSON.parse(JSON.stringify(r));
+            clone.origin = originGeo;
+            clone.destination = destGeo;
+            if (useDecamillaStop && clone.decamilla_stop) {
+              clone.decamilla_stop.hours = decamillaHours;
+              clone.name = clone.name.replace(/Via DeCamilla \d+(\.\d+)?h L2/, `Via DeCamilla ${decamillaHours}h L2`);
+            }
+            if (clone.id === "pa_turnpike_njtpk_osrm") {
+              const has_green_pass = document.getElementById('hasNjGreenPass')?.checked ?? true;
+              const depVal = document.getElementById('departureTime')?.value || "08:00";
+              const depParts = depVal.split(':');
+              const depHour = parseFloat(depParts[0]) + (parseFloat(depParts[1] || 0) / 60.0);
+              const njArrHour = (depHour + 6.5) % 24.0;
+              const isNjPeak = (njArrHour >= 7.0 && njArrHour < 9.0) || (njArrHour >= 16.5 && njArrHour < 18.5);
+              let njToll = 4.70;
+              if (has_ezpass) {
+                njToll = isNjPeak ? 4.60 : (has_green_pass ? 3.11 : 3.45);
+              }
+              const paTollToDelRiver = has_ezpass ? 45.46 : 90.90;
+              clone.toll = Math.round((paTollToDelRiver + njToll) * 100) / 100;
+            } else {
+              const tollInfo = resolveCandidateToll(originGeo, destGeo, { steps: clone.steps, id: clone.id }, [], has_ezpass);
+              clone.toll = tollInfo.total;
+              clone.toll_subtitle = tollInfo.subtitle;
+            }
+            return clone;
+          });
+          routesFound = true;
+          console.log(`[PERF] Loaded ${activeRoutesData.length} corridors from offline cache for ${cacheKey}.`);
+        } else {
+          try {
+            let osrmUrl;
+            if (useDecamillaStop) {
+              // Route through DeCamilla (1185 Gettysburg Pike, Dillsburg, PA: -77.0156, 40.1413)
+              osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};-77.0156,40.1413;${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
+            } else {
+              osrmUrl = `https://router.project-osrm.org/route/v1/driving/${originGeo.lon},${originGeo.lat};${destGeo.lon},${destGeo.lat}?overview=full&geometries=geojson&alternatives=true&steps=true&annotations=speed,distance`;
+            }
+            const osrmResp = await fetch(osrmUrl);
           if (osrmResp.ok) {
             const osrmData = await osrmResp.json();
             if (osrmData && osrmData.routes && osrmData.routes.length > 0) {
@@ -21005,6 +21092,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         } catch (e) {
           console.warn("OSRM online query failed, generating calibrated highway corridor:", e);
         }
+      }
 
         if (!routesFound) {
           buildCalibratedCorridor(originGeo, destGeo);
@@ -22456,7 +22544,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
       await new Promise(r => setTimeout(r, 60));
 
-      // Query OSRM in concurrent batches of 5 with live progress updates
+      // Query OSRM in concurrent batches of 5 with persistent session cache
+      if (!window.OSRM_WAYPOINT_SEQUENCE_CACHE) {
+        window.OSRM_WAYPOINT_SEQUENCE_CACHE = new Map();
+      }
       const osrmResponses = new Map();
       const seqEntries = Array.from(uniqueSequencesMap.entries());
       const BATCH_SIZE = 5;
@@ -22495,6 +22586,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             return;
           }
 
+          if (window.OSRM_WAYPOINT_SEQUENCE_CACHE.has(key)) {
+            osrmResponses.set(key, window.OSRM_WAYPOINT_SEQUENCE_CACHE.get(key));
+            return;
+          }
+
           const coordsStr = [
             `${info.route.origin.lon},${info.route.origin.lat}`,
             ...info.stops.map(s => `${s.station.lon},${s.station.lat}`),
@@ -22522,12 +22618,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   };
                 });
 
-                osrmResponses.set(key, {
+                const osrmObj = {
                   distance_miles: miles,
                   duration_hours: hours,
                   coordinates: r.geometry.coordinates,
                   legs: parsedLegs
-                });
+                };
+                window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(key, osrmObj);
+                osrmResponses.set(key, osrmObj);
               }
             }
           } catch (netErr) {
@@ -25510,6 +25608,7 @@ EXECUTION TIMINGS & BOTTLENECK PROFILING:
       loadBottleneckSpeedsDatabase();
       loadHolidayOffsetsDatabase();
       loadChargerDetoursCache();
+      loadCorridorRoutesCache();
       initDurationTolerance();
       initMap();
       initStopGapsDefault();
