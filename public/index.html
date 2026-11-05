@@ -20813,6 +20813,9 @@ async function handleSearchRoute() {
           const cachedCorridors = CORRIDOR_ROUTES_CACHE[cacheKey];
           activeRoutesData = cachedCorridors.map((r, idx) => {
             const clone = JSON.parse(JSON.stringify(r));
+            if (clone.steps && clone.corridor_id) {
+              clone.steps._corridorId = clone.corridor_id;
+            }
             clone.origin = originGeo;
             clone.destination = destGeo;
             if (useDecamillaStop && clone.decamilla_stop) {
