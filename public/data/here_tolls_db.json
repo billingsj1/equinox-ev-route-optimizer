@@ -587,6 +587,70 @@
       "toll_systems": [],
       "fares_ez": [],
       "fares_cash": []
+    },
+    "columbus_to_sewickley_us22": {
+      "toll_ez": 1.65,
+      "toll_cash": 3.28,
+      "toll_systems": [
+        "PA TURNPIKE 576"
+      ]
+    },
+    "sewickley_to_columbus_us22": {
+      "toll_ez": 1.65,
+      "toll_cash": 3.28,
+      "toll_systems": [
+        "PA TURNPIKE 576"
+      ]
+    },
+    "columbus_to_sewickley_i79": {
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": []
+    },
+    "sewickley_to_columbus_i79": {
+      "toll_ez": 0.0,
+      "toll_cash": 0.0,
+      "toll_systems": []
+    },
+    "columbus_to_marlton_njtpk_peak": {
+      "toll_ez": 50.06,
+      "toll_cash": 95.6,
+      "toll_systems": [
+        "PA TURNPIKE 476",
+        "NEW JERSEY TURNPIKE"
+      ]
+    },
+    "columbus_to_marlton_njtpk_offpeak": {
+      "toll_ez": 48.91,
+      "toll_cash": 95.6,
+      "toll_systems": [
+        "PA TURNPIKE 476",
+        "NEW JERSEY TURNPIKE"
+      ]
+    },
+    "columbus_to_marlton_njtpk_greenpass": {
+      "toll_ez": 48.57,
+      "toll_cash": 95.6,
+      "toll_systems": [
+        "PA TURNPIKE 476",
+        "NEW JERSEY TURNPIKE"
+      ]
+    },
+    "marlton_to_columbus_njtpk_peak": {
+      "toll_ez": 58.04,
+      "toll_cash": 103.58,
+      "toll_systems": [
+        "NEW JERSEY TURNPIKE",
+        "PA TURNPIKE 476 (DEL RIVER BR H43)"
+      ]
+    },
+    "marlton_to_columbus_njtpk_greenpass": {
+      "toll_ez": 56.55,
+      "toll_cash": 103.58,
+      "toll_systems": [
+        "NEW JERSEY TURNPIKE",
+        "PA TURNPIKE 476 (DEL RIVER BR H43)"
+      ]
     }
   },
   "bridges": {
