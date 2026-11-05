@@ -141,7 +141,7 @@ async def run_full_suite():
             assert r1["fastest"]["max_speed_cap"] == 75
 
             # =========================================================================
-            # TEST 2: Optimize Time Only (+/- 2 hours)
+            # TEST 2: Optimize Time Only (+/- 1 hour in 15-min increments)
             # =========================================================================
             r2 = await run_sim_test("Test 2: Optimize Departure Time Only", """(() => {
                 document.getElementById('optimizeDepartureTime').checked = true;
