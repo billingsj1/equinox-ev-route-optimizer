@@ -1217,7 +1217,7 @@
         }).bindPopup(`
           <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
             <b>${s.name}</b><br>
-            <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW)<br>
+            <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW${s.stalls ? ` &bull; ${s.stalls} stalls` : ''})<br>
             <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
             ${isGmDiscountEligible(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
             ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
@@ -23311,8 +23311,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   </span>
                 </span>
               </div>
-              <div class="text-[10px] text-slate-400 font-mono font-normal">
-                Trip Mile ${Math.round(s.mile)} &bull; ${s.station.stalls ? `${s.station.stalls} Stalls &bull; ` : ''}${s.station.network || ''}
+              <div class="text-[10px] text-slate-400 font-mono font-normal flex items-center gap-1.5 flex-wrap mt-0.5">
+                <span>Trip Mile ${Math.round(s.mile)}</span>
+                <span>&bull;</span>
+                <span class="inline-flex items-center gap-1 text-cyan-300 font-semibold bg-cyan-950/70 border border-cyan-700/40 px-1.5 py-0.5 rounded text-[10px]">
+                  <i data-lucide="zap" class="w-2.5 h-2.5 text-cyan-400"></i> ${s.station.stalls ? `${s.station.stalls} Stalls` : '4 Stalls'}
+                </span>
+                <span>&bull;</span>
+                <span>${s.station.kw} kW</span>
+                <span>&bull;</span>
+                <span>${s.station.network || ''}</span>
               </div>
             </div>
           </td>
@@ -23780,43 +23788,43 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     }
 
     const MANUALLY_VERIFIED_OVERRIDES = {
-      'cp-hancock-md': { on: 0.40, off: 0.40, url: 'https://driver.chargepoint.com/stations/13210691', verified: true },
-      'ag-waterfall-pa': { on: 0.55, off: 0.55, url: 'https://dcfctracker.com/stations/451875', verified: true },
-      'ea-belle-vernon-pa': { on: 0.60, off: 0.40, url: 'https://dcfctracker.com/stations/237974', verified: true },
-      'ionna-cambridge-oh': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/', verified: true },
-      'ionna-chester-springs-pa': { on: 0.35, off: 0.35, url: 'https://www.ionna.com/ev-charging-stations/pa/chester-springs/1800-ticonderoga-blvd-19425/', verified: true },
-      'ionna-frederick-md': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/md/frederick/1390-w-patrick-st-21703/', verified: true },
-      'ionna-elkton-md': { on: 0.39, off: 0.39, url: 'https://www.ionna.com/ev-charging-stations/md/elkton/1657-elkton-rd-21921/', verified: true },
-      'evgo-pilot-belmont-oh': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
-      'ocm-306630': { on: 0.53, off: 0.53, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
-      'mb-washington-pa': { on: 0.44, off: 0.44, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
-      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/somersetsupercharger', verified: true },
-      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/26674', verified: true },
-      'tesla-mt-laurel-nj': { on: 0.51, off: 0.35, mem_on: 0.38, mem_off: 0.26, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/406608', verified: true },
-      'tesla-woodlyn-pa': { on: 0.62, off: 0.32, mem_on: 0.44, mem_off: 0.23, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/59209', verified: true },
-      'tesla-cherry-hill-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger', verified: true },
-      'tesla-maple-shade-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/26769', verified: true },
-      'tesla-pittsburgh-freeport-pa': { on: 0.59, off: 0.3, mem_on: 0.44, mem_off: 0.22, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/20506', verified: true },
-      'tesla-summerdale-pa': { on: 0.55, off: 0.28, mem_on: 0.4, mem_off: 0.21, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/33951', verified: true },
-      'tesla-lawnside-nj': { on: 0.49, off: 0.34, mem_on: 0.36, mem_off: 0.25, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/402407', verified: true },
-      'tesla-aston-pa': { on: 0.56, off: 0.28, mem_on: 0.4, mem_off: 0.2, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/35027', verified: true },
-      'tesla-shrewsbury-pa': { on: 0.68, off: 0.3, mem_on: 0.49, mem_off: 0.22, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/36287', verified: true },
-      'tesla-timonium-md': { on: 0.6, off: 0.38, mem_on: 0.43, mem_off: 0.27, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/33688', verified: true },
-      'tesla-waynesburg-pa': { on: 0.57, off: 0.57, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/401410', verified: true },
-      'tesla-medford-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/19516', verified: true },
-      'tesla-hamilton-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/424861', verified: true },
-      'tesla-blackwood-nj': { on: 0.73, off: 0.38, mem_on: 0.52, mem_off: 0.27, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/59126', verified: true },
-      'tesla-34183': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/34183', verified: true, tou_rates: [] },
-      'evgo-pilot-marengo-oh': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
-      'ocm-306512': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
-      'ocm-351529': { on: 0.69, off: 0.69, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
-      'ocm-306563': { on: 0.58, off: 0.58, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/349766', verified: true },
-      'evgo-farley-nj': { on: 0.66, off: 0.66, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
-      'ocm-225139': { on: 0.66, off: 0.66, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
-      'evgo-hollinswood-md': { on: 0.61, off: 0.61, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/322293', verified: true },
-      'ocm-294317': { on: 0.61, off: 0.61, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/322293', verified: true },
-      'cp-potomac-edison-canal-md': { on: 0.34, off: 0.34, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/300557', verified: true },
-      'ocm-282416': { on: 0.34, off: 0.34, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/300557', verified: true }
+      'cp-hancock-md': { on: 0.40, off: 0.40, stalls: 2, url: 'https://driver.chargepoint.com/stations/13210691', verified: true },
+      'ag-waterfall-pa': { on: 0.55, off: 0.55, stalls: 4, url: 'https://dcfctracker.com/stations/451875', verified: true },
+      'ea-belle-vernon-pa': { on: 0.60, off: 0.40, stalls: 4, url: 'https://dcfctracker.com/stations/237974', verified: true },
+      'ionna-cambridge-oh': { on: 0.39, off: 0.39, stalls: 8, url: 'https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/', verified: true },
+      'ionna-chester-springs-pa': { on: 0.35, off: 0.35, stalls: 8, url: 'https://www.ionna.com/ev-charging-stations/pa/chester-springs/1800-ticonderoga-blvd-19425/', verified: true },
+      'ionna-frederick-md': { on: 0.39, off: 0.39, stalls: 8, url: 'https://www.ionna.com/ev-charging-stations/md/frederick/1390-w-patrick-st-21703/', verified: true },
+      'ionna-elkton-md': { on: 0.39, off: 0.39, stalls: 8, url: 'https://www.ionna.com/ev-charging-stations/md/elkton/1657-elkton-rd-21921/', verified: true },
+      'evgo-pilot-belmont-oh': { on: 0.53, off: 0.53, stalls: 4, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
+      'ocm-306630': { on: 0.53, off: 0.53, stalls: 4, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/306630', verified: true },
+      'mb-washington-pa': { on: 0.44, off: 0.44, stalls: 4, url: 'https://mercedesbenzhpc.com/charging-station/pa-washington-the-old-mill/', verified: true },
+      'tesla-somerset-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, stalls: 10, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/somersetsupercharger', verified: true },
+      'tesla-fort-littleton-pa': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, stalls: 8, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/26674', verified: true },
+      'tesla-mt-laurel-nj': { on: 0.51, off: 0.35, mem_on: 0.38, mem_off: 0.26, stalls: 40, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/406608', verified: true },
+      'tesla-woodlyn-pa': { on: 0.62, off: 0.32, mem_on: 0.44, mem_off: 0.23, stalls: 12, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/59209', verified: true },
+      'tesla-cherry-hill-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, stalls: 8, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/cherryhillnjhaddonfieldroadsupercharger', verified: true },
+      'tesla-maple-shade-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, stalls: 12, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/26769', verified: true },
+      'tesla-pittsburgh-freeport-pa': { on: 0.59, off: 0.3, mem_on: 0.44, mem_off: 0.22, stalls: 16, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/20506', verified: true },
+      'tesla-summerdale-pa': { on: 0.55, off: 0.28, mem_on: 0.4, mem_off: 0.21, stalls: 8, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/33951', verified: true },
+      'tesla-lawnside-nj': { on: 0.49, off: 0.34, mem_on: 0.36, mem_off: 0.25, stalls: 32, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/402407', verified: true },
+      'tesla-aston-pa': { on: 0.56, off: 0.28, mem_on: 0.4, mem_off: 0.2, stalls: 8, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/35027', verified: true },
+      'tesla-shrewsbury-pa': { on: 0.68, off: 0.3, mem_on: 0.49, mem_off: 0.22, stalls: 12, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/36287', verified: true },
+      'tesla-timonium-md': { on: 0.6, off: 0.38, mem_on: 0.43, mem_off: 0.27, stalls: 12, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/33688', verified: true },
+      'tesla-waynesburg-pa': { on: 0.57, off: 0.57, mem_on: 0.41, mem_off: 0.41, stalls: 12, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/401410', verified: true },
+      'tesla-medford-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, stalls: 12, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/19516', verified: true },
+      'tesla-hamilton-nj': { on: 0.72, off: 0.72, mem_on: 0.48, mem_off: 0.34, stalls: 12, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/424861', verified: true },
+      'tesla-blackwood-nj': { on: 0.73, off: 0.38, mem_on: 0.52, mem_off: 0.27, stalls: 16, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/59126', verified: true },
+      'tesla-34183': { on: 0.56, off: 0.56, mem_on: 0.41, mem_off: 0.41, stalls: 8, gm: false, gm_pct: 0.0, url: 'https://www.tesla.com/findus/location/supercharger/34183', verified: true, tou_rates: [] },
+      'evgo-pilot-marengo-oh': { on: 0.69, off: 0.69, stalls: 6, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
+      'ocm-306512': { on: 0.69, off: 0.69, stalls: 6, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
+      'ocm-351529': { on: 0.69, off: 0.69, stalls: 6, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/347668', verified: true },
+      'ocm-306563': { on: 0.58, off: 0.58, stalls: 4, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/349766', verified: true },
+      'evgo-farley-nj': { on: 0.66, off: 0.66, stalls: 4, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
+      'ocm-225139': { on: 0.66, off: 0.66, stalls: 4, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/228536', verified: true },
+      'evgo-hollinswood-md': { on: 0.61, off: 0.61, stalls: 6, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/322293', verified: true },
+      'ocm-294317': { on: 0.61, off: 0.61, stalls: 6, gm: true, gm_pct: 0.10, url: 'https://dcfctracker.com/stations/322293', verified: true },
+      'cp-potomac-edison-canal-md': { on: 0.34, off: 0.34, stalls: 1, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/300557', verified: true },
+      'ocm-282416': { on: 0.34, off: 0.34, stalls: 1, gm: false, gm_pct: 0.0, url: 'https://dcfctracker.com/stations/300557', verified: true }
     };
 
     function matchStationToScrapedData(station, db) {
@@ -23836,6 +23844,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           tou_rates: ov.tou_rates || [],
           gm: canGm,
           gm_pct: canGm ? (ov.gm_pct || 0.10) : 0.0,
+          stalls: ov.stalls || station.stalls,
           url: ov.url,
           verified: true
         };
@@ -23863,6 +23872,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 mem_on: t.mem_on,
                 mem_off: t.mem_off,
                 tou_rates: t.tou_rates || [],
+                stalls: t.stalls || 8,
                 url: t.url || `https://www.tesla.com/findus/location/supercharger/${t.slug}`,
                 verified: true
               };
@@ -24101,6 +24111,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const isTesla = isTeslaNetwork(s.network);
           const manual = manualDb[s.id];
 
+          if (!s.stalls) {
+            const sRes = matchStationToScrapedData(s, db);
+            if (sRes && sRes.stalls) s.stalls = sRes.stalls;
+          }
           if (!s.price_verified || s.on == null || s.on <= 0 || hasOverride || isTesla) {
             const res = matchStationToScrapedData(s, db);
             if (res.verified) {
@@ -24111,6 +24125,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               s.tou_rates = res.tou_rates || [];
               if (res.gm !== undefined) s.gm = res.gm;
               if (res.gm_pct !== undefined) s.gm_pct = res.gm_pct;
+              if (res.stalls) s.stalls = res.stalls;
               if (res.url) s.plug = res.url;
               s.price_verified = true;
               s.manually_verified = false;
@@ -24216,13 +24231,24 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   const opTitle = (poi.OperatorInfo && poi.OperatorInfo.Title) || '';
                   const network = OCM_TARGET_OPERATORS[opId] || opTitle || "Other";
 
-                  const exists = ALL_STATIONS.some(s =>
+                  const existingSt = ALL_STATIONS.find(s =>
                     (s.ocm_id && poi.ID && String(s.ocm_id) === String(poi.ID)) ||
                     (s.network === network && haversineMiles(s.lat, s.lon, lat, lon) < (network === 'IONNA' ? 3.5 : 0.5)) ||
                     haversineMiles(s.lat, s.lon, lat, lon) < 0.35
                   );
+                  if (existingSt) {
+                    let curStalls = poi.NumberOfPoints || null;
+                    if (!curStalls && Array.isArray(poi.Connections)) {
+                      const sumQ = poi.Connections.reduce((acc, c) => acc + (c.Quantity || 0), 0);
+                      if (sumQ > 0) curStalls = sumQ;
+                    }
+                    if (curStalls && (!existingSt.stalls || existingSt.stalls < curStalls)) {
+                      existingSt.stalls = curStalls;
+                    }
+                    return;
+                  }
 
-                  if (!exists) {
+                  if (!existingSt) {
                     const isPilot = isPilotStation({ name: addr.Title, network: network, address: addr.AddressLine1, city: addr.Town });
                     const gm = (network === "IONNA" || network === "EVgo") && !isPilot;
                     const ea_pass = network === "Electrify America";
@@ -24339,12 +24365,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const netName = hasMagicDock ? "Tesla CCS1" : "Tesla NACS";
 
               const slug = String(s.locationId || s.id);
-              const exists = ALL_STATIONS.some(ex =>
+              const stallCount = s.stallCount || (res && res.stalls) || 8;
+              const existingSt = ALL_STATIONS.find(ex =>
                 (isTeslaNetwork(ex.network) && (ex.tesla_slug === slug || (ex.id && ex.id.toLowerCase().includes(slug.toLowerCase())))) ||
                 haversineMiles(ex.lat, ex.lon, lat, lon) < 0.35
               );
+              if (existingSt) {
+                if (!existingSt.stalls && stallCount) {
+                  existingSt.stalls = stallCount;
+                }
+                return;
+              }
 
-              if (!exists) {
+              if (!existingSt) {
                 const stId = `tesla-${slug.toLowerCase()}`;
                 const rawTitle = (s.name || (s.address && s.address.city) || 'Station').trim();
                 const stState = (s.address && s.address.state) || '';
@@ -24379,6 +24412,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   city: (s.address && s.address.city) || "",
                   state: stState,
                   kw: kw,
+                  stalls: s.stallCount || (res && res.stalls) || 8,
                   off: res.off,
                   on: res.on,
                   gm: false,
