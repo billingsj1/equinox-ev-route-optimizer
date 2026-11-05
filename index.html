@@ -1078,6 +1078,95 @@
     window.CORRIDOR_ELEVATIONS_DB = null;
     window.BOTTLENECK_SPEEDS_DB = null;
     window.HOLIDAY_OFFSETS_DB = null;
+    window.currentCalculationProfiler = null;
+    window.lastCalculationTimings = null;
+
+    // HIGH-PRECISION CALCULATION PROFILER & TIMING FLAGS
+    class CalculationProfiler {
+      constructor(name = "RouteCalculation") {
+        this.name = name;
+        this.startTime = performance.now();
+        this.currentStage = null;
+        this.stageStart = this.startTime;
+        this.stages = {};
+        this.checkpoints = [];
+        console.log(`⏱️ [PERF START] Starting ${name} session`);
+      }
+
+      startStage(stageName) {
+        const now = performance.now();
+        if (this.currentStage) {
+          this.endStage();
+        }
+        this.currentStage = stageName;
+        this.stageStart = now;
+        const totalSoFar = ((now - this.startTime) / 1000).toFixed(3);
+        console.log(`⏱️ [PERF STAGE START] ${stageName} (T+${totalSoFar}s)`);
+      }
+
+      endStage(stageName) {
+        const now = performance.now();
+        const name = stageName || this.currentStage;
+        if (!name) return;
+        const elapsedMs = now - this.stageStart;
+        this.stages[name] = (this.stages[name] || 0) + elapsedMs;
+        const totalSoFar = ((now - this.startTime) / 1000).toFixed(3);
+        this.checkpoints.push({
+          stage: name,
+          elapsed_ms: Math.round(elapsedMs * 10) / 10,
+          elapsed_sec: Math.round(elapsedMs / 10) / 100,
+          t_offset_ms: Math.round((now - this.startTime) * 10) / 10
+        });
+        console.log(`⏱️ [PERF CHECKPOINT] ${name}: ${(elapsedMs / 1000).toFixed(3)}s (Total T+${totalSoFar}s)`);
+        this.currentStage = null;
+        this.stageStart = now;
+      }
+
+      mark(label, meta = {}) {
+        const now = performance.now();
+        const elapsedFromStart = now - this.startTime;
+        console.log(`⏱️ [PERF MARK] ${label}: ${(elapsedFromStart / 1000).toFixed(3)}s`, meta);
+        this.checkpoints.push({
+          label,
+          ...meta,
+          t_offset_ms: Math.round(elapsedFromStart * 10) / 10
+        });
+      }
+
+      finish() {
+        if (this.currentStage) {
+          this.endStage();
+        }
+        const totalMs = performance.now() - this.startTime;
+        this.totalMs = totalMs;
+        this.totalSec = Math.round(totalMs / 10) / 100;
+
+        const summary = {};
+        for (const [k, v] of Object.entries(this.stages)) {
+          summary[k] = {
+            ms: Math.round(v * 10) / 10,
+            sec: Math.round(v / 10) / 100,
+            pct: totalMs > 0 ? Math.round((v / totalMs) * 1000) / 10 : 0
+          };
+        }
+
+        console.log(`=======================================================`);
+        console.log(`⏱️ [PERF COMPLETE] Total Calculation Time: ${(totalMs / 1000).toFixed(3)}s`);
+        for (const [k, s] of Object.entries(summary)) {
+          console.log(`   • ${k}: ${s.sec}s (${s.pct}%)`);
+        }
+        console.log(`=======================================================`);
+
+        const result = {
+          total_ms: Math.round(totalMs * 10) / 10,
+          total_sec: this.totalSec,
+          stages: summary,
+          checkpoints: this.checkpoints
+        };
+        window.lastCalculationTimings = result;
+        return result;
+      }
+    }
     var CORRIDOR_ELEVATIONS_DB = null;
     var BOTTLENECK_SPEEDS_DB = null;
     var HOLIDAY_OFFSETS_DB = null;
@@ -20637,6 +20726,9 @@ async function handleSearchRoute() {
       const originText = document.getElementById('originAddress').value.trim();
       if (!destText) return;
 
+      const profiler = new CalculationProfiler(`RouteCalculation_${destText}`);
+      window.currentCalculationProfiler = profiler;
+
       const searchBtn = document.getElementById('searchBtn');
       searchBtn.disabled = true;
       searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Finding Routes...</span>`;
@@ -20646,6 +20738,7 @@ async function handleSearchRoute() {
       if (auditStatusText) auditStatusText.innerText = "Finding Corridors...";
 
       try {
+        profiler.startStage("Geocoding & Setup");
         // Resolve Origin & Destination
         const originGeo = await geocodeAddress(originText || "Columbus, OH");
         const destGeo = await geocodeAddress(destText);
@@ -20660,6 +20753,7 @@ async function handleSearchRoute() {
         const useDecamillaStop = (decamillaHours > 0) && isStOnge;
 
         // Fetch Live Road Route via OSRM with full steps & speed metadata
+        profiler.startStage("OSRM Corridors Fetch");
         let routesFound = false;
         try {
           let osrmUrl;
@@ -20917,9 +21011,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         // Pull smart along-route weather (or apply manual override)
+        profiler.startStage("Along-Route Weather Engine");
         await fetchRouteWeatherData(destText, activeRoutesData[0]);
 
-        await recomputeCurrentRoute();
+        await recomputeCurrentRoute(profiler);
 
       } catch (err) {
         console.error("Route search error:", err);
@@ -21381,7 +21476,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     }
 
     // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---    // --- COMPREHENSIVE MULTI-OBJECTIVE PARETO OPTIMIZER ---
-    async function recomputeCurrentRoute() {
+    async function recomputeCurrentRoute(activeProfiler) {
+      const profiler = activeProfiler || window.currentCalculationProfiler || new CalculationProfiler("RecalculateRoute");
+      window.currentCalculationProfiler = profiler;
       try {
       if (!activeRoutesData || activeRoutesData.length === 0) {
         buildCalibratedCorridor(DEFAULT_ORIGIN, CITY_COORDINATES["marlton, nj"]);
@@ -21450,6 +21547,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const speedCapsToTry = shouldOptimizeCap ? [75, 80] : [max_cap];
 
       // Compute Quickest Non-Stop Driving Baseline across active highway corridors
+      profiler.startStage("Elevation & Baseline Physics");
       let fastestNonStop = null;
       activeRoutesData.forEach(route => {
         speedOffsetsToTry.forEach(sOff => {
@@ -21504,6 +21602,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
           const route = activeRoutesData[rIdx];
+        profiler.startStage("Station Projection & Detours");
         const projection = matchStationsToPolyline(route.coordinates);
         let routeStations = projection.matched.slice();
         const total_miles = projection.total_dist || route.distance;
@@ -21568,6 +21667,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           });
         }
 
+        profiler.startStage("Station Leg Physics Matrix");
         // Precompute start-to-dest leg
         const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
 
@@ -21648,6 +21748,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           ? Math.min(1.6, Math.max(0.0, 0.035 * (70.0 - ambTemp0)))
           : 0.0;
 
+        profiler.startStage("Forward State Tree (Dijkstra/DP)");
         const queue = [{
           stationIdx: -1,
           mile: 0.0,
@@ -22729,17 +22830,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const finalPool = (polishedCandidates.length > 0) ? polishedCandidates : stage1_candidates;
       window.lastEvaluatedPool = finalPool;
 
+      profiler.startStage("UI & Map Rendering");
       // Select fastest, cheapest, balanced according to duration cap and checkbox settings
       applyRouteSelectionFromPool(finalPool, fastestNonStop);
       lastCalculatedInputSignature = getCurrentInputSignature();
 
+      const timingResult = profiler.finish();
+      window.lastCalculationTimings = timingResult;
+
       // Automatically record simulation run in persistent session history
-      recordSimulationRun(finalPool, fastestNonStop);
+      recordSimulationRun(finalPool, fastestNonStop, timingResult);
 
       // Persistent Audit Bar Completion Update
       if (auditStatusText) auditStatusText.innerText = "Optimization Complete";
+      const topStage = (timingResult && timingResult.stages)
+        ? Object.entries(timingResult.stages).sort((a,b) => b[1].ms - a[1].ms)[0]
+        : null;
+      const topText = topStage ? ` (Top: ${topStage[0]} ${topStage[1].sec}s)` : '';
+      const perfSummary = timingResult ? `⏱️ ${timingResult.total_sec}s${topText} · ` : '';
       const qSummary = document.getElementById("telemetryQuickSummary");
-      if (qSummary) qSummary.innerText = `${uniqueSequencesCount} routes · ${totalItinerariesCount.toLocaleString()} combinations evaluated (${uniqueSequencesMap.size} verified via OSRM)`;
+      if (qSummary) qSummary.innerText = `${perfSummary}${uniqueSequencesCount} routes · ${totalItinerariesCount.toLocaleString()} combinations evaluated (${uniqueSequencesMap.size} verified via OSRM)`;
       if (auditPulseDot) auditPulseDot.className = "inline-block w-2.5 h-2.5 rounded-full bg-emerald-400";
       if (auditSequencesCount) auditSequencesCount.innerText = uniqueSequencesCount.toLocaleString();
       if (auditGeneratedCount) auditGeneratedCount.innerText = totalItinerariesCount.toLocaleString();
@@ -24998,11 +25108,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       updateSimHistoryBadge();
     }
 
-    function recordSimulationRun(finalPool, fastestNonStop) {
+    function recordSimulationRun(finalPool, fastestNonStop, timingResult) {
       try {
         const history = getSimHistory();
         const runId = "sim_" + Date.now();
         const timestamp = new Date().toISOString();
+        const timing = timingResult || window.lastCalculationTimings || null;
 
         // Extract full active input state
         const origin = document.getElementById('originAddress')?.value.trim() || "";
@@ -25108,6 +25219,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             non_stop_hours: fastestNonStop ? Math.round(fastestNonStop.hours * 100) / 100 : null,
             non_stop_miles: fastestNonStop ? Math.round(fastestNonStop.distance * 10) / 10 : null
           },
+          timing: timing,
           winners: {
             fastest_x: serializeRoute(fx),
             cheapest_x: serializeRoute(cx),
@@ -25266,7 +25378,10 @@ ${planLine}  Total Time: ${win.total_hours ? formatHours(win.total_hours) : '--'
   Total Miles: ${win.miles || '--'} mi
   Stops (${(win.stops || []).length}):
 ${stopsList || '  (None - Non-stop)'}
-  All Evaluated Combinations: ${entry.summary?.total_evaluated_combos || '--'}`;
+  All Evaluated Combinations: ${entry.summary?.total_evaluated_combos || '--'}
+
+EXECUTION TIMINGS & BOTTLENECK PROFILING:
+  Total Elapsed Calculation Time: ${entry.timing?.total_sec != null ? `${entry.timing.total_sec}s (${entry.timing.total_ms} ms)` : 'N/A'}${entry.timing?.stages ? Object.entries(entry.timing.stages).map(([name, s]) => `\n  • ${name}: ${s.sec}s (${s.pct}%)`).join('') : ''}`;
     }
 
     function showCopyToast(msg) {

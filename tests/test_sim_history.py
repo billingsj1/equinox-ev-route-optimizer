@@ -61,6 +61,7 @@ async def test_sim_history_flow():
                 return res.get("result", {}).get("value")
 
             await asyncio.sleep(2.0)
+            await eval_js("localStorage.removeItem('ev_trip_sim_history')")
 
             # 1. Initial State: History should be empty
             hist0 = await eval_js("getSimHistory()")
@@ -73,7 +74,7 @@ async def test_sim_history_flow():
             for _ in range(120):
                 await asyncio.sleep(0.5)
                 status = await eval_js("document.getElementById('auditStatusText')?.innerText")
-                if status in ("Optimization Complete", "No Routes Found"):
+                if status and ("Optimization Complete" in status or "No Routes Found" in status):
                     break
 
             hist1 = await eval_js("getSimHistory()")
@@ -93,7 +94,7 @@ async def test_sim_history_flow():
             for _ in range(120):
                 await asyncio.sleep(0.5)
                 status = await eval_js("document.getElementById('auditStatusText')?.innerText")
-                if status in ("Optimization Complete", "No Routes Found"):
+                if status and ("Optimization Complete" in status or "No Routes Found" in status):
                     break
 
             hist2 = await eval_js("getSimHistory()")
