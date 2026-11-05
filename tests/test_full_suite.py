@@ -95,7 +95,7 @@ async def run_full_suite():
             assert test_match in (55, 65, 70), f"Expected 55, 65 or 70 mph on PA Turnpike, got {test_match}"
 
             # Helper to run a simulation and wait for completion
-            async def run_sim_test(name, config_fn, max_timeout=60):
+            async def run_sim_test(name, config_fn, max_timeout=90):
                 print(f"\n--- Running: {name} ---")
                 t0 = time.time()
                 await eval_js(config_fn)

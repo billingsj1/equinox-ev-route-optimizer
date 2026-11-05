@@ -21594,15 +21594,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       }
 
-      // =========================================================================
-      // STAGE 1: FORWARD STATE-SPACE SEARCH TREE (EXPANDED TARGETS & DYNAMIC PROGRAMMING)
-      // =========================================================================
-      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false, sOffset = speed_offset, sCap = max_cap) {
-        const candidates = [];
-
-        for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
-          const route = activeRoutesData[rIdx];
-        profiler.startStage("Station Projection & Detours");
+      // Precompute station projection, detours, and ambient temperatures per route corridor once
+      profiler.startStage("Station Projection & Detours");
+      const corridorStationData = activeRoutesData.map((route, rIdx) => {
         const projection = matchStationsToPolyline(route.coordinates);
         let routeStations = projection.matched.slice();
         const total_miles = projection.total_dist || route.distance;
@@ -21639,48 +21633,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           decamillaIdx = routeStations.indexOf(decamillaStationObj);
         }
 
-        // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
-        const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-        const rem_soc0 = start_soc - (leg0.kwh / 85.0);
-        const dur_mins0 = leg0.hours * 60.0;
-        if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
-          candidates.push({
-            route: route,
-            speed_offset: sOffset,
-            max_speed_cap: sCap,
-            base_miles: total_miles,
-            total_actual_miles: total_miles,
-            total_detour_miles: 0.0,
-            drive_hours: leg0.hours,
-            ch_hours: 0.0,
-            total_hours: leg0.hours,
-            ch_cost: 0.0,
-            membership_fees: 0.0,
-            toll_cost: route.toll,
-            total_cost: route.toll,
-            final_soc: Math.round(rem_soc0 * 100),
-            stops: [],
-            memberships: {
-              ea: { kwh: 0, active: false, pre_owned: false, fee: 0, savings: 0, net: 0 },
-              tesla: { kwh: 0, active: false, pre_owned: false, fee: 0, savings: 0, net: 0 }
-            }
-          });
-        }
-
-        profiler.startStage("Station Leg Physics Matrix");
-        // Precompute start-to-dest leg
-        const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-
-        // Precompute station-to-destination legs and detour physics for all corridor stations
-        const destLegPerStation = new Array(routeStations.length);
         const stationDetours = new Array(routeStations.length);
-        const startToStationLegs = new Array(routeStations.length);
-        const stationToStationLegs = [];
+        const stationAmbientTemps = new Array(routeStations.length);
 
         for (let j = 0; j < routeStations.length; j++) {
           const st = routeStations[j];
-          startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+          let arrTemp = temp_f;
+          if (window.activeWeatherReport && !document.getElementById('manualWeatherOverride')?.checked) {
+            const wpSt = getRouteWeatherAtMile(st.mile);
+            if (wpSt && wpSt.ambient_temp_f != null) arrTemp = wpSt.ambient_temp_f;
+          }
+          stationAmbientTemps[j] = arrTemp;
 
           if (st.is_decamilla) {
             stationDetours[j] = {
@@ -21719,6 +21682,75 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
 
+        return {
+          routeStations,
+          total_miles,
+          decamillaStationObj,
+          decamillaIdx,
+          stationDetours,
+          stationAmbientTemps
+        };
+      });
+
+      // =========================================================================
+      // STAGE 1: FORWARD STATE-SPACE SEARCH TREE (EXPANDED TARGETS & DYNAMIC PROGRAMMING)
+      // =========================================================================
+      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false, sOffset = speed_offset, sCap = max_cap) {
+        const candidates = [];
+
+        for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
+          const route = activeRoutesData[rIdx];
+          const cData = corridorStationData[rIdx];
+          const routeStations = cData.routeStations;
+          const total_miles = cData.total_miles;
+          const decamillaStationObj = cData.decamillaStationObj;
+          const decamillaIdx = cData.decamillaIdx;
+          const stationDetours = cData.stationDetours;
+          const stationAmbientTemps = cData.stationAmbientTemps;
+
+        // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
+        const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+        const rem_soc0 = start_soc - (leg0.kwh / 85.0);
+        const dur_mins0 = leg0.hours * 60.0;
+        if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
+          candidates.push({
+            route: route,
+            speed_offset: sOffset,
+            max_speed_cap: sCap,
+            base_miles: total_miles,
+            total_actual_miles: total_miles,
+            total_detour_miles: 0.0,
+            drive_hours: leg0.hours,
+            ch_hours: 0.0,
+            total_hours: leg0.hours,
+            ch_cost: 0.0,
+            membership_fees: 0.0,
+            toll_cost: route.toll,
+            total_cost: route.toll,
+            final_soc: Math.round(rem_soc0 * 100),
+            stops: [],
+            memberships: {
+              ea: { kwh: 0, active: false, pre_owned: false, fee: 0, savings: 0, net: 0 },
+              tesla: { kwh: 0, active: false, pre_owned: false, fee: 0, savings: 0, net: 0 }
+            }
+          });
+        }
+
+        profiler.startStage("Station Leg Physics Matrix");
+        // Precompute start-to-dest leg
+        const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+
+        // Precompute station-to-destination legs and station-to-station legs for corridor
+        const destLegPerStation = new Array(routeStations.length);
+        const startToStationLegs = new Array(routeStations.length);
+        const stationToStationLegs = [];
+
+        for (let j = 0; j < routeStations.length; j++) {
+          const st = routeStations[j];
+          startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+        }
+
         for (let i = 0; i < routeStations.length; i++) {
           stationToStationLegs[i] = new Array(routeStations.length);
           for (let j = i + 1; j < routeStations.length; j++) {
@@ -21728,6 +21760,27 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               stationToStationLegs[i][j] = simulateLegFromSteps(route.steps, routeStations[i].mile, routeStations[j].mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
             }
           }
+        }
+
+        // Precompute downstream reachable anchor targets per station
+        const downstreamAnchorTargets = new Array(routeStations.length);
+        for (let j = 0; j < routeStations.length; j++) {
+          const st = routeStations[j];
+          const anchors = [];
+          for (let k = j + 1; k < routeStations.length; k++) {
+            const nextLegSim = stationToStationLegs[j][k];
+            if (!nextLegSim) continue;
+            const nextLegMins = nextLegSim.hours * 60.0;
+            const isToOrFromDecamillaK = st.is_decamilla || routeStations[k].is_decamilla;
+            const satisfiesMinMins = isToOrFromDecamillaK || (nextLegMins >= min_mins);
+            if (satisfiesMinMins && nextLegMins <= max_mins) {
+              const nextDetour = stationDetours[k];
+              const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
+              const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 100 - 1e-9) / 100.0;
+              anchors.push(exactTgtKRaw);
+            }
+          }
+          downstreamAnchorTargets[j] = anchors;
         }
 
         // Forward Tree Search Queue with Pareto State Dominance
@@ -21749,6 +21802,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           : 0.0;
 
         profiler.startStage("Forward State Tree (Dijkstra/DP)");
+        function getRouteStops(state) {
+          const stops = [];
+          let s = state;
+          while (s && s.lastStop) {
+            stops.push(s.lastStop);
+            s = s.parent;
+          }
+          stops.reverse();
+          return stops;
+        }
+
         const queue = [{
           stationIdx: -1,
           mile: 0.0,
@@ -21757,7 +21821,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           drive_hrs: 0.0,
           ch_hrs: 0.0,
           ch_cost: 0.0,
-          stops: [],
+          stopsCount: 0,
+          lastStop: null,
+          parent: null,
           has_decamilla: false
         }];
         let queueHead = 0;
@@ -21800,7 +21866,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
           if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
-            if (curr.stops.length === 0 || leg_to_dest_mins >= 30.0) {
+            if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
+              const currStops = getRouteStops(curr);
               const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
               const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
 
@@ -21808,7 +21875,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               let tesla_kwh = 0, tesla_gross_savings = 0;
 
               let cum_time_s1 = 0.0;
-              curr.stops.forEach(sp => {
+              currStops.forEach(sp => {
                 cum_time_s1 += sp.leg_drive_hrs;
                 const arr_clock_dec = departure_hours + cum_time_s1;
                 if (sp.station.ea_pass) {
@@ -21836,7 +21903,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
               let discounted_ch_cost = 0;
               let cum_time_stops = 0.0;
-              const finalStops = curr.stops.map(sp => {
+              const finalStops = currStops.map(sp => {
                 cum_time_stops += sp.leg_drive_hrs;
                 const arr_clock_dec = departure_hours + cum_time_stops;
                 let effective_rate = sp.station.on;
@@ -21885,12 +21952,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const total_detour_miles = Math.round(finalStops.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
               const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
               const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
-              const stopTollObj = resolveCandidateToll(route.origin, route.destination, route, curr.stops, null);
+              const stopTollObj = resolveCandidateToll(route.origin, route.destination, route, currStops, null);
               const stopToll = (stopTollObj && stopTollObj.total != null) ? stopTollObj.total : route.toll;
               const total_time = total_drive_hrs + curr.ch_hrs;
               const total_cost = Math.round((discounted_ch_cost + membership_fees + stopToll) * 100) / 100;
 
-              const final_leg_miles = curr.stops.length === 0 ? total_miles : Math.round((total_miles - curr.stops[curr.stops.length - 1].mile) * 10) / 10;
+              const final_leg_miles = curr.stopsCount === 0 ? total_miles : Math.round((total_miles - curr.lastStop.mile) * 10) / 10;
               const dest_arr_clock_s1 = formatClockTime(departure_hours + total_drive_hrs + curr.ch_hrs);
               candidates.push({
                 route: route,
@@ -21937,7 +22004,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           if (leg_to_dest_mins < 30.0) continue;
           const max_stops_budget = Math.max(5, Math.ceil(total_miles / 85.0));
-          if (curr.stops.length >= max_stops_budget) continue;
+          if (curr.stopsCount >= max_stops_budget) continue;
 
           if (++queueIterCount % 1000 === 0) {
             await new Promise(r => setTimeout(r, 0));
@@ -21973,11 +22040,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             // Ultium Battery Thermal & Dynamic Preconditioning for DC Fast Chargers
             let precond_kwh = 0.0;
-            let arrTemp = temp_f;
-            if (window.activeWeatherReport && !document.getElementById('manualWeatherOverride')?.checked) {
-              const wpSt = getRouteWeatherAtMile(st.mile);
-              if (wpSt && wpSt.ambient_temp_f != null) arrTemp = wpSt.ambient_temp_f;
-            }
+            const arrTemp = stationAmbientTemps[j];
 
             const total_leg_hrs = legSim.hours + (detour_mins / 60.0 / 2.0);
             const currentPackTemp = (curr.pack_temp_f != null) ? curr.pack_temp_f : arrTemp;
@@ -22032,7 +22095,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 leg_drive_hrs: total_leg_hrs,
                 leg_drive_mins: Math.round(total_leg_hrs * 60.0),
                 leg_miles: (curr.stationIdx === -1) ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[curr.stationIdx].mile) * 10) / 10,
-                from_label: curr.stops.length === 0 ? "from Start" : `from Stop ${curr.stops.length}`,
+                from_label: curr.stopsCount === 0 ? "from Start" : `from Stop ${curr.stopsCount}`,
                 is_plaza: true,
                 detour_mi: 0,
                 detour_miles: 0,
@@ -22059,7 +22122,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 drive_hrs: leg_drive_hrs,
                 ch_hrs: leg_ch_hrs,
                 ch_cost: leg_total_cost,
-                stops: [...curr.stops, stopPlan],
+                stopsCount: curr.stopsCount + 1, lastStop: stopPlan, parent: curr,
                 has_decamilla: true
               });
               continue;
@@ -22084,19 +22147,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             }
 
             // 3. Exact reach-next anchors to downstream reachable stations along this corridor (Tier 1 Smart Anchors)
-            for (let k = j + 1; k < routeStations.length; k++) {
-              const nextLegSim = stationToStationLegs[j][k];
-              if (!nextLegSim) continue;
-              const nextLegMins = nextLegSim.hours * 60.0;
-              const isToOrFromDecamillaK = st.is_decamilla || routeStations[k].is_decamilla;
-              const satisfiesMinMins = isToOrFromDecamillaK || (nextLegMins >= min_mins);
-              if (satisfiesMinMins && nextLegMins <= max_mins) {
-                const nextDetour = stationDetours[k];
-                const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
-                // Round UP (ceil): arriving at k at >= buffer. Raise to the min-charge floor if needed.
-                const exactTgtK = Math.max(min_target_allowed, Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 100 - 1e-9) / 100.0);
-                if (exactTgtK <= 0.90) targetSet.add(exactTgtK);
-              }
+            const precomputedAnchors = downstreamAnchorTargets[j];
+            for (let ai = 0; ai < precomputedAnchors.length; ai++) {
+              const exactTgtK = Math.max(min_target_allowed, precomputedAnchors[ai]);
+              if (exactTgtK <= 0.90) targetSet.add(exactTgtK);
             }
 
             // 4. Strategic standard SoC milestones above the floor (up to 90%)
@@ -22123,7 +22177,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
 
               // Pareto State Dominance Pruning (scoped to exact station and 5% target SoC)
-              const stateKey = `${st.id || st.name}_${curr.stops.length + 1}_${Math.round(target_soc * 100)}_${curr.has_decamilla ? 1 : 0}`;
+              const stateKey = `${st.id || st.name}_${curr.stopsCount + 1}_${Math.round(target_soc * 100)}_${curr.has_decamilla ? 1 : 0}`;
               if (!paretoFrontier.has(stateKey)) {
                 paretoFrontier.set(stateKey, []);
               }
@@ -22149,7 +22203,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 leg_drive_hrs: total_leg_hrs,
                 leg_drive_mins: Math.round(total_leg_hrs * 60.0),
                 leg_miles: (curr.stationIdx === -1) ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[curr.stationIdx].mile) * 10) / 10,
-                from_label: curr.stops.length === 0 ? "from Start" : `from Stop ${curr.stops.length}`,
+                from_label: curr.stopsCount === 0 ? "from Start" : `from Stop ${curr.stopsCount}`,
                 is_plaza: isPlaza,
                 detour_mi: st.detour_mi || 0,
                 detour_miles: detour_miles,
@@ -22174,7 +22228,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 drive_hrs: leg_drive_hrs,
                 ch_hrs: leg_ch_hrs,
                 ch_cost: leg_total_cost,
-                stops: [...curr.stops, stopPlan],
+                stopsCount: curr.stopsCount + 1, lastStop: stopPlan, parent: curr,
                 has_decamilla: curr.has_decamilla
               });
             }
