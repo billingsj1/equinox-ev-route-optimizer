@@ -20724,7 +20724,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // 0. Remove any public charging stations below 100 kW (restricted to >= 100 kW minimum)
       for (let i = ALL_STATIONS.length - 1; i >= 0; i--) {
         const s = ALL_STATIONS[i];
-        if (!s.is_decamilla && s.network !== 'Private' && s.price_verified !== false && (s.kw || 0) < 100) {
+        if (!s.is_decamilla && s.network !== 'Private' && (s.kw || 0) < 100) {
           ALL_STATIONS.splice(i, 1);
         }
       }
@@ -21097,7 +21097,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (Array.isArray(parsed) && parsed.length > 0) {
             parsed.forEach(savedSt => {
               if (isStationBlocked(savedSt)) return;
-              if (!savedSt.is_decamilla && savedSt.network !== 'Private' && savedSt.price_verified !== false && (savedSt.kw || 0) < 100) return;
+              if (!savedSt.is_decamilla && savedSt.network !== 'Private' && (savedSt.kw || 0) < 100) return;
               if (savedSt.network === 'Tesla') {
                 savedSt.network = 'Tesla CCS1';
               }
@@ -21128,10 +21128,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       } catch (e) {}
 
       if (db) {
-        // Register any unverified stations from db.dcfc that have coordinates into ALL_STATIONS
+        // Register any unverified stations from db.dcfc that have coordinates into ALL_STATIONS (strictly >= 100 kW)
         if (Array.isArray(db.dcfc)) {
           db.dcfc.forEach(d => {
-            if (d.verified === false && d.lat != null && d.lon != null) {
+            if (d.verified === false && d.lat != null && d.lon != null && (d.power_kw == null || d.power_kw >= 100)) {
               const id = `dcfc-${d.dcfc_id}`;
               const exists = ALL_STATIONS.some(s => s.id === id || (s.dcfc_id && String(s.dcfc_id) === String(d.dcfc_id)) || (s.lat && s.lon && haversineMiles(s.lat, s.lon, d.lat, d.lon) < 0.1));
               if (!exists) {
@@ -21478,10 +21478,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           console.warn("Error querying supercharge.info for Tesla Superchargers:", tErr);
         }
 
-        // 3. Register any unverified stations from DCFC tracker that have coordinates
+        // 3. Register any unverified stations from DCFC tracker that have coordinates (strictly >= 100 kW)
         if (db && Array.isArray(db.dcfc)) {
           db.dcfc.forEach(d => {
-            if (d.verified === false && d.lat != null && d.lon != null) {
+            if (d.verified === false && d.lat != null && d.lon != null && (d.power_kw == null || d.power_kw >= 100)) {
               const id = `dcfc-${d.dcfc_id}`;
               const exists = ALL_STATIONS.some(s => s.id === id || (s.dcfc_id && String(s.dcfc_id) === String(d.dcfc_id)) || (s.lat && s.lon && haversineMiles(s.lat, s.lon, d.lat, d.lon) < 0.1));
               if (!exists) {

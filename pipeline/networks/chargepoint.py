@@ -89,6 +89,8 @@ class ChargePointAdapter(BaseNetworkAdapter):
                             session_fee = float(guest_fee)
 
                     max_kw = float(st.get("max_power", {}).get("max", 125.0))
+                    if max_kw < 100:
+                        continue
                     tariffs.append(StationTariff(
                         station_id=f"cp-{dev_id}",
                         network=self.network_name,

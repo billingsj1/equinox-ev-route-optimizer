@@ -253,22 +253,6 @@
       "verified": true
     },
     {
-      "dcfc_id": "146685",
-      "network": "ChargePoint",
-      "name": "Brandywine H-d",
-      "address": "1241 Baltimore Pike",
-      "state": "PA",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/146685",
-      "verified": false,
-      "raw_outlier_price": 0.11,
-      "lat": 39.879173,
-      "lon": -75.55247,
-      "city": "Chadds Ford",
-      "power_kw": 24,
-      "stalls": 1
-    },
-    {
       "dcfc_id": "372865",
       "network": "Blink",
       "name": "Chambersburg Hyundai",
@@ -687,22 +671,6 @@
       "price": 0.89,
       "url": "https://dcfctracker.com/stations/324390",
       "verified": true
-    },
-    {
-      "dcfc_id": "326285",
-      "network": "ChargePoint",
-      "name": "Pwh Location",
-      "address": "149 Welwood Ave",
-      "state": "PA",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/326285",
-      "verified": false,
-      "raw_outlier_price": 1.29,
-      "lat": 41.469223,
-      "lon": -75.175261,
-      "city": "Hawley",
-      "power_kw": 63,
-      "stalls": 1
     },
     {
       "dcfc_id": "422699",
@@ -1909,38 +1877,6 @@
       "price": 0.49,
       "url": "https://dcfctracker.com/stations/327031",
       "verified": true
-    },
-    {
-      "dcfc_id": "254274",
-      "network": "ChargePoint",
-      "name": "Piazza Hyundai",
-      "address": "1360 Wilmington",
-      "state": "PA",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/254274",
-      "verified": false,
-      "raw_outlier_price": 2.5,
-      "lat": 39.9027,
-      "lon": -75.565372,
-      "city": "West Chester",
-      "power_kw": 63,
-      "stalls": 1
-    },
-    {
-      "dcfc_id": "254273",
-      "network": "ChargePoint",
-      "name": "Piazza Hyundai",
-      "address": "1360 Wilmington Pike",
-      "state": "PA",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/254273",
-      "verified": false,
-      "raw_outlier_price": 0.99,
-      "lat": 39.902629,
-      "lon": -75.565324,
-      "city": "West Chester",
-      "power_kw": 63,
-      "stalls": 1
     },
     {
       "dcfc_id": "314027",
@@ -3829,22 +3765,6 @@
       "verified": true
     },
     {
-      "dcfc_id": "349831",
-      "network": "ChargePoint",
-      "name": "Tps Charging",
-      "address": "1609 North Summit Street",
-      "state": "OH",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/349831",
-      "verified": false,
-      "raw_outlier_price": 0.05,
-      "lat": 41.662066,
-      "lon": -83.517321,
-      "city": "Toledo",
-      "power_kw": 40,
-      "stalls": 1
-    },
-    {
       "dcfc_id": "355992",
       "network": "EVgo",
       "name": "McDonalds #4700 Manhattan",
@@ -4255,22 +4175,6 @@
       "verified": true
     },
     {
-      "dcfc_id": "189304",
-      "network": "ChargePoint",
-      "name": "Sales Lots",
-      "address": "7020 Arlington Rd",
-      "state": "MD",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/189304",
-      "verified": false,
-      "raw_outlier_price": 1.09,
-      "lat": 38.980197,
-      "lon": -77.099065,
-      "city": "Bethesda",
-      "power_kw": 63,
-      "stalls": 1
-    },
-    {
       "dcfc_id": "214323",
       "network": "Electrify America",
       "name": "Westfield Montgomery Mall (Montgomery, MD)",
@@ -4581,22 +4485,6 @@
       "verified": true
     },
     {
-      "dcfc_id": "154021",
-      "network": "ChargePoint",
-      "name": "H-d Frederick",
-      "address": "5722 Urbana Pike",
-      "state": "MD",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/154021",
-      "verified": false,
-      "raw_outlier_price": 0.12,
-      "lat": 39.390396,
-      "lon": -77.40587,
-      "city": "Frederick",
-      "power_kw": 24,
-      "stalls": 1
-    },
-    {
       "dcfc_id": "355793",
       "network": "ChargePoint",
       "name": "Ideal Hyundai",
@@ -4685,22 +4573,6 @@
       "price": 0.75,
       "url": "https://dcfctracker.com/stations/311679",
       "verified": true
-    },
-    {
-      "dcfc_id": "191543",
-      "network": "ChargePoint",
-      "name": "Germantown Md",
-      "address": "19750 Germantown Rd",
-      "state": "MD",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/191543",
-      "verified": false,
-      "raw_outlier_price": 1.09,
-      "lat": 39.180778,
-      "lon": -77.264986,
-      "city": "Germantown",
-      "power_kw": 63,
-      "stalls": 1
     },
     {
       "dcfc_id": "457484",
@@ -4901,22 +4773,6 @@
       "price": 0.6,
       "url": "https://dcfctracker.com/stations/417973",
       "verified": true
-    },
-    {
-      "dcfc_id": "221249",
-      "network": "ChargePoint",
-      "name": "Hyundai Cp",
-      "address": "22514 Three Notch Rd",
-      "state": "MD",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/221249",
-      "verified": false,
-      "raw_outlier_price": 1.0,
-      "lat": 38.286103,
-      "lon": -76.475714,
-      "city": "Lexington Park",
-      "power_kw": 63,
-      "stalls": 1
     },
     {
       "dcfc_id": "170738",
@@ -5257,22 +5113,6 @@
       "price": 0.75,
       "url": "https://dcfctracker.com/stations/309764",
       "verified": true
-    },
-    {
-      "dcfc_id": "329794",
-      "network": "ChargePoint",
-      "name": "Dm Bowman Inc",
-      "address": "10038 Governor Lane Boulevard",
-      "state": "MD",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/329794",
-      "verified": false,
-      "raw_outlier_price": 1.0,
-      "lat": 39.590056,
-      "lon": -77.809387,
-      "city": "Williamsport",
-      "power_kw": 63,
-      "stalls": 1
     },
     {
       "dcfc_id": "456432",
@@ -5665,38 +5505,6 @@
       "verified": true
     },
     {
-      "dcfc_id": "311179",
-      "network": "ChargePoint",
-      "name": "Burns",
-      "address": "601 NJ-70",
-      "state": "NJ",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/311179",
-      "verified": false,
-      "raw_outlier_price": 1.0,
-      "lat": 39.895716,
-      "lon": -74.937068,
-      "city": "Evesham",
-      "power_kw": 63,
-      "stalls": 1
-    },
-    {
-      "dcfc_id": "311461",
-      "network": "ChargePoint",
-      "name": "Burns",
-      "address": "500 Rte 70 W",
-      "state": "NJ",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/311461",
-      "verified": false,
-      "raw_outlier_price": 1.0,
-      "lat": 39.894584,
-      "lon": -74.9368,
-      "city": "Evesham",
-      "power_kw": 63,
-      "stalls": 1
-    },
-    {
       "dcfc_id": "153239",
       "network": "Electrify America",
       "name": "Target T1175 (Fairfield, NJ)",
@@ -5907,22 +5715,6 @@
       "verified": true
     },
     {
-      "dcfc_id": "382793",
-      "network": "Blink",
-      "name": "Route 22 Honda",
-      "address": "1480 North Broad Street",
-      "state": "NJ",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/382793",
-      "verified": false,
-      "raw_outlier_price": 5.0,
-      "lat": 40.699474,
-      "lon": -74.215544,
-      "city": "Hillside",
-      "power_kw": 60,
-      "stalls": 2
-    },
-    {
       "dcfc_id": "351499",
       "network": "ChargePoint",
       "name": "Dt&amp;p",
@@ -6033,22 +5825,6 @@
       "verified": true
     },
     {
-      "dcfc_id": "326191",
-      "network": "Blink",
-      "name": "Precision Acura of Princeton",
-      "address": "3001 U.S. 1",
-      "state": "NJ",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/326191",
-      "verified": false,
-      "raw_outlier_price": 7.0,
-      "lat": 40.276992,
-      "lon": -74.705153,
-      "city": "Lawrence Township",
-      "power_kw": 60,
-      "stalls": 3
-    },
-    {
       "dcfc_id": "228491",
       "network": "EVgo",
       "name": "Quaker Bridge Mall",
@@ -6117,22 +5893,6 @@
       "price": 0.4,
       "url": "https://dcfctracker.com/stations/237435",
       "verified": true
-    },
-    {
-      "dcfc_id": "327089",
-      "network": "ChargePoint",
-      "name": "Liberty Hyundai",
-      "address": "305 New Jersey 17",
-      "state": "NJ",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/327089",
-      "verified": false,
-      "raw_outlier_price": 1.0,
-      "lat": 41.0887,
-      "lon": -74.152412,
-      "city": "Mahwah",
-      "power_kw": 31,
-      "stalls": 1
     },
     {
       "dcfc_id": "334305",
@@ -6355,22 +6115,6 @@
       "price": 0.59,
       "url": "https://dcfctracker.com/stations/373125",
       "verified": true
-    },
-    {
-      "dcfc_id": "456705",
-      "network": "ChargePoint",
-      "name": "Gateway Kia Nb",
-      "address": "720 Carolier Lane",
-      "state": "NJ",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/456705",
-      "verified": false,
-      "raw_outlier_price": 1.8,
-      "lat": 40.463695,
-      "lon": -74.449776,
-      "city": "North Brunswick Township",
-      "power_kw": 63,
-      "stalls": 1
     },
     {
       "dcfc_id": "448009",
@@ -6861,22 +6605,6 @@
       "price": 0.5,
       "url": "https://dcfctracker.com/stations/405338",
       "verified": true
-    },
-    {
-      "dcfc_id": "329501",
-      "network": "ChargePoint",
-      "name": "Maxonexpress",
-      "address": "2329 US-22",
-      "state": "NJ",
-      "price": null,
-      "url": "https://dcfctracker.com/stations/329501",
-      "verified": false,
-      "raw_outlier_price": 25.0,
-      "lat": 40.691319,
-      "lon": -74.292612,
-      "city": "Union",
-      "power_kw": 63,
-      "stalls": 1
     },
     {
       "dcfc_id": "462667",

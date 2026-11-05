@@ -63,6 +63,10 @@ class DCFCTrackerAdapter(BaseNetworkAdapter):
 
                         power = float(kw_match.group(1)) if kw_match else 150.0
 
+                        # Strictly filter out public charging stations below 100 kW minimum
+                        if power < 100:
+                            continue
+
                         stalls_match = re.search(r'>Stalls</p>\s*<p[^>]*>(\d+)</p>', card) or re.search(r'(\d+)\s*(?:DC\s+fast\s+)?stalls', card, re.I)
                         stalls = int(stalls_match.group(1)) if stalls_match else 4
 
