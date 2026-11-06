@@ -19905,6 +19905,101 @@
       return null;
     }
 
+    let WAYPOINT_SEQUENCES_CACHE = null;
+
+    function unpackWaypointSequence(packed) {
+      if (!packed) return null;
+      if (packed.legs && packed.legs[0] && Array.isArray(packed.legs[0].steps)) {
+        return packed;
+      }
+      const legs = (packed.legs || []).map(l => {
+        const steps = (l.s || l.steps || []).map(t => {
+          if (!Array.isArray(t)) return t;
+          return {
+            name: t[0] || '',
+            ref: t[1] || '',
+            distance_miles: t[2] || 0,
+            posted_speed: t[3] || 70,
+            mid_lon: t[4] || 0,
+            mid_lat: t[5] || 0,
+            maneuver: {
+              type: t[6] || '',
+              bearing_after: (t[7] != null) ? t[7] : 90,
+              bearing_before: (t[8] != null) ? t[8] : 90
+            },
+            intersections: new Array(t[9] || 0).fill(0)
+          };
+        });
+        return {
+          distance_miles: (l.d != null) ? l.d : l.distance_miles,
+          duration_hours: (l.h != null) ? l.h : l.duration_hours,
+          steps: steps
+        };
+      });
+      return {
+        distance_miles: (packed.d != null) ? packed.d : packed.distance_miles,
+        duration_hours: (packed.h != null) ? packed.h : packed.duration_hours,
+        legs: legs
+      };
+    }
+
+    async function loadWaypointSequencesCache() {
+      if (!window.OSRM_WAYPOINT_SEQUENCE_CACHE) {
+        window.OSRM_WAYPOINT_SEQUENCE_CACHE = new Map();
+      }
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const localStr = localStorage.getItem('ev_waypoint_cache');
+          if (localStr) {
+            const localObj = JSON.parse(localStr);
+            for (const [k, v] of Object.entries(localObj)) {
+              const unpacked = unpackWaypointSequence(v);
+              if (unpacked) window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(k, unpacked);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load ev_waypoint_cache from localStorage:", e);
+      }
+
+      if (WAYPOINT_SEQUENCES_CACHE) return WAYPOINT_SEQUENCES_CACHE;
+      const ts = Date.now();
+      try {
+        const resp = await fetch(`data/waypoint_sequences_cache.json?t=${ts}`);
+        if (resp.ok) {
+          const db = await resp.json();
+          WAYPOINT_SEQUENCES_CACHE = db;
+          for (const [k, v] of Object.entries(db)) {
+            if (!window.OSRM_WAYPOINT_SEQUENCE_CACHE.has(k)) {
+              window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(k, unpackWaypointSequence(v));
+            }
+          }
+          console.log(`Loaded offline waypoint sequences cache (${Object.keys(db).length} pre-seeded sequences).`);
+          return db;
+        }
+      } catch (e) {
+        console.warn("Could not load local data/waypoint_sequences_cache.json, trying GitHub raw:", e);
+      }
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/waypoint_sequences_cache.json?t=${ts}`;
+        const resp2 = await fetch(rawUrl);
+        if (resp2.ok) {
+          const db = await resp2.json();
+          WAYPOINT_SEQUENCES_CACHE = db;
+          for (const [k, v] of Object.entries(db)) {
+            if (!window.OSRM_WAYPOINT_SEQUENCE_CACHE.has(k)) {
+              window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(k, unpackWaypointSequence(v));
+            }
+          }
+          console.log("Loaded waypoint sequences cache from GitHub raw.");
+          return db;
+        }
+      } catch (e2) {
+        console.warn("Could not load waypoint sequences cache from GitHub:", e2);
+      }
+      return null;
+    }
+
     let HERE_TOLLS_DB = null;
     const HERE_TOLL_CACHE = new Map();
 
@@ -22547,9 +22642,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
       await new Promise(r => setTimeout(r, 60));
 
-      // Query OSRM in concurrent batches of 5 with persistent session cache
+      // Query OSRM with 3-tier resolution: Option A (Pre-seeded Cache) -> Live OSRM + Local Persistence -> Option B (Corridor Slicing Fallback)
       if (!window.OSRM_WAYPOINT_SEQUENCE_CACHE) {
         window.OSRM_WAYPOINT_SEQUENCE_CACHE = new Map();
+      }
+      if (!WAYPOINT_SEQUENCES_CACHE) {
+        await loadWaypointSequencesCache();
       }
       const osrmResponses = new Map();
       const seqEntries = Array.from(uniqueSequencesMap.entries());
@@ -22560,9 +22658,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
 
         if (auditLogSummary) {
-                    auditLogSummary.innerHTML = `
+          auditLogSummary.innerHTML = `
             <div class="space-y-1 font-mono text-xs">
-                            <div class="text-slate-300 flex items-center gap-2">
+              <div class="text-slate-300 flex items-center gap-2">
                 <span class="font-bold text-emerald-400">*</span> <span><b>${uniqueSequencesCount} different routes</b> (unique stop combinations) evaluated</span>
               </div>
               <div class="text-slate-300 flex items-center gap-2">
@@ -22589,11 +22687,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             return;
           }
 
+          // Tier 1: Option A Pre-seeded Offline / Memory Cache
           if (window.OSRM_WAYPOINT_SEQUENCE_CACHE.has(key)) {
             osrmResponses.set(key, window.OSRM_WAYPOINT_SEQUENCE_CACHE.get(key));
             return;
           }
 
+          // Tier 2: Live OSRM Query to Fill in the Blanks + LocalStorage Persistence
           const coordsStr = [
             `${info.route.origin.lon},${info.route.origin.lat}`,
             ...info.stops.map(s => `${s.station.lon},${s.station.lat}`),
@@ -22601,6 +22701,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           ].join(';');
 
           const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
+          let fetchedSuccessfully = false;
           try {
             const resp = await fetch(url, { headers: { "User-Agent": "EquinoxEV-RouteOptimizer/2.0" } });
             if (resp.ok) {
@@ -22629,10 +22730,85 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 };
                 window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(key, osrmObj);
                 osrmResponses.set(key, osrmObj);
+                fetchedSuccessfully = true;
+
+                // Persist newly filled blanks into browser localStorage for future sessions
+                try {
+                  if (typeof localStorage !== 'undefined') {
+                    const stored = JSON.parse(localStorage.getItem('ev_waypoint_cache') || '{}');
+                    stored[key] = {
+                      d: osrmObj.distance_miles,
+                      h: osrmObj.duration_hours,
+                      legs: osrmObj.legs.map(l => ({
+                        d: l.distance_miles,
+                        h: l.duration_hours,
+                        s: (l.steps || []).map(s => [
+                          s.name || '',
+                          s.ref || '',
+                          Math.round((s.distance_miles || 0) * 10000) / 10000,
+                          s.posted_speed || 70,
+                          Math.round((s.mid_lon || 0) * 10000) / 10000,
+                          Math.round((s.mid_lat || 0) * 10000) / 10000,
+                          (s.maneuver && s.maneuver.type) || '',
+                          (s.maneuver && s.maneuver.bearing_after != null) ? s.maneuver.bearing_after : 90,
+                          (s.maneuver && s.maneuver.bearing_before != null) ? s.maneuver.bearing_before : 90,
+                          (s.intersections && s.intersections.length) ? s.intersections.length : 0
+                        ])
+                      }))
+                    };
+                    localStorage.setItem('ev_waypoint_cache', JSON.stringify(stored));
+                  }
+                } catch (lsErr) {}
               }
             }
           } catch (netErr) {
-            console.warn("Stage 2 OSRM waypoint query error for key:", key, netErr);
+            console.warn("Stage 3 live OSRM waypoint query error for key:", key, netErr);
+          }
+
+          // Tier 3: Option B Fallback (High-resolution corridor slicing + detour assembly) if network fails
+          if (!fetchedSuccessfully && !osrmResponses.has(key) && info.route && info.route.steps && info.stops && info.stops.length > 0) {
+            try {
+              const rSteps = info.route.steps;
+              const stops = info.stops;
+              const legList = [];
+              let prevMile = 0.0;
+              let prevDetour = 0.0;
+              for (let sIdx = 0; sIdx <= stops.length; sIdx++) {
+                const isFinal = (sIdx === stops.length);
+                const curMile = isFinal ? info.route.distance : stops[sIdx].mile;
+                const curDetour = isFinal ? 0.0 : ((stops[sIdx].detour_miles || 0.8) / 2.0);
+                const legDist = Math.max(0.1, (curMile - prevMile) + prevDetour + curDetour);
+                
+                let accDist = 0.0;
+                const slicedSteps = [];
+                for (let st = 0; st < rSteps.length; st++) {
+                  const sLen = rSteps[st].distance_miles || 0.0;
+                  const stepEnd = accDist + sLen;
+                  if (stepEnd >= prevMile && accDist <= curMile) {
+                    slicedSteps.push(rSteps[st]);
+                  }
+                  accDist = stepEnd;
+                }
+                const pSteps = (slicedSteps.length > 0) ? slicedSteps : rSteps;
+                legList.push({
+                  distance_miles: legDist,
+                  duration_hours: legDist / (info.route.speed_mph || 65.0),
+                  steps: pSteps
+                });
+                prevMile = curMile;
+                prevDetour = curDetour;
+              }
+              const totalDist = legList.reduce((acc, l) => acc + l.distance_miles, 0);
+              const totalHrs = legList.reduce((acc, l) => acc + l.duration_hours, 0);
+              const fallbackObj = {
+                distance_miles: totalDist,
+                duration_hours: totalHrs,
+                legs: legList
+              };
+              osrmResponses.set(key, fallbackObj);
+            } catch (fallbackErr) {
+              console.warn("Option B corridor slice fallback error:", fallbackErr);
+            }
           }
         }));
 
@@ -25612,6 +25788,7 @@ EXECUTION TIMINGS & BOTTLENECK PROFILING:
       loadHolidayOffsetsDatabase();
       loadChargerDetoursCache();
       loadCorridorRoutesCache();
+      loadWaypointSequencesCache();
       initDurationTolerance();
       initMap();
       initStopGapsDefault();
