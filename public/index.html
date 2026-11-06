@@ -60,7 +60,7 @@
         <i id="dbEngineIcon" data-lucide="loader" class="w-3.5 h-3.5 text-amber-400 animate-spin"></i>
         <span id="dbEngineText" class="font-mono text-[11px] text-amber-300 flex items-center gap-1.5">
           <span>Loading Engine</span>
-          <span id="dbEngineCount" class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">0/9</span>
+          <span id="dbEngineCount" class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">0/10</span>
         </span>
       </div>
 
@@ -1127,6 +1127,7 @@
     window.CORRIDOR_ELEVATIONS_DB = null;
     window.BOTTLENECK_SPEEDS_DB = null;
     window.HOLIDAY_OFFSETS_DB = null;
+    window.ROUTE_INTERSECTIONS_DB = null;
     window.currentCalculationProfiler = null;
     window.lastCalculationTimings = null;
 
@@ -1219,6 +1220,7 @@
     var CORRIDOR_ELEVATIONS_DB = null;
     var BOTTLENECK_SPEEDS_DB = null;
     var HOLIDAY_OFFSETS_DB = null;
+    var ROUTE_INTERSECTIONS_DB = null;
 
     // --- VERIFIED CHARGING NETWORK DATABASE (CCS1 / >= 100 kW) ---
     let ALL_STATIONS = [
@@ -18802,10 +18804,41 @@
 
     // Comprehensive Charger Detour Simulator: models highway service plazas vs off-ramp street exits,
     // intersection signals, parking lot navigation, and on-ramp merge acceleration.
-    function simulateDetourPhysics(detour_miles, is_plaza, payload_lbs, temp_f, road_cond) {
+    function simulateDetourPhysics(detour_miles, is_plaza, payload_lbs, temp_f, road_cond, station_id) {
       const curb_kg = 2233.0;
       const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
-      const v_mph = is_plaza ? 20.0 : 28.0;
+      
+      const st_db = (window.ROUTE_INTERSECTIONS_DB && window.ROUTE_INTERSECTIONS_DB.stations) ? window.ROUTE_INTERSECTIONS_DB.stations[station_id] : null;
+      let v_mph, num_stops, idle_hours;
+
+      if (st_db) {
+        const access_type = st_db.access_type || (is_plaza ? 'plaza_standard' : 'off_pike_commercial');
+        if (access_type.startsWith('plaza_')) {
+          if (access_type === 'plaza_median_bidirectional') {
+            v_mph = 22.0;
+            num_stops = Math.max(2.0, (st_db.stop_signs_count || 1) + 1.0); // crossover ramp yield + stall stop
+            idle_hours = (1.8 / 60.0);
+          } else {
+            v_mph = 20.0;
+            num_stops = Math.max(1.0, st_db.stop_signs_count || 1.0);
+            idle_hours = (1.2 / 60.0);
+          }
+        } else {
+          v_mph = 26.0;
+          const sig_count = st_db.traffic_signals_count || 0;
+          const stop_count = Math.max(1.0, st_db.stop_signs_count || 1.0);
+          const rbs_count = st_db.roundabouts_count || 0;
+
+          // Physical signal stop probability ~40%, 32s red dwell; Stop sign 100% stop, 3s dwell; Roundabout 50% yield, 4s dwell
+          num_stops = (sig_count * 0.40) + stop_count + (rbs_count * 0.50);
+          idle_hours = ((sig_count * 0.40 * 32.0) + (stop_count * 3.0) + (rbs_count * 4.0)) / 3600.0;
+        }
+      } else {
+        v_mph = is_plaza ? 20.0 : 28.0;
+        num_stops = is_plaza ? 1.0 : Math.max(2.0, detour_miles * 2.2);
+        idle_hours = is_plaza ? (1.2 / 60.0) : (Math.max(2.0, detour_miles * 2.4) / 60.0);
+      }
+
       const v_ms = v_mph * 0.44704;
       const hours = detour_miles / v_mph;
       const dist_m = detour_miles * 1609.34;
@@ -18822,8 +18855,7 @@
       const f_aero = 0.5 * rho * (0.332 * 2.60) * Math.pow(v_ms, 2);
       const steady_kwh = ((f_rr + f_spray + f_aero) * dist_m) / 3.6e6 / 0.91;
 
-      // Stop-and-go intersection cycles (service plazas: 1 parking stop; off-highway exits: 2-3 intersection stops)
-      const num_stops = is_plaza ? 1.0 : Math.max(2.0, detour_miles * 2.2);
+      // Stop-and-go intersection cycles (with regenerative braking: ~78% recovery)
       const delta_ke = 0.5 * total_mass_kg * Math.pow(v_ms, 2);
       const cycle_loss = delta_ke * ((1.0 / 0.91) - 0.78);
       const stops_kwh = (num_stops * cycle_loss) / 3.6e6;
@@ -18833,8 +18865,6 @@
       const ramp_ke = 0.5 * total_mass_kg * Math.max(0.0, Math.pow(v_hwy_ms, 2) - Math.pow(v_ms, 2));
       const ramp_accel_kwh = (ramp_ke / 0.91) / 3.6e6;
 
-      // Idle delay (plazas: ~1.2 mins pedestrian/stall entry; off-highway: traffic lights + turns ~2.5 mins/mi)
-      const idle_hours = is_plaza ? (1.2 / 60.0) : (Math.max(2.0, detour_miles * 2.4) / 60.0);
       const total_hours = hours + idle_hours;
 
       let hvac_kw = 0.35;
@@ -20100,6 +20130,37 @@
       return null;
     }
 
+    async function loadRouteIntersectionsDatabase() {
+      if (ROUTE_INTERSECTIONS_DB) return ROUTE_INTERSECTIONS_DB;
+      const ts = Date.now();
+      try {
+        const resp = await fetch(`data/route_intersections_db.json?t=${ts}`);
+        if (resp.ok) {
+          const db = await resp.json();
+          window.ROUTE_INTERSECTIONS_DB = db;
+          ROUTE_INTERSECTIONS_DB = db;
+          console.log(`Loaded OSM route intersections database (${Object.keys(db.stations || {}).length} stations).`);
+          return db;
+        }
+      } catch (e) {
+        console.warn("Could not load local data/route_intersections_db.json, trying GitHub raw:", e);
+      }
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/route_intersections_db.json?t=${ts}`;
+        const resp2 = await fetch(rawUrl);
+        if (resp2.ok) {
+          const db = await resp2.json();
+          window.ROUTE_INTERSECTIONS_DB = db;
+          ROUTE_INTERSECTIONS_DB = db;
+          console.log("Loaded route intersections database from GitHub raw.");
+          return db;
+        }
+      } catch (e2) {
+        console.warn("Could not load route intersections database from GitHub:", e2);
+      }
+      return null;
+    }
+
     async function loadHolidayOffsetsDatabase() {
       if (HOLIDAY_OFFSETS_DB) return HOLIDAY_OFFSETS_DB;
       const ts = Date.now();
@@ -20193,6 +20254,7 @@
       { id: 'elevations', name: 'Elevation Models', fn: () => loadCorridorElevationsDatabase() },
       { id: 'bottlenecks', name: 'Bottleneck Speeds', fn: () => loadBottleneckSpeedsDatabase() },
       { id: 'holidays', name: 'Holiday Congestion', fn: () => loadHolidayOffsetsDatabase() },
+      { id: 'intersections', name: 'Intersections & Signals', fn: () => loadRouteIntersectionsDatabase() },
       { id: 'charger_detours', name: 'Charger Detours', fn: () => loadChargerDetoursCache() },
       { id: 'corridor_routes', name: 'Corridor Routes', fn: () => loadCorridorRoutesCache() },
       { id: 'waypoint_sequences', name: 'Waypoint Sequences', fn: () => loadWaypointSequencesCache() }
@@ -22089,8 +22151,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               detour_miles = Math.round((0.6 + (2.0 * Math.max(0.15, st.detour_mi || 0.2))) * 10) / 10;
               detour_mins = Math.round((2.5 + (detour_miles / 30.0 * 60.0)) * 10) / 10;
             }
-            const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond);
-            const lastExitSim = simulateDetourPhysics(detour_miles / 2.0, isPlaza, payload_lbs, temp_f, road_cond);
+            const detourSim = simulateDetourPhysics(detour_miles, isPlaza, payload_lbs, temp_f, road_cond, st.id);
+            const lastExitSim = simulateDetourPhysics(detour_miles / 2.0, isPlaza, payload_lbs, temp_f, road_cond, st.id);
+            if (detourSim && detourSim.mins) {
+              detour_mins = detourSim.mins;
+            }
 
             stationDetours[j] = {
               isPlaza: isPlaza,
@@ -22670,7 +22735,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       for (let pIdx = 0; pIdx < stage1Pairs.length; pIdx++) {
         const pair = stage1Pairs[pIdx];
-        const res = await runStage1Search(min_leg_mins, max_leg_mins, shouldOptimizeDep, pair.off, pair.cap);
+        const res = await runStage1Search(min_leg_mins, max_leg_mins, false, pair.off, pair.cap);
         stage1_candidates = stage1_candidates.concat(res);
       }
       window.lastStage1Candidates = stage1_candidates;
