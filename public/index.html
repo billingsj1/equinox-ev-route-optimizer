@@ -896,12 +896,32 @@
             <div id="cardBalancedX" onclick="selectItinerary('balanced_x')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-blue-500/50 transition flex flex-col justify-between">
               <div>
                 <div class="flex justify-between items-center mb-1">
-                  <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Balanced (Pareto)</span>
+                  <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">
+                    <span>Balanced</span>
+                    <span class="text-[10px] font-normal text-slate-400 font-sans">(Pareto)</span>
+                  </span>
                   <div class="flex items-center gap-1.5">
                     <span id="balancedArrivalBadge_x" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
                     <span id="balancedStopsBadge_x" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
                   </div>
                 </div>
+
+                <!-- Interactive Pareto Stepper (X Stops) -->
+                <div class="my-2 bg-slate-950/80 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono select-none" onclick="event.stopPropagation()">
+                  <button type="button" id="paretoFasterBtn_x" onclick="stepParetoCurve('x', -1)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-emerald-300 disabled:opacity-30 disabled:hover:bg-slate-800/80 disabled:hover:text-slate-200 flex items-center gap-1 transition cursor-pointer" title="Trade cost for speed (arrive earlier)">
+                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                    <span class="text-[10px] font-sans font-semibold">Faster</span>
+                  </button>
+                  <div class="text-center px-1">
+                    <div id="paretoStepLabel_x" class="text-blue-300 font-bold text-[10px] tracking-tight">Option 3 of 5 (Knee)</div>
+                    <div id="paretoDeltaLabel_x" class="text-[9px] text-slate-400 font-mono">Baseline (Fastest)</div>
+                  </div>
+                  <button type="button" id="paretoCheaperBtn_x" onclick="stepParetoCurve('x', 1)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-amber-300 disabled:opacity-30 disabled:hover:bg-slate-800/80 disabled:hover:text-slate-200 flex items-center gap-1 transition cursor-pointer" title="Trade time for savings (save money)">
+                    <span class="text-[10px] font-sans font-semibold">Cheaper</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
                 <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
                 <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="balancedSchedule_x">
                   <span>Dep: <b class="text-white" id="balancedDep_x">--</b></span>
@@ -987,12 +1007,32 @@
             <div id="cardBalancedY" onclick="selectItinerary('balanced_y')" class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 cursor-pointer hover:border-blue-500/50 transition flex flex-col justify-between">
               <div>
                 <div class="flex justify-between items-center mb-1">
-                  <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Balanced (Extra Stop)</span>
+                  <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">
+                    <span>Balanced</span>
+                    <span class="text-[10px] font-normal text-slate-400 font-sans">(Extra Stop)</span>
+                  </span>
                   <div class="flex items-center gap-1.5">
                     <span id="balancedArrivalBadge_y" class="text-[10px] bg-cyan-950/60 border border-cyan-800 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Arr: --</span>
                     <span id="balancedStopsBadge_y" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">-- stops</span>
                   </div>
                 </div>
+
+                <!-- Interactive Pareto Stepper (Y Stops) -->
+                <div class="my-2 bg-slate-950/80 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono select-none" onclick="event.stopPropagation()">
+                  <button type="button" id="paretoFasterBtn_y" onclick="stepParetoCurve('y', -1)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-emerald-300 disabled:opacity-30 disabled:hover:bg-slate-800/80 disabled:hover:text-slate-200 flex items-center gap-1 transition cursor-pointer" title="Trade cost for speed (arrive earlier)">
+                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                    <span class="text-[10px] font-sans font-semibold">Faster</span>
+                  </button>
+                  <div class="text-center px-1">
+                    <div id="paretoStepLabel_y" class="text-blue-300 font-bold text-[10px] tracking-tight">Option 3 of 5 (Knee)</div>
+                    <div id="paretoDeltaLabel_y" class="text-[9px] text-slate-400 font-mono">Baseline (Fastest)</div>
+                  </div>
+                  <button type="button" id="paretoCheaperBtn_y" onclick="stepParetoCurve('y', 1)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-amber-300 disabled:opacity-30 disabled:hover:bg-slate-800/80 disabled:hover:text-slate-200 flex items-center gap-1 transition cursor-pointer" title="Trade time for savings (save money)">
+                    <span class="text-[10px] font-sans font-semibold">Cheaper</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
                 <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
                 <div class="text-[11px] text-slate-300 font-mono mt-1 flex items-center justify-between" id="balancedSchedule_y">
                   <span>Dep: <b class="text-white" id="balancedDep_y">--</b></span>
@@ -21719,11 +21759,91 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           best_balanced = sortedByKnee.find(c => c !== fastest && c !== cheapest) || sortedByKnee[0];
         }
 
+        // 4. PARETO FRONTIER CURVE (5 Options when possible)
+        const sortedByTime = [...validCappedPool].sort((a, b) => {
+          if (Math.abs(a.total_hours - b.total_hours) > 0.0001) return a.total_hours - b.total_hours;
+          return a.total_cost - b.total_cost;
+        });
+        const rawFrontier = [];
+        let minCostSoFar = Infinity;
+        for (const cand of sortedByTime) {
+          if (cand.total_cost < minCostSoFar - 0.01) {
+            rawFrontier.push(cand);
+            minCostSoFar = cand.total_cost;
+          }
+        }
+        if (rawFrontier.length === 0 || rawFrontier[0] !== fastest) {
+          rawFrontier.unshift(fastest);
+        }
+        if (cheapest && cheapest.total_cost < rawFrontier[rawFrontier.length - 1].total_cost - 0.01) {
+          rawFrontier.push(cheapest);
+        }
+        const uniqueFrontier = [];
+        const seenSeq = new Set();
+        const getSeqKey = (c) => (c.route ? c.route.id : 'r') + '|' + (c.stops || []).map(s => s.station ? s.station.name : '').join('->');
+        
+        for (const cand of rawFrontier) {
+          const sk = getSeqKey(cand);
+          if (!seenSeq.has(sk)) {
+            uniqueFrontier.push(cand);
+            seenSeq.add(sk);
+          }
+        }
+
+
+
+        let rawKneeIdx = uniqueFrontier.indexOf(best_balanced);
+        if (rawKneeIdx < 0) {
+          rawKneeIdx = 0;
+          let bestKd = Infinity;
+          uniqueFrontier.forEach((c, idx) => {
+            const kd = c.knee_dist != null ? c.knee_dist : 999;
+            if (kd < bestKd) {
+              bestKd = kd;
+              rawKneeIdx = idx;
+            }
+          });
+        }
+
+        const M = uniqueFrontier.length;
+        let selectedIndices = [];
+        let kneeOptionIdx = 0;
+
+        if (M <= 1) {
+          selectedIndices = [0];
+          kneeOptionIdx = 0;
+        } else if (M <= 5) {
+          selectedIndices = Array.from({ length: M }, (_, i) => i);
+          kneeOptionIdx = Math.max(0, Math.min(M - 1, rawKneeIdx));
+        } else {
+          const k = Math.max(0, Math.min(M - 1, rawKneeIdx));
+          const target_k = Math.max(1, Math.min(M - 2, k));
+          const i1 = Math.max(1, Math.min(target_k - 1, Math.round(target_k / 2)));
+          const i3 = Math.max(target_k + 1, Math.min(M - 2, Math.round((target_k + M - 1) / 2)));
+          const idxSet = new Set([0, i1, target_k, i3, M - 1]);
+          for (let c = 0; c < M; c++) {
+            if (idxSet.size === 5) break;
+            idxSet.add(c);
+          }
+          selectedIndices = Array.from(idxSet).sort((a, b) => a - b);
+          kneeOptionIdx = selectedIndices.indexOf(target_k);
+          if (kneeOptionIdx < 0) {
+            kneeOptionIdx = selectedIndices.indexOf(
+              selectedIndices.reduce((prev, curr) => Math.abs(curr - k) < Math.abs(prev - k) ? curr : prev)
+            );
+          }
+        }
+
+        const paretoCurve = selectedIndices.map(idx => uniqueFrontier[idx]);
+        const balancedRoute = paretoCurve[kneeOptionIdx] || best_balanced;
+
         return {
           fastest: fastest,
           cheapest: cheapest,
-          balanced: best_balanced,
-          maxAllowedHours: maxAllowedHours
+          balanced: balancedRoute,
+          maxAllowedHours: maxAllowedHours,
+          paretoCurve: paretoCurve,
+          kneeIndex: kneeOptionIdx
         };
       }
 
@@ -21753,6 +21873,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         fastest_y: trioY?.fastest || null,
         cheapest_y: trioY?.cheapest || null,
         balanced_y: trioY?.balanced || null,
+        pareto_curve_x: trioX?.paretoCurve || [],
+        pareto_index_x: trioX?.kneeIndex || 0,
+        pareto_knee_x: trioX?.kneeIndex || 0,
+        pareto_curve_y: trioY?.paretoCurve || [],
+        pareto_index_y: trioY?.kneeIndex || 0,
+        pareto_knee_y: trioY?.kneeIndex || 0,
         // Backward-compatibility aliases
         fastest: trioX?.fastest,
         cheapest: trioX?.cheapest,
@@ -23470,19 +23596,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       if (bx) {
-        const elT = document.getElementById('balancedTime_x'); if (elT) elT.innerText = formatHours(bx.total_hours);
-        const elC = document.getElementById('balancedCost_x'); if (elC) elC.innerText = '$' + bx.total_cost.toFixed(2);
-        const elM = document.getElementById('balancedMiles_x'); if (elM) elM.innerText = Math.round(bx.total_actual_miles || bx.route.distance) + ' mi' + (bx.total_detour_miles > 0.4 ? ' (+' + bx.total_detour_miles + ' mi)' : '');
-        const elS = document.getElementById('balancedStopsBadge_x'); if (elS) elS.innerText = bx.stops.length + (bx.stops.length === 1 ? ' stop' : ' stops');
-        const elA = document.getElementById('balancedArrivalBadge_x'); if (elA) elA.innerText = (bx.dest_arr_clock ? bx.dest_arr_clock + ' • ' : '') + bx.final_soc + '%';
-        const elDepBx = document.getElementById('balancedDep_x'); if (elDepBx) elDepBx.innerText = bx.departure_clock || formatClockTime(getDepartureHoursDecimal());
-        const elArrBx = document.getElementById('balancedArr_x'); if (elArrBx) elArrBx.innerText = bx.dest_arr_clock ? (bx.dest_arr_clock + ' (' + bx.final_soc + '%)') : '--';
-
-        const bTime = document.getElementById('balancedTime'); if (bTime) bTime.innerText = formatHours(bx.total_hours);
-        const bCost = document.getElementById('balancedCost'); if (bCost) bCost.innerText = '$' + bx.total_cost.toFixed(2);
-        const bMiles = document.getElementById('balancedMiles'); if (bMiles) bMiles.innerText = Math.round(bx.total_actual_miles || bx.route.distance) + ' mi' + (bx.total_detour_miles > 0.4 ? ' (+' + bx.total_detour_miles + ' mi)' : '');
-        const bStops = document.getElementById('balancedStopsBadge'); if (bStops) bStops.innerText = bx.stops.length + (bx.stops.length === 1 ? ' stop' : ' stops');
-        const bArr = document.getElementById('balancedArrivalBadge'); if (bArr) bArr.innerText = (bx.dest_arr_clock ? bx.dest_arr_clock + ' • ' : '') + bx.final_soc + '%';
+        updateBalancedCardUI('x');
       }
 
       // ROW 2 (Y Stops)
@@ -23522,13 +23636,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         if (by) {
-          const elBT = document.getElementById('balancedTime_y'); if (elBT) elBT.innerText = formatHours(by.total_hours);
-          const elBC = document.getElementById('balancedCost_y'); if (elBC) elBC.innerText = '$' + by.total_cost.toFixed(2);
-          const elBM = document.getElementById('balancedMiles_y'); if (elBM) elBM.innerText = Math.round(by.total_actual_miles || by.route.distance) + ' mi' + (by.total_detour_miles > 0.4 ? ' (+' + by.total_detour_miles + ' mi)' : '');
-          const elBS = document.getElementById('balancedStopsBadge_y'); if (elBS) elBS.innerText = by.stops.length + (by.stops.length === 1 ? ' stop' : ' stops');
-          const elBA = document.getElementById('balancedArrivalBadge_y'); if (elBA) elBA.innerText = (by.dest_arr_clock ? by.dest_arr_clock + ' • ' : '') + by.final_soc + '%';
-          const elDepBy = document.getElementById('balancedDep_y'); if (elDepBy) elDepBy.innerText = by.departure_clock || formatClockTime(getDepartureHoursDecimal());
-          const elArrBy = document.getElementById('balancedArr_y'); if (elArrBy) elArrBy.innerText = by.dest_arr_clock ? (by.dest_arr_clock + ' (' + by.final_soc + '%)') : '--';
+          updateBalancedCardUI('y');
         }
       } else {
         // If Y stops not available, show clear informative banner instead of silently hiding Row 2
@@ -23546,6 +23654,115 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       selectItinerary(currentItineraryKey || 'fastest_x');
+    }
+
+    function updateBalancedCardUI(row) {
+      if (!calculatedResults) return;
+      const bKey = `balanced_${row}`;
+      const fKey = `fastest_${row}`;
+      const cCurveKey = `pareto_curve_${row}`;
+      const cIdxKey = `pareto_index_${row}`;
+      const cKneeKey = `pareto_knee_${row}`;
+
+      const b = calculatedResults[bKey];
+      const f = calculatedResults[fKey] || b;
+      const curve = calculatedResults[cCurveKey] || [];
+      const idx = calculatedResults[cIdxKey] !== undefined ? calculatedResults[cIdxKey] : 0;
+      const kneeIdx = calculatedResults[cKneeKey] !== undefined ? calculatedResults[cKneeKey] : 0;
+
+      if (!b) return;
+
+      const elT = document.getElementById(`balancedTime_${row}`);
+      if (elT) elT.innerText = formatHours(b.total_hours);
+
+      const elC = document.getElementById(`balancedCost_${row}`);
+      if (elC) elC.innerText = '$' + b.total_cost.toFixed(2);
+
+      const elM = document.getElementById(`balancedMiles_${row}`);
+      if (elM) elM.innerText = Math.round(b.total_actual_miles || b.route.distance) + ' mi' + (b.total_detour_miles > 0.4 ? ' (+' + b.total_detour_miles + ' mi)' : '');
+
+      const elS = document.getElementById(`balancedStopsBadge_${row}`);
+      if (elS) elS.innerText = b.stops.length + (b.stops.length === 1 ? ' stop' : ' stops');
+
+      const elA = document.getElementById(`balancedArrivalBadge_${row}`);
+      if (elA) elA.innerText = (b.dest_arr_clock ? b.dest_arr_clock + ' • ' : '') + b.final_soc + '%';
+
+      const elDep = document.getElementById(`balancedDep_${row}`);
+      if (elDep) elDep.innerText = b.departure_clock || formatClockTime(getDepartureHoursDecimal());
+
+      const elArr = document.getElementById(`balancedArr_${row}`);
+      if (elArr) elArr.innerText = b.dest_arr_clock ? (b.dest_arr_clock + ' (' + b.final_soc + '%)') : '--';
+
+      if (row === 'x') {
+        const bTime = document.getElementById('balancedTime'); if (bTime) bTime.innerText = formatHours(b.total_hours);
+        const bCost = document.getElementById('balancedCost'); if (bCost) bCost.innerText = '$' + b.total_cost.toFixed(2);
+        const bMiles = document.getElementById('balancedMiles'); if (bMiles) bMiles.innerText = Math.round(b.total_actual_miles || b.route.distance) + ' mi' + (b.total_detour_miles > 0.4 ? ' (+' + b.total_detour_miles + ' mi)' : '');
+        const bStops = document.getElementById('balancedStopsBadge'); if (bStops) bStops.innerText = b.stops.length + (b.stops.length === 1 ? ' stop' : ' stops');
+        const bArr = document.getElementById('balancedArrivalBadge'); if (bArr) bArr.innerText = (b.dest_arr_clock ? b.dest_arr_clock + ' • ' : '') + b.final_soc + '%';
+      }
+
+      // Update Stepper Controls
+      const fasterBtn = document.getElementById(`paretoFasterBtn_${row}`);
+      const cheaperBtn = document.getElementById(`paretoCheaperBtn_${row}`);
+      const stepLabel = document.getElementById(`paretoStepLabel_${row}`);
+      const deltaLabel = document.getElementById(`paretoDeltaLabel_${row}`);
+
+      if (fasterBtn) fasterBtn.disabled = (idx <= 0 || curve.length <= 1);
+      if (cheaperBtn) cheaperBtn.disabled = (idx >= curve.length - 1 || curve.length <= 1);
+
+      if (stepLabel) {
+        const isKnee = (idx === kneeIdx && curve.length > 2);
+        const isFast = (idx === 0 && curve.length > 1);
+        const isCheap = (idx === curve.length - 1 && curve.length > 1);
+        let tag = '';
+        if (isKnee) tag = ' (Knee)';
+        else if (isFast) tag = ' (Fastest)';
+        else if (isCheap) tag = ' (Cheapest)';
+        stepLabel.innerText = `Option ${idx + 1} of ${Math.max(1, curve.length)}${tag}`;
+      }
+
+      if (deltaLabel && f) {
+        const deltaHours = b.total_hours - f.total_hours;
+        const deltaCost = b.total_cost - f.total_cost;
+        const deltaMins = Math.round(deltaHours * 60);
+
+        if (idx === 0 || (deltaMins === 0 && Math.abs(deltaCost) < 0.05)) {
+          deltaLabel.innerText = "Baseline (Fastest)";
+          deltaLabel.className = "text-[9px] text-emerald-400 font-mono";
+        } else {
+          const timePart = deltaMins > 0 ? `+${deltaMins}m` : (deltaMins < 0 ? `-${Math.abs(deltaMins)}m` : `+0m`);
+          const costPart = deltaCost < -0.01 ? `-$${Math.abs(deltaCost).toFixed(2)}` : (deltaCost > 0.01 ? `+$${deltaCost.toFixed(2)}` : `$0.00`);
+          deltaLabel.innerText = `${timePart}, ${costPart} vs fastest`;
+          deltaLabel.className = "text-[9px] text-cyan-300 font-mono";
+        }
+      }
+    }
+
+    function stepParetoCurve(row, delta) {
+      if (!calculatedResults) return;
+      const cCurveKey = `pareto_curve_${row}`;
+      const cIdxKey = `pareto_index_${row}`;
+      const bKey = `balanced_${row}`;
+      const curve = calculatedResults[cCurveKey] || [];
+      if (curve.length === 0) return;
+
+      let curr = calculatedResults[cIdxKey] !== undefined ? calculatedResults[cIdxKey] : 0;
+      let next = curr + delta;
+      if (next < 0) next = 0;
+      if (next >= curve.length) next = curve.length - 1;
+      if (next === curr) return;
+
+      calculatedResults[cIdxKey] = next;
+      calculatedResults[bKey] = curve[next];
+      if (row === 'x') {
+        calculatedResults.balanced = curve[next];
+      }
+
+      updateBalancedCardUI(row);
+
+      // Select balanced card and render active route
+      selectItinerary(bKey);
+      if (window.lucide) lucide.createIcons();
     }
 
     function selectItinerary(key) {
