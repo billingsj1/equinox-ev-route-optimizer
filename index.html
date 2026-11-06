@@ -18174,39 +18174,93 @@
       return (spd != null && !isNaN(spd)) ? spd : fallback;
     }
 
-    // Google Routes Speed Lookup with Normalized Holiday Congestion Offsets
+    // Google Routes Speed Lookup with 30-min rush intervals and normalized holiday congestion
+    function getBestHourEntry(hoursObj, hour) {
+      if (!hoursObj) return null;
+      const clamped = Math.min(23, Math.max(0, hour));
+      const halfHour = Math.round(clamped * 2) / 2;
+      const halfStr = String(halfHour);
+      if (hoursObj[halfStr] && hoursObj[halfStr].traffic_mph != null) {
+        return hoursObj[halfStr];
+      }
+      const intStr = String(Math.round(clamped));
+      if (hoursObj[intStr] && hoursObj[intStr].traffic_mph != null) {
+        return hoursObj[intStr];
+      }
+      const floorStr = String(Math.floor(clamped));
+      if (hoursObj[floorStr] && hoursObj[floorStr].traffic_mph != null) {
+        return hoursObj[floorStr];
+      }
+      return null;
+    }
+
+    const CORRIDOR_KEY_ALIASES = {
+      'vinest_east': 'vinest_benfranklin_east',
+      'vinest_west': 'vinest_benfranklin_west',
+      'columbus_i70_split_east': 'columbus_i70_east',
+      'columbus_i70_split_west': 'columbus_i70_west',
+      'i276_east': 'i276_paturnpike_east',
+      'i276_west': 'i276_paturnpike_west',
+      'patp_carlisle_node_east': 'pa_turnpike_east_carlisle',
+      'patp_carlisle_node_west': 'pa_turnpike_west_carlisle',
+      'patp_allegheny_tunnel_east': 'pa_turnpike_tunnels_east',
+      'patp_allegheny_tunnel_west': 'pa_turnpike_tunnels_west',
+      'patp_tuscarora_tunnel_east': 'pa_turnpike_tunnels_east',
+      'patp_tuscarora_tunnel_west': 'pa_turnpike_tunnels_west',
+      'patp_blue_mountain_tunnel_east': 'pa_turnpike_tunnels_east',
+      'patp_blue_mountain_tunnel_west': 'pa_turnpike_tunnels_west',
+      'i79_bridgeville_north': 'sewickley_i79_north',
+      'i79_bridgeville_south': 'sewickley_i79_south',
+      'us22_weirton_east': 'sewickley_us22_east',
+      'us22_weirton_west': 'sewickley_us22_west'
+    };
+
     function getCalibratedSpeed(key, dow, hour, fallback, dateStr) {
+      const lookupKey = (BOTTLENECK_SPEEDS_DB && BOTTLENECK_SPEEDS_DB.corridors && BOTTLENECK_SPEEDS_DB.corridors[key])
+        ? key
+        : (CORRIDOR_KEY_ALIASES[key] || key);
+
       // 1. Check if Google Routes DB has this corridor
-      if (BOTTLENECK_SPEEDS_DB && BOTTLENECK_SPEEDS_DB.corridors && BOTTLENECK_SPEEDS_DB.corridors[key]) {
-        const cData = BOTTLENECK_SPEEDS_DB.corridors[key];
+      if (BOTTLENECK_SPEEDS_DB && BOTTLENECK_SPEEDS_DB.corridors && BOTTLENECK_SPEEDS_DB.corridors[lookupKey]) {
+        const cData = BOTTLENECK_SPEEDS_DB.corridors[lookupKey];
         const hKeyObj = dateStr ? getHolidayProfileKey(dateStr) : null;
         const hKey = hKeyObj ? hKeyObj.key : null;
-        const hStr = String(Math.min(23, Math.max(0, hour)));
 
-        // A. If holiday date and offsets exist, apply normalized offset multiplier to baseline
-        if (hKey && HOLIDAY_OFFSETS_DB && HOLIDAY_OFFSETS_DB.corridors && HOLIDAY_OFFSETS_DB.corridors[key]) {
-          const hOffset = HOLIDAY_OFFSETS_DB.corridors[key].holidays?.[hKey]?.hours?.[hStr];
+        // A. If holiday date and direct Google holiday profile exists
+        if (hKey && cData.dates && cData.dates[hKey]) {
+          const directEntry = getBestHourEntry(cData.dates[hKey].hours, hour);
+          if (directEntry && directEntry.traffic_mph != null) {
+            return directEntry.traffic_mph;
+          }
+        }
+
+        // B. If holiday date and offsets exist, apply normalized offset multiplier to baseline
+        if (hKey && HOLIDAY_OFFSETS_DB && HOLIDAY_OFFSETS_DB.corridors && HOLIDAY_OFFSETS_DB.corridors[lookupKey]) {
+          const clamped = Math.min(23, Math.max(0, hour));
+          const hStr = String(Math.round(clamped));
+          const hOffset = HOLIDAY_OFFSETS_DB.corridors[lookupKey].holidays?.[hKey]?.hours?.[hStr];
           if (hOffset && hOffset.speed_multiplier != null) {
             let bKey = 'baseline_wed';
             if (dow === 0) bKey = 'baseline_sun';
             else if (dow === 1) bKey = 'baseline_mon';
             else if (dow === 5 || dow === 6) bKey = 'baseline_fri';
             
-            const baseSpd = cData.dates?.[bKey]?.hours?.[hStr]?.traffic_mph || fallback;
+            const baseEntry = getBestHourEntry(cData.dates?.[bKey]?.hours, hour);
+            const baseSpd = (baseEntry && baseEntry.traffic_mph != null) ? baseEntry.traffic_mph : fallback;
             const adjustedSpd = Math.round(baseSpd * hOffset.speed_multiplier * 10) / 10;
             return Math.max(12.0, adjustedSpd);
           }
         }
 
-        // B. Non-holiday or direct Google baseline lookup
+        // C. Non-holiday or direct Google baseline lookup
         let baseProfileKey = 'baseline_wed';
         if (dow === 0) baseProfileKey = 'baseline_sun';
         else if (dow === 1) baseProfileKey = 'baseline_mon';
         else if (dow === 5 || dow === 6) baseProfileKey = 'baseline_fri';
 
-        const gHourData = cData.dates?.[baseProfileKey]?.hours?.[hStr];
-        if (gHourData && gHourData.traffic_mph != null) {
-          return gHourData.traffic_mph;
+        const gEntry = getBestHourEntry(cData.dates?.[baseProfileKey]?.hours, hour);
+        if (gEntry && gEntry.traffic_mph != null) {
+          return gEntry.traffic_mph;
         }
       }
 
@@ -18221,10 +18275,24 @@
       return getCalibratedSpeed(key, dow, hour, fallback, dateStr);
     }
 
-    function getSchuylkillHourlySpeed(dow, hour, isEastbound) {
-      return (isEastbound != null)
-        ? getDirectionalTomTomSpeed('schuylkill_east', 'schuylkill_west', isEastbound, dow, hour, 49.5)
-        : getTomTomSpeed('schuylkill', dow, hour, 49.5);
+    function getSchuylkillHourlySpeed(dow, hour, isEastbound, lon) {
+      if (isEastbound != null) {
+        let eastKey = 'schuylkill_east';
+        let westKey = 'schuylkill_west';
+        if (lon != null && lon !== 0.0) {
+          if (isEastbound) {
+            if (lon <= -75.305) eastKey = 'schuylkill_east_slice1';
+            else if (lon <= -75.215) eastKey = 'schuylkill_east_slice2';
+            else eastKey = 'schuylkill_east_slice3';
+          } else {
+            if (lon > -75.215) westKey = 'schuylkill_west_slice1';
+            else if (lon > -75.305) westKey = 'schuylkill_west_slice2';
+            else westKey = 'schuylkill_west_slice3';
+          }
+        }
+        return getDirectionalTomTomSpeed(eastKey, westKey, isEastbound, dow, hour, 49.5);
+      }
+      return getTomTomSpeed('schuylkill', dow, hour, 49.5);
     }
 
     function getVineStHourlySpeed(dow, hour, isEastbound) {
@@ -18349,81 +18417,81 @@
         } else if (sName.includes('turnpike') || sRef.includes('turnpike') || sRef.includes('patp')) {
           if (sName.includes('tunnel') || (s.ref && s.ref.includes('tunnel')) || posted_speed <= 55.0) {
             if (lon > -78.83 && lon < -78.78) {
-              base_mph = getDirectionalTomTomSpeed('patp_allegheny_tunnel_east', 'patp_allegheny_tunnel_west', isEastbound, localDayOfWeek, localHourInt, 52.0);
+              base_mph = getDirectionalTomTomSpeed('patp_allegheny_tunnel_east', 'patp_allegheny_tunnel_west', isEastbound, localDayOfWeek, localHourFloat, 52.0);
             } else if (lon > -77.80 && lon < -77.75) {
-              base_mph = getDirectionalTomTomSpeed('patp_tuscarora_tunnel_east', 'patp_tuscarora_tunnel_west', isEastbound, localDayOfWeek, localHourInt, 54.0);
+              base_mph = getDirectionalTomTomSpeed('patp_tuscarora_tunnel_east', 'patp_tuscarora_tunnel_west', isEastbound, localDayOfWeek, localHourFloat, 54.0);
             } else if (lon > -77.64 && lon < -77.58) {
-              base_mph = getDirectionalTomTomSpeed('patp_blue_mountain_tunnel_east', 'patp_blue_mountain_tunnel_west', isEastbound, localDayOfWeek, localHourInt, 53.0);
+              base_mph = getDirectionalTomTomSpeed('patp_blue_mountain_tunnel_east', 'patp_blue_mountain_tunnel_west', isEastbound, localDayOfWeek, localHourFloat, 53.0);
             } else {
               base_mph = 55.0;
             }
             free_flow_mph = 55.0;
           } else if (lon > -78.26 && lon < -78.22 && lat > 39.99 && lat < 40.03) {
             // Breezewood PA Turnpike Interchange / Gateway (Exit 161)
-            base_mph = getDirectionalTomTomSpeed('patp_breezewood_node_east', 'patp_breezewood_node_west', isEastbound, localDayOfWeek, localHourInt, 45.0);
+            base_mph = getDirectionalTomTomSpeed('patp_breezewood_node_east', 'patp_breezewood_node_west', isEastbound, localDayOfWeek, localHourFloat, 45.0);
             free_flow_mph = 50.0;
           } else if (lon > -79.10 && lon < -79.05 && lat > 40.00 && lat < 40.04) {
             // Somerset Interchange (Exit 110)
-            base_mph = getDirectionalTomTomSpeed('patp_somerset_node_east', 'patp_somerset_node_west', isEastbound, localDayOfWeek, localHourInt, 55.0);
+            base_mph = getDirectionalTomTomSpeed('patp_somerset_node_east', 'patp_somerset_node_west', isEastbound, localDayOfWeek, localHourFloat, 55.0);
             free_flow_mph = 65.0;
           } else if (lon > -77.15 && lon < -77.10 && lat > 40.20 && lat < 40.24) {
             // Carlisle / I-81 Mega Interchange (Exit 226)
-            base_mph = getDirectionalTomTomSpeed('patp_carlisle_node_east', 'patp_carlisle_node_west', isEastbound, localDayOfWeek, localHourInt, 52.0);
+            base_mph = getDirectionalTomTomSpeed('patp_carlisle_node_east', 'patp_carlisle_node_west', isEastbound, localDayOfWeek, localHourFloat, 52.0);
             free_flow_mph = 65.0;
           } else if (lon > -76.02 && lon < -75.96 && lat > 40.16 && lat < 40.20) {
             // Bowmansville Plaza / Lancaster Ridge (MP 289)
-            base_mph = getDirectionalTomTomSpeed('patp_bowmansville_node_east', 'patp_bowmansville_node_west', isEastbound, localDayOfWeek, localHourInt, 62.0);
+            base_mph = getDirectionalTomTomSpeed('patp_bowmansville_node_east', 'patp_bowmansville_node_west', isEastbound, localDayOfWeek, localHourFloat, 62.0);
             free_flow_mph = 70.0;
           } else if (lon > -79.64 && lon < -79.54 && lat > 40.20 && lat < 40.25) {
             // New Stanton PA Turnpike Interchange (Exit 75 / I-70 merge)
-            base_mph = getDirectionalTomTomSpeed('patp_new_stanton_east', 'patp_new_stanton_west', isEastbound, localDayOfWeek, localHourInt, 30.0);
+            base_mph = getDirectionalTomTomSpeed('patp_new_stanton_east', 'patp_new_stanton_west', isEastbound, localDayOfWeek, localHourFloat, 30.0);
             free_flow_mph = 30.4;
           } else if (lon > -76.94 && lon < -76.84 && lat > 40.20 && lat < 40.24) {
             // Harrisburg West (Exit 242 / US-15 to Dillsburg)
-            base_mph = getDirectionalTomTomSpeed('patp_harrisburg_west_east', 'patp_harrisburg_west_west', isEastbound, localDayOfWeek, localHourInt, 25.0);
+            base_mph = getDirectionalTomTomSpeed('patp_harrisburg_west_east', 'patp_harrisburg_west_west', isEastbound, localDayOfWeek, localHourFloat, 25.0);
             free_flow_mph = 24.9;
           } else if (lon > -75.45 && lon < -75.36 && lat > 40.06 && lat < 40.11) {
             // Valley Forge / King of Prussia (Exit 326)
-            base_mph = getDirectionalTomTomSpeed('patp_valley_forge_east', 'patp_valley_forge_west', isEastbound, localDayOfWeek, localHourInt, 28.0);
+            base_mph = getDirectionalTomTomSpeed('patp_valley_forge_east', 'patp_valley_forge_west', isEastbound, localDayOfWeek, localHourFloat, 28.0);
             free_flow_mph = 29.5;
           } else if (sName.includes('new jersey') || sRef.includes('nj turnpike') || (lon > -75.05 && lon < -74.70 && lat > 39.88 && lat < 40.16)) {
-            base_mph = getNJTurnpikeHourlySpeed(localDayOfWeek, localHourInt, isNorthbound); // NJ Turnpike Mainline
+            base_mph = getNJTurnpikeHourlySpeed(localDayOfWeek, localHourFloat, isNorthbound); // NJ Turnpike Mainline
             free_flow_mph = 57.6;
           } else if (sRef.includes('276') || sName.includes('delaware river') || (lon > -75.40 && lon < -74.74 && lat > 40.05 && lat < 40.20)) {
-            base_mph = getI276HourlySpeed(localDayOfWeek, localHourInt, isEastbound); // PA Turnpike East Extension
+            base_mph = getI276HourlySpeed(localDayOfWeek, localHourFloat, isEastbound); // PA Turnpike East Extension
             free_flow_mph = 64.0;
           } else {
             base_mph = posted_speed; // Mainline PA Turnpike cruising
             free_flow_mph = posted_speed;
           }
         } else if (sName.includes('schuylkill') || (sRef.includes('76') && ((lon > -75.45 && lon < -75.15 && lat > 39.92 && lat < 40.15) || (lat === 0.0 && sName.includes('schuylkill'))))) {
-          base_mph = getSchuylkillHourlySpeed(localDayOfWeek, localHourInt, isEastbound);
+          base_mph = getSchuylkillHourlySpeed(localDayOfWeek, localHourFloat, isEastbound, lon);
           free_flow_mph = 49.5;
         } else if (sName.includes('vine') || (sRef.includes('676') && (lat === 0.0 || lon > -75.40)) || sName.includes('ben franklin') || sName.includes('benjamin franklin') || (lon > -75.18 && lon < -75.10 && lat > 39.93 && lat < 39.98) || (sRef.includes('30') && lon > -75.18 && lon < -75.08 && lat > 39.93 && lat < 39.98)) {
-          base_mph = getVineStHourlySpeed(localDayOfWeek, localHourInt, isEastbound);
+          base_mph = getVineStHourlySpeed(localDayOfWeek, localHourFloat, isEastbound);
           free_flow_mph = 31.0;
         } else if ((sName.includes('walt whitman') || (sRef.includes('76') && lon > -75.16 && lon < -75.11)) && lat > 39.89 && lat < 39.93) {
-          base_mph = getDirectionalTomTomSpeed('waltwhitman_east', 'waltwhitman_west', isEastbound, localDayOfWeek, localHourInt, 30.0);
+          base_mph = getDirectionalTomTomSpeed('waltwhitman_east', 'waltwhitman_west', isEastbound, localDayOfWeek, localHourFloat, 30.0);
           free_flow_mph = 31.0;
         } else if ((sName.includes('delaware memorial') || (sRef.includes('295') && lon > -75.56 && lon < -75.47)) && lat > 39.67 && lat < 39.71) {
-          base_mph = getDirectionalTomTomSpeed('delaware_memorial_bridge_east', 'delaware_memorial_bridge_west', isEastbound, localDayOfWeek, localHourInt, 35.0);
+          base_mph = getDirectionalTomTomSpeed('delaware_memorial_bridge_east', 'delaware_memorial_bridge_west', isEastbound, localDayOfWeek, localHourFloat, 35.0);
           free_flow_mph = 37.3;
         } else if ((sRef.includes('295') || sName.includes('295')) && lon > -75.10 && lon < -74.92 && lat > 39.84 && lat < 39.95) {
-          base_mph = getDirectionalTomTomSpeed('i295_southjersey_north', 'i295_southjersey_south', isNorthbound, localDayOfWeek, localHourInt, posted_speed);
+          base_mph = getDirectionalTomTomSpeed('i295_southjersey_north', 'i295_southjersey_south', isNorthbound, localDayOfWeek, localHourFloat, posted_speed);
           free_flow_mph = 53.1;
         } else if (sName.includes('marlton') || sRef.includes('nj 70') || sRef.includes('route 70') || (sRef.includes('70') && (lon === 0.0 || (lon > -75.15 && lon < -74.85 && lat > 39.84 && lat < 39.98)))) {
-          base_mph = getNJ70HourlySpeed(localDayOfWeek, localHourInt, isEastbound);
+          base_mph = getNJ70HourlySpeed(localDayOfWeek, localHourFloat, isEastbound);
           free_flow_mph = 34.3;
         } else if (sRef.includes('73') || sName.includes('route 73') || sName.includes('nj-73') || sName.includes('nj 73')) {
           if (lat > 39.99 && lon < -75.00) {
-            base_mph = getDirectionalTomTomSpeed('tacony_palmyra_nj73_north', 'tacony_palmyra_nj73_south', isNorthbound, localDayOfWeek, localHourInt, 31.0);
+            base_mph = getDirectionalTomTomSpeed('tacony_palmyra_nj73_north', 'tacony_palmyra_nj73_south', isNorthbound, localDayOfWeek, localHourFloat, 31.0);
             free_flow_mph = 36.3;
           } else {
-            base_mph = getNJ73HourlySpeed(localDayOfWeek, localHourInt, isNorthbound);
+            base_mph = getNJ73HourlySpeed(localDayOfWeek, localHourFloat, isNorthbound);
             free_flow_mph = 25.2;
           }
         } else if ((sRef.includes('38') || sName.includes('route 38') || sName.includes('nj-38')) && lon > -75.05 && lon < -74.90 && lat > 39.93 && lat < 39.98) {
-          base_mph = getDirectionalTomTomSpeed('nj38_east', 'nj38_west', isEastbound, localDayOfWeek, localHourInt, 36.0);
+          base_mph = getDirectionalTomTomSpeed('nj38_east', 'nj38_west', isEastbound, localDayOfWeek, localHourFloat, 36.0);
           free_flow_mph = 36.0;
         } else if (
           /(^|\b)(pa[- ]?283|pa 283)\b/i.test(sRef) || /(^|\b)(pa[- ]?283|pa 283)\b/i.test(sName) ||
@@ -18431,50 +18499,57 @@
            lon > -76.80 && lon < -75.30 && lat >= 39.90 && lat <= 40.25)
         ) {
           if (lon > -76.36 && lon < -76.20 && lat > 40.02 && lat < 40.08) {
-            base_mph = getDirectionalTomTomSpeed('us30_lancaster_east', 'us30_lancaster_west', isEastbound, localDayOfWeek, localHourInt, 40.0);
+            base_mph = getDirectionalTomTomSpeed('us30_lancaster_east', 'us30_lancaster_west', isEastbound, localDayOfWeek, localHourFloat, 40.0);
             free_flow_mph = 44.5;
           } else {
-            base_mph = getUS30PA283HourlySpeed(localDayOfWeek, localHourInt, isEastbound);
+            base_mph = getUS30PA283HourlySpeed(localDayOfWeek, localHourFloat, isEastbound);
             free_flow_mph = 63.7;
           }
         } else if ((sRef.includes('15') || sName.includes('us-15') || sName.includes('us 15')) && lon > -77.06 && lon < -76.90 && lat > 40.08 && lat < 40.24) {
-          base_mph = getDirectionalTomTomSpeed('dillsburg_us15_arterial_north', 'dillsburg_us15_arterial_south', isNorthbound, localDayOfWeek, localHourInt, 30.0);
+          base_mph = getDirectionalTomTomSpeed('dillsburg_us15_arterial_north', 'dillsburg_us15_arterial_south', isNorthbound, localDayOfWeek, localHourFloat, 30.0);
           free_flow_mph = 31.7;
         } else if ((sRef.includes('83') || sName.includes('i-83') || sName.includes('i 83')) && lon > -76.90 && lon < -76.82 && lat > 40.22 && lat < 40.30) {
-          base_mph = getDirectionalTomTomSpeed('i83_harrisburg_north', 'i83_harrisburg_south', isNorthbound, localDayOfWeek, localHourInt, 48.0);
+          base_mph = getDirectionalTomTomSpeed('i83_harrisburg_north', 'i83_harrisburg_south', isNorthbound, localDayOfWeek, localHourFloat, 48.0);
           free_flow_mph = 48.4;
         } else if ((sRef.includes('68') || sName.includes('i-68') || sName.includes('i 68')) && lon > -78.82 && lon < -78.70 && lat > 39.63 && lat < 39.67) {
-          base_mph = getDirectionalTomTomSpeed('i68_cumberland_east', 'i68_cumberland_west', isEastbound, localDayOfWeek, localHourInt, 21.0);
+          base_mph = getDirectionalTomTomSpeed('i68_cumberland_east', 'i68_cumberland_west', isEastbound, localDayOfWeek, localHourFloat, 21.0);
           free_flow_mph = 21.1;
         } else if ((sRef.includes('70') || sName.includes('i-70') || sName.includes('i 70')) && lon > -77.82 && lon < -77.65 && lat > 39.61 && lat < 39.66) {
-          base_mph = getDirectionalTomTomSpeed('i70_hagerstown_east', 'i70_hagerstown_west', isEastbound, localDayOfWeek, localHourInt, 28.0);
+          base_mph = getDirectionalTomTomSpeed('i70_hagerstown_east', 'i70_hagerstown_west', isEastbound, localDayOfWeek, localHourFloat, 28.0);
           free_flow_mph = 28.8;
         } else if ((sRef.includes('70') || sName.includes('i-70') || sName.includes('i 70')) && lon > -77.46 && lon < -77.35 && lat > 39.38 && lat < 39.44) {
-          base_mph = getDirectionalTomTomSpeed('i70_frederick_east', 'i70_frederick_west', isEastbound, localDayOfWeek, localHourInt, 30.0);
+          base_mph = getDirectionalTomTomSpeed('i70_frederick_east', 'i70_frederick_west', isEastbound, localDayOfWeek, localHourFloat, 30.0);
           free_flow_mph = 32.1;
         } else if ((sRef.includes('22') || sName.includes('us-22') || sName.includes('us 22')) && lon > -80.64 && lon < -80.55 && lat > 40.35 && lat < 40.42) {
-          base_mph = getDirectionalTomTomSpeed('us22_weirton_east', 'us22_weirton_west', isEastbound, localDayOfWeek, localHourInt, 23.5);
+          base_mph = getDirectionalTomTomSpeed('us22_weirton_east', 'us22_weirton_west', isEastbound, localDayOfWeek, localHourFloat, 23.5);
           free_flow_mph = 23.9;
         } else if (sRef.includes('576') || sName.includes('pa-576') || sName.includes('southern beltway') || (sName.includes('beltway') && (lon === 0.0 || (lon > -80.35 && lon < -80.24 && lat > 40.35 && lat < 40.50)))) {
-          base_mph = getDirectionalTomTomSpeed('pa576_beltway_north', 'pa576_beltway_south', isNorthbound, localDayOfWeek, localHourInt, 40.0);
+          base_mph = getDirectionalTomTomSpeed('pa576_beltway_north', 'pa576_beltway_south', isNorthbound, localDayOfWeek, localHourFloat, 40.0);
           free_flow_mph = 41.0;
         } else if ((sRef.includes('79') || sName.includes('i-79') || sName.includes('i 79')) && lon > -80.15 && lon < -80.08 && lat > 40.32 && lat < 40.42) {
-          base_mph = getDirectionalTomTomSpeed('i79_bridgeville_north', 'i79_bridgeville_south', isNorthbound, localDayOfWeek, localHourInt, 36.0);
+          base_mph = getDirectionalTomTomSpeed('i79_bridgeville_north', 'i79_bridgeville_south', isNorthbound, localDayOfWeek, localHourFloat, 36.0);
           free_flow_mph = 41.1;
         } else if ((sRef.includes('65') || sName.includes('pa-65') || sName.includes('ohio river')) && lon > -80.22 && lon < -80.14 && lat > 40.50 && lat < 40.57) {
-          base_mph = getDirectionalTomTomSpeed('pa65_north', 'pa65_south', isNorthbound, localDayOfWeek, localHourInt, 38.0);
+          base_mph = getDirectionalTomTomSpeed('pa65_north', 'pa65_south', isNorthbound, localDayOfWeek, localHourFloat, 38.0);
           free_flow_mph = 38.8;
         } else if ((sName.includes('sewickley') || sName.includes('bridge st')) && lon > -80.21 && lon < -80.16 && lat > 40.53 && lat < 40.56) {
-          base_mph = getDirectionalTomTomSpeed('sewickley_bridge_east', 'sewickley_bridge_west', isEastbound, localDayOfWeek, localHourInt, 13.0);
+          base_mph = getDirectionalTomTomSpeed('sewickley_bridge_east', 'sewickley_bridge_west', isEastbound, localDayOfWeek, localHourFloat, 13.0);
           free_flow_mph = 13.9;
         } else if ((sRef.includes('376') || sName.includes('i-376') || sName.includes('parkway')) && lon > -80.15 && lon < -80.00 && lat > 40.41 && lat < 40.46) {
-          base_mph = getDirectionalTomTomSpeed('pittsburgh_parkway_inbound', 'pittsburgh_parkway_outbound', isEastbound, localDayOfWeek, localHourInt, 42.0);
+          base_mph = getDirectionalTomTomSpeed('pittsburgh_parkway_inbound', 'pittsburgh_parkway_outbound', isEastbound, localDayOfWeek, localHourFloat, 42.0);
           free_flow_mph = 42.5;
-        } else if ((sRef.includes('70') || sName.includes('i-70') || sName.includes('i 70')) && lon > -83.08 && lon < -82.90 && lat > 39.93 && lat < 39.98) {
-          base_mph = getDirectionalTomTomSpeed('columbus_i70_split_east', 'columbus_i70_split_west', isEastbound, localDayOfWeek, localHourInt, posted_speed);
+        } else if ((sRef.includes('70') || sName.includes('i-70') || sName.includes('i 70')) && lon > -83.10 && lon < -82.80 && lat > 39.92 && lat < 40.00) {
+          let eastKey = (lon < -82.855) ? 'columbus_i70_east_slice1' : 'columbus_i70_east_slice2';
+          let westKey = (lon >= -82.855) ? 'columbus_i70_west_slice1' : 'columbus_i70_west_slice2';
+          base_mph = getDirectionalTomTomSpeed(eastKey, westKey, isEastbound, localDayOfWeek, localHourFloat, posted_speed);
           free_flow_mph = 52.8;
+        } else if ((sRef.includes('70') || sName.includes('i-70') || sName.includes('i 70')) && lon > -80.32 && lon < -80.16 && lat > 40.14 && lat < 40.21) {
+          let eastKey = (lon <= -80.240) ? 'washington_pa_i70_east_slice1' : 'washington_pa_i70_east_slice2';
+          let westKey = (lon > -80.240) ? 'washington_pa_i70_west_slice1' : 'washington_pa_i70_west_slice2';
+          base_mph = getDirectionalTomTomSpeed(eastKey, westKey, isEastbound, localDayOfWeek, localHourFloat, posted_speed);
+          free_flow_mph = 55.0;
         } else if ((sRef.includes('70') || sName.includes('i-70') || sName.includes('i 70')) && lon > -80.76 && lon < -80.68 && lat > 40.05 && lat < 40.09) {
-          base_mph = getDirectionalTomTomSpeed('wheeling_i70_east', 'wheeling_i70_west', isEastbound, localDayOfWeek, localHourInt, 30.0);
+          base_mph = getDirectionalTomTomSpeed('wheeling_i70_east', 'wheeling_i70_west', isEastbound, localDayOfWeek, localHourFloat, 30.0);
           free_flow_mph = 33.2;
         } else if (posted_speed <= 30.0) {
           base_mph = 25.0;
@@ -20121,7 +20196,7 @@
           const db = await resp.json();
           window.BOTTLENECK_SPEEDS_DB = db;
           BOTTLENECK_SPEEDS_DB = db;
-          console.log(`Loaded Google Routes bottleneck speeds database (28 corridors x 17 hours).`);
+          console.log(`Loaded Google Routes bottleneck speeds database (42 corridors/slices x 23 hours/half-hours x 15 dates).`);
           return db;
         }
       } catch (e) {
