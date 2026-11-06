@@ -22687,86 +22687,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             return;
           }
 
-          // Tier 1: Option A Pre-seeded Offline / Memory Cache
+          // Tier 1: Option A Pre-seeded Offline Cache & LocalStorage Check
           if (window.OSRM_WAYPOINT_SEQUENCE_CACHE.has(key)) {
             osrmResponses.set(key, window.OSRM_WAYPOINT_SEQUENCE_CACHE.get(key));
             return;
           }
 
-          // Tier 2: Live OSRM Query to Fill in the Blanks + LocalStorage Persistence
-          const coordsStr = [
-            `${info.route.origin.lon},${info.route.origin.lat}`,
-            ...info.stops.map(s => `${s.station.lon},${s.station.lat}`),
-            `${info.route.destination.lon},${info.route.destination.lat}`
-          ].join(';');
-
-          const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
-          let fetchedSuccessfully = false;
-          try {
-            const resp = await fetch(url, { headers: { "User-Agent": "EquinoxEV-RouteOptimizer/2.0" } });
-            if (resp.ok) {
-              const data = await resp.json();
-              if (data && data.routes && data.routes.length > 0) {
-                const r = data.routes[0];
-                const miles = r.distance * 0.000621371;
-                const hours = r.duration / 3600.0;
-
-                const parsedLegs = (r.legs || []).map(leg => {
-                  const legMiles = (leg.distance || 0) * 0.000621371;
-                  const rawSteps = leg.steps || [];
-                  const pSteps = parseStepsWithHighResSpeedLimits(rawSteps);
-                  return {
-                    distance_miles: legMiles,
-                    duration_hours: (leg.duration || 0) / 3600.0,
-                    steps: pSteps
-                  };
-                });
-
-                const osrmObj = {
-                  distance_miles: miles,
-                  duration_hours: hours,
-                  coordinates: r.geometry.coordinates,
-                  legs: parsedLegs
-                };
-                window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(key, osrmObj);
-                osrmResponses.set(key, osrmObj);
-                fetchedSuccessfully = true;
-
-                // Persist newly filled blanks into browser localStorage for future sessions
-                try {
-                  if (typeof localStorage !== 'undefined') {
-                    const stored = JSON.parse(localStorage.getItem('ev_waypoint_cache') || '{}');
-                    stored[key] = {
-                      d: osrmObj.distance_miles,
-                      h: osrmObj.duration_hours,
-                      legs: osrmObj.legs.map(l => ({
-                        d: l.distance_miles,
-                        h: l.duration_hours,
-                        s: (l.steps || []).map(s => [
-                          s.name || '',
-                          s.ref || '',
-                          Math.round((s.distance_miles || 0) * 10000) / 10000,
-                          s.posted_speed || 70,
-                          Math.round((s.mid_lon || 0) * 10000) / 10000,
-                          Math.round((s.mid_lat || 0) * 10000) / 10000,
-                          (s.maneuver && s.maneuver.type) || '',
-                          (s.maneuver && s.maneuver.bearing_after != null) ? s.maneuver.bearing_after : 90,
-                          (s.maneuver && s.maneuver.bearing_before != null) ? s.maneuver.bearing_before : 90,
-                          (s.intersections && s.intersections.length) ? s.intersections.length : 0
-                        ])
-                      }))
-                    };
-                    localStorage.setItem('ev_waypoint_cache', JSON.stringify(stored));
-                  }
-                } catch (lsErr) {}
-              }
-            }
-          } catch (netErr) {
-            console.warn("Stage 3 live OSRM waypoint query error for key:", key, netErr);
-          }
-
-          // Tier 3: Option B Fallback (High-resolution corridor slicing + detour assembly) if network fails
-          if (!fetchedSuccessfully && !osrmResponses.has(key) && info.route && info.route.steps && info.stops && info.stops.length > 0) {
+          // Tier 2: Option B Fallback (Instant High-Resolution Corridor Slicing + Verified Station Detours)
+          // Uses surveyed highway steps, HERE speed limits, and exact OSRM detours for known corridors with ZERO network lag!
+          if (info.route && info.route.steps && info.route.steps.length > 0 && info.stops && info.stops.length > 0) {
             try {
               const rSteps = info.route.steps;
               const stops = info.stops;
@@ -22800,15 +22729,91 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               }
               const totalDist = legList.reduce((acc, l) => acc + l.distance_miles, 0);
               const totalHrs = legList.reduce((acc, l) => acc + l.duration_hours, 0);
-              const fallbackObj = {
+              const optionBObj = {
                 distance_miles: totalDist,
                 duration_hours: totalHrs,
                 legs: legList
               };
-              osrmResponses.set(key, fallbackObj);
-            } catch (fallbackErr) {
-              console.warn("Option B corridor slice fallback error:", fallbackErr);
+              window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(key, optionBObj);
+              osrmResponses.set(key, optionBObj);
+              return;
+            } catch (optionBErr) {
+              console.warn("Option B corridor slice error:", optionBErr);
             }
+          }
+
+          // Tier 3: Live OSRM Query to "Fill in the Blanks" (ONLY for unknown ad-hoc routes with NO corridor steps)
+          // Protected by 3.5-second strict timeout and automatic localStorage persistence
+          const coordsStr = [
+            `${info.route.origin.lon},${info.route.origin.lat}`,
+            ...info.stops.map(s => `${s.station.lon},${s.station.lat}`),
+            `${info.route.destination.lon},${info.route.destination.lat}`
+          ].join(';');
+
+          const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=true&annotations=speed,distance`;
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const resp = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data && data.routes && data.routes.length > 0) {
+                const r = data.routes[0];
+                const miles = r.distance * 0.000621371;
+                const hours = r.duration / 3600.0;
+
+                const parsedLegs = (r.legs || []).map(leg => {
+                  const legMiles = (leg.distance || 0) * 0.000621371;
+                  const rawSteps = leg.steps || [];
+                  const pSteps = parseStepsWithHighResSpeedLimits(rawSteps);
+                  return {
+                    distance_miles: legMiles,
+                    duration_hours: (leg.duration || 0) / 3600.0,
+                    steps: pSteps
+                  };
+                });
+
+                const osrmObj = {
+                  distance_miles: miles,
+                  duration_hours: hours,
+                  coordinates: r.geometry.coordinates,
+                  legs: parsedLegs
+                };
+                window.OSRM_WAYPOINT_SEQUENCE_CACHE.set(key, osrmObj);
+                osrmResponses.set(key, osrmObj);
+
+                try {
+                  if (typeof localStorage !== 'undefined') {
+                    const stored = JSON.parse(localStorage.getItem('ev_waypoint_cache') || '{}');
+                    stored[key] = {
+                      d: osrmObj.distance_miles,
+                      h: osrmObj.duration_hours,
+                      legs: osrmObj.legs.map(l => ({
+                        d: l.distance_miles,
+                        h: l.duration_hours,
+                        s: (l.steps || []).map(s => [
+                          s.name || '',
+                          s.ref || '',
+                          Math.round((s.distance_miles || 0) * 10000) / 10000,
+                          s.posted_speed || 70,
+                          Math.round((s.mid_lon || 0) * 10000) / 10000,
+                          Math.round((s.mid_lat || 0) * 10000) / 10000,
+                          (s.maneuver && s.maneuver.type) || '',
+                          (s.maneuver && s.maneuver.bearing_after != null) ? s.maneuver.bearing_after : 90,
+                          (s.maneuver && s.maneuver.bearing_before != null) ? s.maneuver.bearing_before : 90,
+                          (s.intersections && s.intersections.length) ? s.intersections.length : 0
+                        ])
+                      }))
+                    };
+                    localStorage.setItem('ev_waypoint_cache', JSON.stringify(stored));
+                  }
+                } catch (lsErr) {}
+              }
+            }
+          } catch (netErr) {
+            console.warn("Stage 3 live OSRM waypoint query error for key:", key, netErr);
           }
         }));
 
