@@ -32267,44 +32267,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let routeStations = projection.matched.slice();
         const total_miles = projection.total_dist || route.distance;
 
-        // Highway Exit Clustering for Forward Search Tree:
-        // When hundreds of stations are cached, multiple fast chargers sit at the exact same highway exit (within 2.5 miles).
-        // To eliminate redundant permutations, retain top diverse chargers per exit cluster (preserving DeCamilla, top Tesla, and top CCS).
-        if (routeStations.length > 25) {
-          const clusteredStations = [];
-          const exitClusters = [];
-          let currExit = [];
-          for (let i = 0; i < routeStations.length; i++) {
-            const st = routeStations[i];
-            if (currExit.length === 0) {
-              currExit.push(st);
-            } else {
-              if (Math.abs(st.mile - currExit[0].mile) <= 2.5) {
-                currExit.push(st);
-              } else {
-                exitClusters.push(currExit);
-                currExit = [st];
-              }
-            }
-          }
-          if (currExit.length > 0) exitClusters.push(currExit);
 
-          exitClusters.forEach(cl => {
-            const dec = cl.find(s => s.is_decamilla);
-            if (dec) clusteredStations.push(dec);
-
-            const tesla = cl.find(s => s.network && s.network.includes('Tesla'));
-            if (tesla && tesla !== dec) clusteredStations.push(tesla);
-
-            const nonTesla = cl.filter(s => s !== dec && (!s.network || !s.network.includes('Tesla')));
-            if (nonTesla.length > 0) {
-              nonTesla.sort((a,b) => (b.kw || 150) - (a.kw || 150) || (a.detour_mi || 0) - (b.detour_mi || 0));
-              clusteredStations.push(nonTesla[0]);
-            }
-          });
-          clusteredStations.sort((a, b) => a.mile - b.mile);
-          routeStations = clusteredStations;
-        }
 
         let decamillaStationObj = null;
         let decamillaIdx = -1;

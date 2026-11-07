@@ -74,6 +74,14 @@ async def test_loading_bar():
             })()""")
             print("[INIT] Engine ready:", engine_ready)
 
+            # Seed full active stations cache into localStorage
+            with open("data/active_stations_cache.json", "r", encoding="utf-8") as f:
+                cached_stations = json.load(f)
+            await eval_js(f"localStorage.setItem('equinox_custom_stations', {json.dumps(json.dumps(cached_stations))});")
+            await eval_js("initStationData();")
+            total_stations = await eval_js("ALL_STATIONS.length")
+            print(f"[INIT] Loaded {total_stations} active stations into browser memory from cache.")
+
             # Test 1: Verify header placement & initial state
             container_info = await eval_js("""(() => {
                 const c = document.getElementById('calcProgressContainer');

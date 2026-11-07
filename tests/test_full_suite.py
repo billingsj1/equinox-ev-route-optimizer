@@ -80,6 +80,14 @@ async def run_full_suite():
             await send("Runtime.enable")
             await asyncio.sleep(2.5)
 
+            # Seed full active stations cache into localStorage
+            with open("data/active_stations_cache.json", "r", encoding="utf-8") as f:
+                cached_stations = json.load(f)
+            await eval_js(f"localStorage.setItem('equinox_custom_stations', {json.dumps(json.dumps(cached_stations))});")
+            await eval_js("initStationData();")
+            total_stations = await eval_js("ALL_STATIONS.length")
+            print(f"[INIT] Loaded {total_stations} active stations into browser memory from cache.")
+
             # Check 1: Verify HERE database loaded and spatial grid ready
             here_db_len = await eval_js("HERE_SPEED_LIMITS_DB ? HERE_SPEED_LIMITS_DB.length : 0")
             print(f"[CHECK 1] HERE Legal Speed Limits Database: {here_db_len} segments loaded.")

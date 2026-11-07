@@ -128,29 +128,29 @@ async def benchmark_current_code():
             print(f"\nCompleted in {elapsed:.2f}s!")
             print("Profiling Timings:", json.dumps(timings, indent=2))
 
-            best_plan = await eval_js("""(() => {
+            curve_summary = await eval_js("""(() => {
                 const res = (typeof calculatedResults !== 'undefined') ? calculatedResults : null;
-                if (!res || !res.fastest_x) return null;
-                const b = res.fastest_x;
+                if (!res) return null;
                 return {
-                    dep_time: b.dep_time || b.departure_time,
-                    total_time_mins: Math.round((b.total_hours || 0) * 60),
-                    total_time_str: `${Math.floor(b.total_hours || 0)}h ${Math.round(((b.total_hours || 0) * 60) % 60)}m`,
-                    total_cost: b.total_cost,
-                    total_charging_cost: b.charging_cost,
-                    total_tolls: b.toll_cost,
-                    stops_count: b.stops ? b.stops.length : 0,
-                    stops: (b.stops || []).map(s => ({
-                        name: s.station ? s.station.name : s.name,
-                        network: s.station ? s.station.network : s.network,
-                        start_soc: Math.round((s.arrival_soc || 0) * 100),
-                        end_soc: Math.round((s.target_soc || 0) * 100),
-                        ch_mins: Math.round(s.charging_minutes || ((s.charging_hours || s.charging_time_hrs || 0) * 60) || 0),
-                        cost: s.charging_cost || 0
+                    curve_len: res.pareto_curve_x ? res.pareto_curve_x.length : 0,
+                    fastest: res.fastest_x ? {
+                        time_str: `${Math.floor(res.fastest_x.total_hours)}h ${Math.round((res.fastest_x.total_hours * 60) % 60)}m`,
+                        cost: res.fastest_x.total_cost,
+                        stops: res.fastest_x.stops.map(s => s.station ? s.station.name : s.name)
+                    } : null,
+                    cheapest: res.cheapest_x ? {
+                        time_str: `${Math.floor(res.cheapest_x.total_hours)}h ${Math.round((res.cheapest_x.total_hours * 60) % 60)}m`,
+                        cost: res.cheapest_x.total_cost,
+                        stops: res.cheapest_x.stops.map(s => s.station ? s.station.name : s.name)
+                    } : null,
+                    pareto_samples: (res.pareto_curve_x || []).slice(0, 10).map(c => ({
+                        time_str: `${Math.floor(c.total_hours)}h ${Math.round((c.total_hours * 60) % 60)}m`,
+                        cost: Math.round(c.total_cost * 100) / 100,
+                        stops_count: c.stops.length
                     }))
                 };
             })()""")
-            print("\nBEST TIME PLAN (Route X):", json.dumps(best_plan, indent=2))
+            print("\nPARETO TRIO & CURVE SUMMARY:", json.dumps(curve_summary, indent=2))
 
     finally:
         proc.kill()
