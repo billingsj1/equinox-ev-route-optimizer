@@ -1,8 +1,10 @@
 {
   "completed_days": [
-    1
+    1,
+    2
   ],
-  "next_day": 2,
-  "last_run": "2026-11-06T00:55:00",
-  "schedule": "Daily at 19:05 EST (00:05 UTC) after daily quota reset"
+  "next_day": 3,
+  "last_run": "2026-11-06T22:04:22",
+  "schedule": "Daily at 19:05 EST (00:05 UTC) after daily quota reset",
+  "active_campaign_protocol": "5 days x 25 timestamps (15 daytime + 4 night + 6 rush half-hours)"
 }

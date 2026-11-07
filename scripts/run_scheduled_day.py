@@ -1,6 +1,14 @@
 """
-Unified Automated Runner for Scheduled Daily TomTom Campaigns
-Executes harvest -> integration -> testing -> git commit -> git push -> status log.
+Unified Automated Runner for Scheduled Daily TomTom Campaigns (Days 3..6)
+Executes:
+  1. Harvester execution (scripts/harvest_tomtom_day{X}.py)
+  2. HTML synchronization across index.html, public/index.html, ui/templates/index.html
+  3. SHA-256 byte parity verification
+  4. Chrome V8 syntax compilation test (tests/test_js_syntax.py)
+  5. Full 7-scenario simulation suite verification (tests/test_full_suite.py)
+  6. Simulation history & logging test (tests/test_sim_history.py)
+  7. Git commit & push directly to origin/main
+  8. State update in data/scheduled_runs_state.json
 """
 
 import argparse
@@ -29,7 +37,7 @@ def load_state():
                 return json.load(f)
         except Exception:
             pass
-    return {"completed_days": [1], "next_day": 2, "last_run": "2026-11-06T00:55:00"}
+    return {"completed_days": [1, 2], "next_day": 3, "last_run": "2026-11-06T21:46:56"}
 
 def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
@@ -113,7 +121,7 @@ def run_day(day_num):
 
     # 6. Git commit & push
     run_cmd(["git", "add", "data/tomtom_corridors_168h.json", "public/data/tomtom_corridors_168h.json", "index.html", "public/index.html", "ui/templates/index.html", STATE_FILE, LOG_FILE], "Git Add")
-    commit_msg = f"feat: automated TomTom Day {day_num} harvest and integration (100% test verified)"
+    commit_msg = f"feat: automated TomTom Day {day_num} harvest and 100% verified integration"
     run_cmd(["git", "commit", "-m", commit_msg], "Git Commit")
     ok, out = run_cmd(["git", "push", "origin", "main"], "Git Push")
     if ok:
@@ -125,7 +133,7 @@ def run_day(day_num):
     state = load_state()
     if day_num not in state.get("completed_days", []):
         state.setdefault("completed_days", []).append(day_num)
-    state["next_day"] = day_num + 1 if day_num < 5 else 6
+    state["next_day"] = day_num + 1 if day_num < 6 else 7
     state["last_run"] = datetime.datetime.now().isoformat()
     save_state(state)
 
@@ -134,15 +142,15 @@ def run_day(day_num):
 
 def main():
     parser = argparse.ArgumentParser(description="Run scheduled TomTom harvest & integration")
-    parser.add_argument("--day", type=int, default=0, help="Day number (2..5). If 0, auto-detects next day.")
+    parser.add_argument("--day", type=int, default=0, help="Day number (3..6). If 0, auto-detects next day.")
     args = parser.parse_args()
 
     state = load_state()
-    day_to_run = args.day if args.day > 0 else state.get("next_day", 2)
+    day_to_run = args.day if args.day > 0 else state.get("next_day", 3)
 
-    if day_to_run > 5:
-        log("All 5 days of TomTom campaigns have already completed!")
-        print("All 5 days completed.")
+    if day_to_run > 6:
+        log("All days of the TomTom campaign (Days 1..6) have completed!")
+        print("All campaign days completed.")
         return
 
     run_day(day_to_run)

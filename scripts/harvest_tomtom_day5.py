@@ -1,23 +1,21 @@
 """
-TomTom Day 5 Quota Harvester (Priority 3, Day 5):
-Harvests 12 Secondary Feeder Corridors & Regional Bypasses across PA, NJ, OH, WV
-across 7 Days of the Week (168 hours) using the 2,500 daily free allowance.
+TomTom Day 5 Quota Harvester (Fast-Charger Offshoots Part 2: 19 Directed Segments / 2,375 Calls):
+Strictly follows the 5-Day x 25-Timestamp Protocol.
 
-Corridors:
-  1. US-22: Steubenville OH <-> Weirton WV / Ohio River (us22_steubenville_to_weirton_east / west)
-  2. US-22: Weirton WV <-> PA Border / PA-576 merge (us22_weirton_to_paborder_east / west)
-  3. PA-576: US-22 Interchange <-> Pittsburgh Airport / I-376 (pa576_us22_to_airport_north / south)
-  4. PA-576: Pittsburgh Airport <-> I-79 Southern Beltway (pa576_airport_to_i79_north / south)
-  5. US-30: Lancaster <-> York PA / Susquehanna River (us30_lancaster_to_york_east / west)
-  6. US-30: York PA <-> Gettysburg (us30_york_to_gettysburg_east / west)
-  7. I-83: York PA <-> Maryland Border (i83_york_to_mdborder_north / south)
-  8. I-68: Cumberland MD <-> Sideling Hill Mountain (i68_cumberland_to_sideling_east / west)
-  9. I-68: Sideling Hill <-> Hancock / I-70 merge (i68_sideling_to_hancock_east / west)
- 10. Walt Whitman Bridge approach corridor (waltwhitman_approach_east / west)
- 11. Tacony-Palmyra Bridge approach corridor (tacony_approach_north / south)
- 12. Delaware Memorial Bridge approach corridor (delaware_approach_east / west)
+Segments:
+  1. EVgo - Chartiers Valley / Bridgeville, PA (Outbound)
+  2. Sheetz - Carlisle, PA (I-81 Exit 44 / Allen Rd) Inbound & Outbound
+  3. Electrify America - Target / Mount Laurel, NJ (NJ Turnpike Exit 4) Inbound & Outbound
+  4. Tesla / EA - Cherry Hill Mall, NJ (NJ-38) Inbound & Outbound
+  5. Tesla Supercharger - Woodlyn, PA (I-95) Inbound & Outbound
+  6. ChargePoint Flex - DeCamilla / Dillsburg, PA (US-15) Inbound & Outbound
+  7. Sheetz - Zanesville, OH (I-70 Exit 155 / Underwood St) Inbound & Outbound
+  8. EVgo - Ohio Valley Mall / St. Clairsville, OH (I-70 Exit 218) Inbound & Outbound
+  9. Sheetz - Greensburg, PA (PA-66 / US-30) Inbound & Outbound
+ 10. Electrify America - Bedford, PA (PA Turnpike Exit 146 / US-220) Inbound & Outbound
 
-Total calls: 24 directed corridors * 7 days * 12 sampled hours = 2,016 calls.
+Total calls: 19 directed segments * 5 days * 25 timestamps = 2,375 calls (125 buffer).
+Assembles 48-slot half-hour matrices into data/tomtom_corridors_168h.json.
 """
 
 import concurrent.futures
@@ -43,68 +41,63 @@ if not api_key:
     sys.exit(1)
 
 CORRIDORS = [
-    # 1. US-22: Steubenville OH <-> Weirton WV
-    {"id": "us22_steubenville_to_weirton_east", "start": (40.365, -80.620), "end": (40.380, -80.580), "fallback": 50.0},
-    {"id": "us22_steubenville_to_weirton_west", "start": (40.380, -80.580), "end": (40.365, -80.620), "fallback": 50.0},
+    # 1. EVgo Bridgeville Outbound
+    {"id": "evgo_bridgeville_outbound", "start": (40.365, -80.095), "end": (40.355, -80.105), "fallback": 22.0},
 
-    # 2. US-22: Weirton WV <-> PA Border / PA-576
-    {"id": "us22_weirton_to_paborder_east", "start": (40.380, -80.580), "end": (40.410, -80.460), "fallback": 55.0},
-    {"id": "us22_weirton_to_paborder_west", "start": (40.410, -80.460), "end": (40.380, -80.580), "fallback": 55.0},
+    # 2. Sheetz Carlisle I-81 Exit 44
+    {"id": "sheetz_carlisle_i81_inbound", "start": (40.185, -77.165), "end": (40.190, -77.175), "fallback": 20.0},
+    {"id": "sheetz_carlisle_i81_outbound", "start": (40.190, -77.175), "end": (40.185, -77.165), "fallback": 20.0},
 
-    # 3. PA-576: US-22 <-> Pittsburgh Airport
-    {"id": "pa576_us22_to_airport_north", "start": (40.410, -80.460), "end": (40.490, -80.260), "fallback": 65.0},
-    {"id": "pa576_us22_to_airport_south", "start": (40.490, -80.260), "end": (40.410, -80.460), "fallback": 65.0},
+    # 3. Target Mount Laurel NJ
+    {"id": "target_mt_laurel_inbound", "start": (39.945, -74.960), "end": (39.952, -74.968), "fallback": 20.0},
+    {"id": "target_mt_laurel_outbound", "start": (39.952, -74.968), "end": (39.945, -74.960), "fallback": 20.0},
 
-    # 4. PA-576: Airport <-> I-79 Southern Beltway
-    {"id": "pa576_airport_to_i79_north", "start": (40.490, -80.260), "end": (40.315, -80.170), "fallback": 65.0},
-    {"id": "pa576_airport_to_i79_south", "start": (40.315, -80.170), "end": (40.490, -80.260), "fallback": 65.0},
+    # 4. Cherry Hill Mall NJ-38
+    {"id": "cherry_hill_mall_inbound", "start": (39.938, -75.025), "end": (39.943, -75.018), "fallback": 22.0},
+    {"id": "cherry_hill_mall_outbound", "start": (39.943, -75.018), "end": (39.938, -75.025), "fallback": 22.0},
 
-    # 5. US-30: Lancaster <-> York PA
-    {"id": "us30_lancaster_to_york_west", "start": (40.040, -76.350), "end": (39.980, -76.720), "fallback": 55.0},
-    {"id": "us30_lancaster_to_york_east", "start": (39.980, -76.720), "end": (40.040, -76.350), "fallback": 55.0},
+    # 5. Woodlyn PA I-95
+    {"id": "woodlyn_pa_inbound", "start": (39.875, -75.335), "end": (39.882, -75.340), "fallback": 25.0},
+    {"id": "woodlyn_pa_outbound", "start": (39.882, -75.340), "end": (39.875, -75.335), "fallback": 25.0},
 
-    # 6. US-30: York PA <-> Gettysburg
-    {"id": "us30_york_to_gettysburg_west", "start": (39.980, -76.720), "end": (39.830, -77.230), "fallback": 50.0},
-    {"id": "us30_york_to_gettysburg_east", "start": (39.830, -77.230), "end": (39.980, -76.720), "fallback": 50.0},
+    # 6. DeCamilla Dillsburg US-15
+    {"id": "decamilla_dillsburg_inbound", "start": (40.140, -77.015), "end": (40.145, -77.020), "fallback": 25.0},
+    {"id": "decamilla_dillsburg_outbound", "start": (40.145, -77.020), "end": (40.140, -77.015), "fallback": 25.0},
 
-    # 7. I-83: York PA <-> MD Border
-    {"id": "i83_york_to_mdborder_south", "start": (39.950, -76.730), "end": (39.720, -76.650), "fallback": 65.0},
-    {"id": "i83_york_to_mdborder_north", "start": (39.720, -76.650), "end": (39.950, -76.730), "fallback": 65.0},
+    # 7. Sheetz Zanesville I-70 Exit 155
+    {"id": "sheetz_zanesville_inbound", "start": (39.945, -82.005), "end": (39.950, -82.000), "fallback": 20.0},
+    {"id": "sheetz_zanesville_outbound", "start": (39.950, -82.000), "end": (39.945, -82.005), "fallback": 20.0},
 
-    # 8. I-68: Cumberland MD <-> Sideling Hill
-    {"id": "i68_cumberland_to_sideling_east", "start": (39.650, -78.760), "end": (39.715, -78.290), "fallback": 65.0},
-    {"id": "i68_cumberland_to_sideling_west", "start": (39.715, -78.290), "end": (39.650, -78.760), "fallback": 65.0},
+    # 8. EVgo St. Clairsville Ohio Valley Mall
+    {"id": "evgo_st_clairsville_inbound", "start": (40.065, -80.855), "end": (40.070, -80.860), "fallback": 22.0},
+    {"id": "evgo_st_clairsville_outbound", "start": (40.070, -80.860), "end": (40.065, -80.855), "fallback": 22.0},
 
-    # 9. I-68: Sideling Hill <-> Hancock I-70
-    {"id": "i68_sideling_to_hancock_east", "start": (39.715, -78.290), "end": (39.700, -78.180), "fallback": 65.0},
-    {"id": "i68_sideling_to_hancock_west", "start": (39.700, -78.180), "end": (39.715, -78.290), "fallback": 65.0},
+    # 9. Sheetz Greensburg PA-66
+    {"id": "sheetz_greensburg_inbound", "start": (40.315, -79.560), "end": (40.320, -79.555), "fallback": 22.0},
+    {"id": "sheetz_greensburg_outbound", "start": (40.320, -79.555), "end": (40.315, -79.560), "fallback": 22.0},
 
-    # 10. Walt Whitman approach corridor
-    {"id": "waltwhitman_approach_east", "start": (39.905, -75.185), "end": (39.905, -75.125), "fallback": 40.0},
-    {"id": "waltwhitman_approach_west", "start": (39.905, -75.125), "end": (39.905, -75.185), "fallback": 40.0},
-
-    # 11. Tacony-Palmyra approach corridor
-    {"id": "tacony_approach_north", "start": (40.010, -75.050), "end": (40.015, -75.025), "fallback": 35.0},
-    {"id": "tacony_approach_south", "start": (40.015, -75.025), "end": (40.010, -75.050), "fallback": 35.0},
-
-    # 12. Delaware Memorial approach corridor
-    {"id": "delaware_approach_east", "start": (39.680, -75.550), "end": (39.695, -75.500), "fallback": 45.0},
-    {"id": "delaware_approach_west", "start": (39.695, -75.500), "end": (39.680, -75.550), "fallback": 45.0},
+    # 10. EA Bedford PA Turnpike Exit 146
+    {"id": "ea_bedford_inbound", "start": (40.040, -78.505), "end": (40.048, -78.512), "fallback": 22.0},
+    {"id": "ea_bedford_outbound", "start": (40.048, -78.512), "end": (40.040, -78.505), "fallback": 22.0}
 ]
+assert len(CORRIDORS) == 19, f"Expected 19 corridors, got {len(CORRIDORS)}"
 
-SAMPLED_HOURS = [6, 7, 8, 9, 11, 13, 15, 16, 17, 18, 20, 23]
+DAYS_MAP = {
+    0: "2026-11-15", # Sun
+    1: "2026-11-16", # Mon
+    3: "2026-11-18", # Wed
+    5: "2026-11-20", # Fri
+    6: "2026-11-21"  # Sat
+}
 
-REF_DATES = [
-    "2026-11-15", # Sun (0)
-    "2026-11-16", # Mon (1)
-    "2026-11-17", # Tue (2)
-    "2026-11-18", # Wed (3)
-    "2026-11-19", # Thu (4)
-    "2026-11-20", # Fri (5)
-    "2026-11-21"  # Sat (6)
+FULL_25_HOURS = [
+    6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0,
+    22.0, 0.0, 2.0, 4.0,
+    6.5, 7.5, 8.5, 15.5, 16.5, 17.5
 ]
+assert len(FULL_25_HOURS) == 25
 
-def query_tomtom(start_lat, start_lon, end_lat, end_lon, dt_iso, fallback=55.0):
+def query_tomtom(start_lat, start_lon, end_lat, end_lon, dt_iso, fallback=22.0):
     base_url = f"https://api.tomtom.com/routing/1/calculateRoute/{start_lat},{start_lon}:{end_lat},{end_lon}/json"
     params = {
         "key": api_key,
@@ -128,27 +121,25 @@ def query_tomtom(start_lat, start_lon, end_lat, end_lon, dt_iso, fallback=55.0):
                     hours = seconds / 3600.0
                     return round(miles / max(0.001, hours), 1)
         except Exception:
-            time.sleep(0.2 * (attempt + 1))
+            time.sleep(0.3 * (attempt + 1))
     return fallback
 
-def interpolate_24h(hourly_dict, fallback=55.0):
-    full = [fallback] * 24
-    known_hours = sorted(hourly_dict.keys())
-    if not known_hours:
-        return full
-    for h in range(24):
-        if h in hourly_dict:
-            full[h] = hourly_dict[h]
-        elif h < known_hours[0]:
-            full[h] = hourly_dict[known_hours[0]]
-        elif h > known_hours[-1]:
-            full[h] = hourly_dict[known_hours[-1]]
+def assemble_48_slots(h_dict, fb):
+    known_times = sorted(h_dict.keys())
+    slots = [fb] * 48
+    for slot_idx in range(48):
+        t_val = slot_idx / 2.0
+        if t_val in h_dict:
+            slots[slot_idx] = h_dict[t_val]
         else:
-            h_prev = max([k for k in known_hours if k < h])
-            h_next = min([k for k in known_hours if k > h])
-            frac = (h - h_prev) / (h_next - h_prev)
-            full[h] = round(hourly_dict[h_prev] + frac * (hourly_dict[h_next] - hourly_dict[h_prev]), 1)
-    return full
+            prev_t = max([kt for kt in known_times if kt <= t_val], default=min(known_times))
+            next_t = min([kt for kt in known_times if kt >= t_val], default=max(known_times))
+            if prev_t == next_t:
+                slots[slot_idx] = h_dict[prev_t]
+            else:
+                frac = (t_val - prev_t) / (next_t - prev_t)
+                slots[slot_idx] = round(h_dict[prev_t] + frac * (h_dict[next_t] - h_dict[prev_t]), 1)
+    return slots
 
 def run_harvest():
     db_file = "data/tomtom_corridors_168h.json"
@@ -157,69 +148,64 @@ def run_harvest():
     with open(db_file, "r", encoding="utf-8") as f:
         database = json.load(f)
 
-    print(f"Loaded existing database with {len(database)} corridors.")
-    print(f"Targeting {len(CORRIDORS)} Day 5 corridors (2,016 queries) with 6 worker threads...\n")
-
     tasks = []
     for c in CORRIDORS:
         cid = c["id"]
-        start_lat, start_lon = c["start"]
-        end_lat, end_lon = c["end"]
-        fb = c["fallback"]
-        for dow in range(7):
-            d_str = REF_DATES[dow]
-            for h in SAMPLED_HOURS:
-                dt_iso = f"{d_str}T{h:02d}:00:00"
+        for dow, d_str in DAYS_MAP.items():
+            for h in FULL_25_HOURS:
+                int_part = int(h)
+                min_part = int(round((h - int_part) * 60))
                 tasks.append({
-                    "cid": cid,
-                    "dow": dow,
-                    "h": h,
-                    "start": (start_lat, start_lon),
-                    "end": (end_lat, end_lon),
-                    "dt_iso": dt_iso,
-                    "fallback": fb
+                    "cid": cid, "dow": dow, "h": h,
+                    "start": c["start"], "end": c["end"],
+                    "dt_iso": f"{d_str}T{int_part:02d}:{min_part:02d}:00",
+                    "fallback": c["fallback"]
                 })
 
-    results_map = {c["id"]: [{} for _ in range(7)] for c in CORRIDORS}
-
-    def worker(task):
-        spd = query_tomtom(task["start"][0], task["start"][1], task["end"][0], task["end"][1], task["dt_iso"], task["fallback"])
-        return task["cid"], task["dow"], task["h"], spd
-
+    print(f"Executing Day 5 Harvester: {len(tasks)} queries across {len(CORRIDORS)} corridors...")
     start_time = time.time()
+    results = {}
     completed = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-        futures = [executor.submit(worker, t) for t in tasks]
-        for f in concurrent.futures.as_completed(futures):
-            cid, dow, h, spd = f.result()
-            results_map[cid][dow][h] = spd
-            completed += 1
-            if completed % 200 == 0 or completed == len(tasks):
-                elapsed = time.time() - start_time
-                rate = completed / elapsed if elapsed > 0 else 0
-                print(f"  Progress: {completed}/{len(tasks)} queries completed ({rate:.1f} q/s, {elapsed:.1f}s elapsed)")
 
-    print(f"\nAll {len(tasks)} queries completed in {time.time() - start_time:.1f}s! Assembling 168h matrices...")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        future_map = {
+            executor.submit(
+                query_tomtom,
+                t["start"][0], t["start"][1],
+                t["end"][0], t["end"][1],
+                t["dt_iso"], t["fallback"]
+            ): t for t in tasks
+        }
+        for f in concurrent.futures.as_completed(future_map):
+            t = future_map[f]
+            spd = f.result()
+            cid = t["cid"]
+            dow = t["dow"]
+            h = t["h"]
+            results.setdefault(cid, {}).setdefault(dow, {})[h] = spd
+            completed += 1
+            if completed % 100 == 0 or completed == len(tasks):
+                elapsed = time.time() - start_time
+                print(f"  Progress: {completed}/{len(tasks)} queries completed ({elapsed:.1f}s)")
+
+    print(f"\nAll {len(tasks)} queries completed in {time.time() - start_time:.1f}s. Assembling matrices...")
 
     for c in CORRIDORS:
         cid = c["id"]
         fb = c["fallback"]
-        c_matrix = []
+        new_7x48 = []
         for dow in range(7):
-            hourly_dict = results_map[cid][dow]
-            full_24h = interpolate_24h(hourly_dict, fb)
-            c_matrix.append(full_24h)
-        database[cid] = c_matrix
+            mapped_dow = 3 if dow in (2, 4) else dow
+            h_dict = results.get(cid, {}).get(mapped_dow, {})
+            new_7x48.append(assemble_48_slots(h_dict, fb))
+        database[cid] = new_7x48
 
     with open(db_file, "w", encoding="utf-8") as f:
         json.dump(database, f, indent=2)
-    print(f"Saved: {db_file} (Now {len(database)} corridors)")
-
     with open(public_db_file, "w", encoding="utf-8") as f:
         json.dump(database, f, indent=2)
-    print(f"Saved: {public_db_file}")
 
-    print("\nTomTom Day 5 harvest complete!")
+    print(f"Updated database ({len(database)} corridors total). Day 5 harvest complete!")
 
 if __name__ == "__main__":
     run_harvest()

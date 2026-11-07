@@ -1,18 +1,26 @@
 """
-TomTom Day 4 Quota Harvester (Priority 3, Day 4):
-Harvests 15-Minute High-Fidelity Rush Hour Intervals on Primary Bottlenecks:
-  - Schuylkill Expressway (East & West)
-  - Vine St Expressway (East & West)
-  - I-276 PA Turnpike East Extension (East & West)
-  - Breezewood Interchange Gateway (East & West)
-  - Allegheny Mountain Tunnel (East & West)
-  - Carlisle Mega Interchange (East & West)
+TomTom Day 4 Quota Harvester (Backfill Wave 2 + Fast-Charger Offshoots Part 1):
+Strictly follows the 5-Day x 25-Timestamp Protocol.
 
-Sampled 15-minute rush intervals:
-  Morning: 6:45, 7:15, 7:45, 8:15, 8:45, 9:15
-  Evening: 15:45, 16:15, 16:45, 17:15, 17:45, 18:15
-across 7 Days of the Week = 12 directed corridors * 7 days * 12 rush slots = 1,008 calls
-Plus 12 secondary bottleneck rush intervals = 2,016 calls total.
+Part A: Backfill Remaining 7 Segments from Day 2 (490 calls):
+  - I-81: Shippensburg -> Chambersburg Northbound
+  - I-79: Washington PA <-> Canonsburg (North & South)
+  - I-79: Canonsburg <-> Bridgeville (North & South)
+  - I-79: Bridgeville <-> Neville Island / Sewickley (North & South)
+  7 segments * 5 days * 14 timestamps = 490 calls.
+
+Part B: First 8 Fast-Charger Arterial Offshoots (15 directed segments / 1,875 calls):
+  1. Electrify America - Belle Vernon, PA (Tri-County Plaza / I-70 Exit 42)
+  2. Sheetz - New Stanton, PA (I-70 / PA Turnpike Interchange)
+  3. EVgo - Pilot Travel Center - Belmont, OH (I-70 Exit 208)
+  4. IONNA - Cambridge, OH (I-70 Exit 178)
+  5. Sheetz - Cambridge, OH (I-70 Exit 176)
+  6. Tesla Supercharger - Somerset, PA (PA Turnpike Exit 110)
+  7. Electrify America - Washington, PA (Washington Crown Center / I-70 Exit 19B)
+  8. EVgo - Chartiers Valley / Bridgeville, PA (Inbound)
+  15 segments * 5 days * 25 timestamps = 1,875 calls.
+
+Total calls: 490 + 1,875 = 2,365 calls (135 buffer below 2,500 limit).
 """
 
 import concurrent.futures
@@ -37,51 +45,76 @@ if not api_key:
     print("ERROR: TOMTOM_API_KEY not found in .env")
     sys.exit(1)
 
-CORRIDORS = [
-    # Primary Bottlenecks for 15-minute rush intervals
-    {"id": "schuylkill_east_rush15", "start": (40.090, -75.388), "end": (39.957, -75.181), "fallback": 35.0},
-    {"id": "schuylkill_west_rush15", "start": (39.957, -75.181), "end": (40.090, -75.388), "fallback": 35.0},
-    {"id": "vinest_east_rush15", "start": (39.957, -75.181), "end": (39.954, -75.143), "fallback": 28.0},
-    {"id": "vinest_west_rush15", "start": (39.954, -75.143), "end": (39.957, -75.181), "fallback": 28.0},
-    {"id": "i276_east_rush15", "start": (40.088, -75.405), "end": (40.115, -74.850), "fallback": 55.0},
-    {"id": "i276_west_rush15", "start": (40.115, -74.850), "end": (40.088, -75.405), "fallback": 55.0},
-    {"id": "patp_breezewood_node_east_rush15", "start": (40.005, -78.260), "end": (40.005, -78.220), "fallback": 45.0},
-    {"id": "patp_breezewood_node_west_rush15", "start": (40.005, -78.220), "end": (40.005, -78.260), "fallback": 45.0},
-    {"id": "patp_allegheny_tunnel_east_rush15", "start": (40.024, -78.825), "end": (40.024, -78.780), "fallback": 52.0},
-    {"id": "patp_allegheny_tunnel_west_rush15", "start": (40.024, -78.780), "end": (40.024, -78.825), "fallback": 52.0},
-    {"id": "patp_carlisle_node_east_rush15", "start": (40.218, -77.150), "end": (40.218, -77.100), "fallback": 52.0},
-    {"id": "patp_carlisle_node_west_rush15", "start": (40.218, -77.100), "end": (40.218, -77.150), "fallback": 52.0},
-    {"id": "nj70_east_rush15", "start": (39.915, -75.050), "end": (39.900, -74.920), "fallback": 30.0},
-    {"id": "nj70_west_rush15", "start": (39.900, -74.920), "end": (39.915, -75.050), "fallback": 30.0},
-    {"id": "nj73_north_rush15", "start": (39.880, -74.920), "end": (40.005, -75.035), "fallback": 22.0},
-    {"id": "nj73_south_rush15", "start": (40.005, -75.035), "end": (39.880, -74.920), "fallback": 22.0},
-    {"id": "pittsburgh_parkway_inbound_rush15", "start": (40.440, -80.120), "end": (40.435, -80.005), "fallback": 35.0},
-    {"id": "pittsburgh_parkway_outbound_rush15", "start": (40.435, -80.005), "end": (40.440, -80.120), "fallback": 35.0},
-    {"id": "columbus_i70_split_east_rush15", "start": (39.955, -83.050), "end": (39.955, -82.950), "fallback": 48.0},
-    {"id": "columbus_i70_split_west_rush15", "start": (39.955, -82.950), "end": (39.955, -83.050), "fallback": 48.0},
-    {"id": "us30_lancaster_east_rush15", "start": (40.040, -76.350), "end": (40.035, -76.220), "fallback": 38.0},
-    {"id": "us30_lancaster_west_rush15", "start": (40.035, -76.220), "end": (40.040, -76.350), "fallback": 38.0},
-    {"id": "patp_new_stanton_east_rush15", "start": (40.215, -79.620), "end": (40.220, -79.560), "fallback": 28.0},
-    {"id": "patp_new_stanton_west_rush15", "start": (40.220, -79.560), "end": (40.215, -79.620), "fallback": 28.0},
+# PART A: 7 Backfill Segments
+BACKFILL_CORRIDORS = [
+    {"id": "i81_shippensburg_to_chambersburg_north", "start": (39.935, -77.660), "end": (40.050, -77.520), "fallback": 55.0},
+    {"id": "i79_washington_to_canonsburg_north", "start": (40.180, -80.220), "end": (40.260, -80.190), "fallback": 60.0},
+    {"id": "i79_washington_to_canonsburg_south", "start": (40.260, -80.190), "end": (40.180, -80.220), "fallback": 60.0},
+    {"id": "i79_canonsburg_to_bridgeville_north", "start": (40.260, -80.190), "end": (40.350, -80.110), "fallback": 55.0},
+    {"id": "i79_canonsburg_to_bridgeville_south", "start": (40.350, -80.110), "end": (40.260, -80.190), "fallback": 55.0},
+    {"id": "i79_bridgeville_to_sewickley_north", "start": (40.350, -80.110), "end": (40.540, -80.180), "fallback": 50.0},
+    {"id": "i79_bridgeville_to_sewickley_south", "start": (40.540, -80.180), "end": (40.350, -80.110), "fallback": 50.0},
+]
+assert len(BACKFILL_CORRIDORS) == 7
+
+# PART B: 15 Charger Arterial Segments
+CHARGER_CORRIDORS = [
+    # 1. EA Belle Vernon (I-70 Exit 42 to plaza)
+    {"id": "ea_belle_vernon_inbound", "start": (40.125, -79.865), "end": (40.138, -79.878), "fallback": 25.0},
+    {"id": "ea_belle_vernon_outbound", "start": (40.138, -79.878), "end": (40.125, -79.865), "fallback": 25.0},
+
+    # 2. Sheetz New Stanton (I-70/PA Turnpike to Sheetz)
+    {"id": "sheetz_new_stanton_inbound", "start": (40.220, -79.590), "end": (40.215, -79.605), "fallback": 20.0},
+    {"id": "sheetz_new_stanton_outbound", "start": (40.215, -79.605), "end": (40.220, -79.590), "fallback": 20.0},
+
+    # 3. Pilot Travel Center / EVgo Belmont OH (I-70 Exit 208)
+    {"id": "evgo_pilot_belmont_inbound", "start": (40.035, -81.010), "end": (40.040, -81.015), "fallback": 22.0},
+    {"id": "evgo_pilot_belmont_outbound", "start": (40.040, -81.015), "end": (40.035, -81.010), "fallback": 22.0},
+
+    # 4. IONNA Cambridge OH (I-70 Exit 178)
+    {"id": "ionna_cambridge_inbound", "start": (40.035, -81.545), "end": (40.040, -81.542), "fallback": 22.0},
+    {"id": "ionna_cambridge_outbound", "start": (40.040, -81.542), "end": (40.035, -81.545), "fallback": 22.0},
+
+    # 5. Sheetz Cambridge OH (I-70 Exit 176)
+    {"id": "sheetz_cambridge_inbound", "start": (40.030, -81.585), "end": (40.025, -81.580), "fallback": 20.0},
+    {"id": "sheetz_cambridge_outbound", "start": (40.025, -81.580), "end": (40.030, -81.585), "fallback": 20.0},
+
+    # 6. Tesla Supercharger Somerset PA (PA Turnpike Exit 110)
+    {"id": "tesla_somerset_inbound", "start": (40.010, -79.075), "end": (40.018, -79.082), "fallback": 22.0},
+    {"id": "tesla_somerset_outbound", "start": (40.018, -79.082), "end": (40.010, -79.075), "fallback": 22.0},
+
+    # 7. EA Washington Crown Center PA (I-70 Exit 19B)
+    {"id": "ea_washington_pa_inbound", "start": (40.165, -80.250), "end": (40.155, -80.265), "fallback": 20.0},
+    {"id": "ea_washington_pa_outbound", "start": (40.155, -80.265), "end": (40.165, -80.250), "fallback": 20.0},
+
+    # 8. EVgo Chartiers Valley / Bridgeville PA (Inbound)
+    {"id": "evgo_bridgeville_inbound", "start": (40.355, -80.105), "end": (40.365, -80.095), "fallback": 22.0}
+]
+assert len(CHARGER_CORRIDORS) == 15
+
+DAYS_MAP = {
+    0: "2026-11-15", # Sun
+    1: "2026-11-16", # Mon
+    3: "2026-11-18", # Wed
+    5: "2026-11-20", # Fri
+    6: "2026-11-21"  # Sat
+}
+
+BACKFILL_HOURS = [
+    10.0, 12.0, 14.0, 19.0, # Daytime
+    22.0, 0.0, 2.0, 4.0,    # Night anchors
+    6.5, 7.5, 8.5,          # AM peak half-hours
+    15.5, 16.5, 17.5        # PM peak half-hours
 ]
 
-# 12 Rush 15-min intervals
-RUSH_INTERVALS = [
-    (6, 45), (7, 15), (7, 45), (8, 15), (8, 45), (9, 15),
-    (15, 45), (16, 15), (16, 45), (17, 15), (17, 45), (18, 15)
+FULL_25_HOURS = [
+    6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, # 15 Daytime
+    22.0, 0.0, 2.0, 4.0,                                                                     # 4 Night anchors
+    6.5, 7.5, 8.5, 15.5, 16.5, 17.5                                                          # 6 Peak rush half-hours
 ]
+assert len(FULL_25_HOURS) == 25
 
-REF_DATES = [
-    "2026-11-15", # Sun (0)
-    "2026-11-16", # Mon (1)
-    "2026-11-17", # Tue (2)
-    "2026-11-18", # Wed (3)
-    "2026-11-19", # Thu (4)
-    "2026-11-20", # Fri (5)
-    "2026-11-21"  # Sat (6)
-]
-
-def query_tomtom(start_lat, start_lon, end_lat, end_lon, dt_iso, fallback=45.0):
+def query_tomtom(start_lat, start_lon, end_lat, end_lon, dt_iso, fallback=25.0):
     base_url = f"https://api.tomtom.com/routing/1/calculateRoute/{start_lat},{start_lon}:{end_lat},{end_lon}/json"
     params = {
         "key": api_key,
@@ -105,8 +138,25 @@ def query_tomtom(start_lat, start_lon, end_lat, end_lon, dt_iso, fallback=45.0):
                     hours = seconds / 3600.0
                     return round(miles / max(0.001, hours), 1)
         except Exception:
-            time.sleep(0.2 * (attempt + 1))
+            time.sleep(0.3 * (attempt + 1))
     return fallback
+
+def assemble_48_slots(h_dict, fb):
+    known_times = sorted(h_dict.keys())
+    slots = [fb] * 48
+    for slot_idx in range(48):
+        t_val = slot_idx / 2.0
+        if t_val in h_dict:
+            slots[slot_idx] = h_dict[t_val]
+        else:
+            prev_t = max([kt for kt in known_times if kt <= t_val], default=min(known_times))
+            next_t = min([kt for kt in known_times if kt >= t_val], default=max(known_times))
+            if prev_t == next_t:
+                slots[slot_idx] = h_dict[prev_t]
+            else:
+                frac = (t_val - prev_t) / (next_t - prev_t)
+                slots[slot_idx] = round(h_dict[prev_t] + frac * (h_dict[next_t] - h_dict[prev_t]), 1)
+    return slots
 
 def run_harvest():
     db_file = "data/tomtom_corridors_168h.json"
@@ -115,64 +165,98 @@ def run_harvest():
     with open(db_file, "r", encoding="utf-8") as f:
         database = json.load(f)
 
-    print(f"Loaded existing database with {len(database)} corridors.")
-    print(f"Targeting {len(CORRIDORS)} Day 4 rush-hour corridors (2,016 queries) with 6 worker threads...\n")
-
     tasks = []
-    for c in CORRIDORS:
+    # Part A tasks: 7 corridors * 5 days * 14 hours = 490 tasks
+    for c in BACKFILL_CORRIDORS:
         cid = c["id"]
-        start_lat, start_lon = c["start"]
-        end_lat, end_lon = c["end"]
-        fb = c["fallback"]
-        for dow in range(7):
-            d_str = REF_DATES[dow]
-            for h, m in RUSH_INTERVALS:
-                dt_iso = f"{d_str}T{h:02d}:{m:02d}:00"
-                slot_key = f"{h}.{int(m * 100 / 60)}"
+        for dow, d_str in DAYS_MAP.items():
+            for h in BACKFILL_HOURS:
+                int_part = int(h)
+                min_part = int(round((h - int_part) * 60))
                 tasks.append({
-                    "cid": cid,
-                    "dow": dow,
-                    "slot": slot_key,
-                    "start": (start_lat, start_lon),
-                    "end": (end_lat, end_lon),
-                    "dt_iso": dt_iso,
-                    "fallback": fb
+                    "cid": cid, "dow": dow, "h": h,
+                    "start": c["start"], "end": c["end"],
+                    "dt_iso": f"{d_str}T{int_part:02d}:{min_part:02d}:00",
+                    "fallback": c["fallback"]
                 })
 
-    results_map = {c["id"]: [{} for _ in range(7)] for c in CORRIDORS}
-
-    def worker(task):
-        spd = query_tomtom(task["start"][0], task["start"][1], task["end"][0], task["end"][1], task["dt_iso"], task["fallback"])
-        return task["cid"], task["dow"], task["slot"], spd
-
-    start_time = time.time()
-    completed = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-        futures = [executor.submit(worker, t) for t in tasks]
-        for f in concurrent.futures.as_completed(futures):
-            cid, dow, slot, spd = f.result()
-            results_map[cid][dow][slot] = spd
-            completed += 1
-            if completed % 200 == 0 or completed == len(tasks):
-                elapsed = time.time() - start_time
-                rate = completed / elapsed if elapsed > 0 else 0
-                print(f"  Progress: {completed}/{len(tasks)} queries completed ({rate:.1f} q/s, {elapsed:.1f}s elapsed)")
-
-    print(f"\nAll {len(tasks)} queries completed in {time.time() - start_time:.1f}s! Saving rush matrices...")
-
-    for c in CORRIDORS:
+    # Part B tasks: 15 corridors * 5 days * 25 hours = 1,875 tasks
+    for c in CHARGER_CORRIDORS:
         cid = c["id"]
-        database[cid] = results_map[cid]
+        for dow, d_str in DAYS_MAP.items():
+            for h in FULL_25_HOURS:
+                int_part = int(h)
+                min_part = int(round((h - int_part) * 60))
+                tasks.append({
+                    "cid": cid, "dow": dow, "h": h,
+                    "start": c["start"], "end": c["end"],
+                    "dt_iso": f"{d_str}T{int_part:02d}:{min_part:02d}:00",
+                    "fallback": c["fallback"]
+                })
+
+    print(f"Executing Day 4 Harvester: {len(tasks)} queries (490 backfill + 1,875 charger offshoots)...")
+    start_time = time.time()
+    results = {}
+    completed = 0
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+        future_map = {
+            executor.submit(
+                query_tomtom,
+                t["start"][0], t["start"][1],
+                t["end"][0], t["end"][1],
+                t["dt_iso"], t["fallback"]
+            ): t for t in tasks
+        }
+        for f in concurrent.futures.as_completed(future_map):
+            t = future_map[f]
+            spd = f.result()
+            cid = t["cid"]
+            dow = t["dow"]
+            h = t["h"]
+            results.setdefault(cid, {}).setdefault(dow, {})[h] = spd
+            completed += 1
+            if completed % 100 == 0 or completed == len(tasks):
+                elapsed = time.time() - start_time
+                print(f"  Progress: {completed}/{len(tasks)} queries completed ({elapsed:.1f}s)")
+
+    print(f"\nAll {len(tasks)} queries completed in {time.time() - start_time:.1f}s. Assembling matrices...")
+
+    # Process Backfill Corridors
+    for c in BACKFILL_CORRIDORS:
+        cid = c["id"]
+        fb = c["fallback"]
+        old_data = database.get(cid, [[fb]*24 for _ in range(7)])
+        new_7x48 = []
+        for dow in range(7):
+            mapped_dow = 3 if dow in (2, 4) else dow
+            h_dict = {}
+            if len(old_data[mapped_dow]) == 48:
+                for idx in range(48): h_dict[idx / 2.0] = old_data[mapped_dow][idx]
+            else:
+                for idx in range(min(24, len(old_data[mapped_dow]))): h_dict[float(idx)] = old_data[mapped_dow][idx]
+            if cid in results and mapped_dow in results[cid]:
+                for h_val, spd in results[cid][mapped_dow].items(): h_dict[h_val] = spd
+            new_7x48.append(assemble_48_slots(h_dict, fb))
+        database[cid] = new_7x48
+
+    # Process New Charger Corridors
+    for c in CHARGER_CORRIDORS:
+        cid = c["id"]
+        fb = c["fallback"]
+        new_7x48 = []
+        for dow in range(7):
+            mapped_dow = 3 if dow in (2, 4) else dow
+            h_dict = results.get(cid, {}).get(mapped_dow, {})
+            new_7x48.append(assemble_48_slots(h_dict, fb))
+        database[cid] = new_7x48
 
     with open(db_file, "w", encoding="utf-8") as f:
         json.dump(database, f, indent=2)
-    print(f"Saved: {db_file} (Now {len(database)} corridors)")
-
     with open(public_db_file, "w", encoding="utf-8") as f:
         json.dump(database, f, indent=2)
-    print(f"Saved: {public_db_file}")
 
-    print("\nTomTom Day 4 harvest complete!")
+    print(f"Updated database ({len(database)} corridors total). Day 4 harvest complete!")
 
 if __name__ == "__main__":
     run_harvest()
