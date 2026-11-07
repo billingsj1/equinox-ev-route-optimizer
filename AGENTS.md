@@ -343,16 +343,20 @@ Whenever a plan is requested, execute this automated review sequence within your
      ```
   6. **Monitor CodeRabbit Review (Low-Token Polling):**
      - Do not poll repeatedly in short intervals.
-     - **Preferred CLI Watch (Zero Turn Overhead):** Use GitHub CLI's native watch mode set to a 60-second refresh interval:
+     - **Initial Wait:** Wait an initial baseline of 120 seconds before checking status.
+     - **Poll Specific Check:** Check CodeRabbit check run status and reviews directly:
        ```bash
-       gh pr checks --watch -i 60
+       gh pr checks
        ```
-     - **Fallback Polling Loop:** If checking via command line loops:
-       - Wait an initial baseline of 120 seconds before the first check.
-       - Poll status using `gh pr checks` or `gh pr view --comments` no more frequently than once every 60–90 seconds (e.g., `sleep 60`).
-     - Stop polling as soon as the CodeRabbit status changes from pending to completed, or once inline review comments appear.
+     - **Stop Condition:** Stop polling as soon as the CodeRabbit check status changes from pending to completed (pass/fail), or once review bodies appear. Do not use indefinite `gh pr checks --watch` which can keep waiting on unrelated pending checks (e.g. deployment previews).
+     - **Mandatory Inline Review Retrieval:** After CodeRabbit completes, **always** query the pull request comments API and review bodies:
+       ```bash
+       gh api repos/:owner/:repo/pulls/<pr_number>/comments
+       gh pr view <pr_number> --json reviews
+       ```
+       *(Note: `gh pr view --comments` only displays top-level issue comments and omits inline code review threads; you must query inline comments and reviews explicitly).*
   7. **Resolve Review Feedback & Output Impact Summary:**
-     - **Actionable Bugs / Edge Cases:** Immediately fix the code locally, rerun test gates, and push the follow-up commit (`git push`).
+     - **Actionable Bugs / Edge Cases:** Immediately fix the code locally, verify 3-file HTML parity, rerun test gates, and push the follow-up commit (`git push`).
      - **Stylistic / Irrelevant Comments:** Disregard minor comments that violate established project patterns (e.g., CDN loading, single-file SPA).
   8. **Merge & Report:**
      - Merge the PR:

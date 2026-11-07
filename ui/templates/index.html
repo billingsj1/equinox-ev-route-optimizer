@@ -32615,11 +32615,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         // Component A: Destination Pareto Frontier (tracking completed exact routes)
         const destFrontier = [];
-        const min_possible_corridor_toll = (route.toll != null) ? Math.max(0.0, route.toll * 0.60) : 0.0;
-        const corridorStationRates = routeStations.filter(s => !s.is_decamilla && s.on != null).map(s => s.on);
-        const min_dcfc_rate = (corridorStationRates.length > 0 && !decamillaStationObj)
-          ? Math.max(0.0, Math.min(...corridorStationRates) * 0.70)
-          : 0.0;
+        const min_possible_corridor_toll = 0.0;
 
         // Component B: Scalable Flat Numeric Array Key Indexing (station << 8 | socBucket << 1 | has_decamilla)
         const paretoFrontier = new Array((routeStations.length + 1) << 8);
@@ -32666,7 +32662,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
               const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
               const total_time = total_drive_hrs + curr.ch_hrs;
-              const candidate_lb_cost = ((curr.ch_cost || 0.0) * 0.70) + min_possible_corridor_toll;
+              const candidate_lb_cost = ((curr.ch_cost || 0.0) * 0.40) + min_possible_corridor_toll;
 
               // Component A: Provably Admissible Fast-Filter against destFrontier
               let destDominated = false;
@@ -32880,9 +32876,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             // Component E: Admissible Pareto Branch-and-Bound with Regeneration Clamping
             if (destFrontier.length > 0) {
-              const dest_kwh = Math.max(0.0, legToDestFromSt.kwh);
               const lb_time = curr.drive_hrs + curr.ch_hrs + total_leg_hrs + legToDestFromSt.hours;
-              const lb_cost = ((curr.ch_cost || 0.0) * 0.70) + (dest_kwh * min_dcfc_rate) + min_possible_corridor_toll;
+              const lb_cost = ((curr.ch_cost || 0.0) * 0.40) + min_possible_corridor_toll;
               let bbPruned = false;
               for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
                 const d = destFrontier[dIdx];
