@@ -28865,21 +28865,23 @@
 
       const curb_kg = 2233.0;
       const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
-      const traffic_profile = (typeof document !== 'undefined' && document.getElementById('trafficProfile')) 
-        ? document.getElementById('trafficProfile').value : 'typical';
+      const dom = (typeof window !== 'undefined' && window._cachedDOMParams) ? window._cachedDOMParams : null;
+      const traffic_profile = dom ? dom.traffic_profile : ((typeof document !== 'undefined' && document.getElementById('trafficProfile')) 
+        ? document.getElementById('trafficProfile').value : 'typical');
 
-      const isManual = (typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')?.checked);
+      const isManual = dom ? dom.isManual : ((typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')?.checked) || false);
       const weatherKey = isManual
         ? `manual_${temp_f}_${wind_speed}_${wind_dir}_${road_cond}`
         : (window.activeWeatherReport ? `smart_${window.activeWeatherReport.departure_time_iso}_${window.activeWeatherReport.route_id}` : `default_${temp_f}_${road_cond}`);
-      const depVal = (typeof document !== 'undefined' && document.getElementById('departureTime')) ? document.getElementById('departureTime').value : '08:00';
-      const depDateVal = (typeof document !== 'undefined' && document.getElementById('departureDate')) ? document.getElementById('departureDate').value : '';
-      const decamillaStopVal = (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) ? document.getElementById('decamillaStopDuration').value : '0';
-      const clockKey = (start_clock_hours != null) ? start_clock_hours.toFixed(2) : depVal;
+      const depVal = dom ? dom.depVal : ((typeof document !== 'undefined' && document.getElementById('departureTime')) ? document.getElementById('departureTime').value : '08:00');
+      const depDateVal = dom ? dom.depDateVal : ((typeof document !== 'undefined' && document.getElementById('departureDate')) ? document.getElementById('departureDate').value : '');
+      const decamillaStopVal = dom ? dom.decamillaStopVal : ((typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) ? document.getElementById('decamillaStopDuration').value : '0');
+      const quantizedClockHours = (start_clock_hours != null) ? (Math.round(start_clock_hours * 4.0) / 4.0) : null;
+      const clockKey = (quantizedClockHours != null) ? quantizedClockHours.toFixed(2) : depVal;
       const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${depDateVal}_${clockKey}_${decamillaStopVal}_${weatherKey}`;
       steps._luts = steps._luts || {};
       if (!steps._luts[lutKey]) {
-        steps._luts[lutKey] = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, start_clock_hours);
+        steps._luts[lutKey] = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, quantizedClockHours);
       }
       steps._lut = steps._luts[lutKey];
       steps._lutKey = lutKey;
@@ -32197,6 +32199,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     async function recomputeCurrentRoute(activeProfiler) {
       const profiler = activeProfiler || window.currentCalculationProfiler || new CalculationProfiler("RecalculateRoute");
       window.currentCalculationProfiler = profiler;
+      window._cachedDOMParams = {
+        traffic_profile: (typeof document !== 'undefined' && document.getElementById('trafficProfile')) ? document.getElementById('trafficProfile').value : 'typical',
+        isManual: (typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')?.checked) || false,
+        depVal: (typeof document !== 'undefined' && document.getElementById('departureTime')) ? document.getElementById('departureTime').value : '08:00',
+        depDateVal: (typeof document !== 'undefined' && document.getElementById('departureDate')) ? document.getElementById('departureDate').value : '',
+        decamillaStopVal: (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) ? document.getElementById('decamillaStopDuration').value : '0'
+      };
       try {
       if (!activeRoutesData || activeRoutesData.length === 0) {
         buildCalibratedCorridor(DEFAULT_ORIGIN, CITY_COORDINATES["marlton, nj"]);
@@ -32536,26 +32545,70 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         function getRouteStops(state) {
           const stops = [];
           let s = state;
-          while (s && s.lastStop) {
-            stops.push(s.lastStop);
+          while (s && s.stationIdx >= 0) {
+            stops.push(s);
             s = s.parent;
           }
           stops.reverse();
-          return stops;
+
+          let cum_drive_hrs = 0.0;
+          let cum_ch_hrs = 0.0;
+          return stops.map((node, idx) => {
+            const st = routeStations[node.stationIdx];
+            const stDetour = stationDetours[node.stationIdx];
+            const prevStationIdx = node.parent ? node.parent.stationIdx : -1;
+            const leg_drive_hrs = node.parent ? (node.drive_hrs - node.parent.drive_hrs) : node.drive_hrs;
+            const leg_miles = prevStationIdx === -1 ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[prevStationIdx].mile) * 10) / 10;
+            cum_drive_hrs += leg_drive_hrs;
+            const arr_clock_dec = departure_hours + cum_drive_hrs + cum_ch_hrs;
+            cum_ch_hrs += (node.stop_mins / 60.0);
+
+            return {
+              station: st,
+              mile: st.mile,
+              arr_clock_dec: arr_clock_dec,
+              leg_drive_hrs: leg_drive_hrs,
+              leg_drive_mins: Math.round(leg_drive_hrs * 60.0),
+              leg_miles: leg_miles,
+              from_label: idx === 0 ? "from Start" : `from Stop ${idx}`,
+              is_plaza: stDetour.isPlaza,
+              detour_mi: st.detour_mi || 0,
+              detour_miles: stDetour.detour_miles,
+              detour_mins: stDetour.detour_mins,
+              arr_soc: Math.round(node.arr_soc * 100),
+              tgt_soc: Math.round(node.soc * 100),
+              added_kwh: Math.round(node.added_kwh * 10) / 10,
+              charge_mins: Math.round(node.ch_mins),
+              setup_mins: node.setup_mins,
+              has_plug_and_go: node.is_decamilla ? false : (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint"),
+              mins: node.stop_mins,
+              cost: Math.round(node.cost * 100) / 100,
+              rate: node.rate,
+              badge: node.is_decamilla ? "Free (Private L2)" : "",
+              is_decamilla: node.is_decamilla
+            };
+          });
         }
 
         const queue = [{
           stationIdx: -1,
           mile: 0.0,
           soc: start_soc,
+          arr_soc: start_soc,
+          added_kwh: 0,
+          ch_mins: 0,
+          setup_mins: 0,
+          stop_mins: 0,
+          rate: 0,
+          cost: 0,
           pack_temp_f: initialPackTemp,
           drive_hrs: 0.0,
           ch_hrs: 0.0,
           ch_cost: 0.0,
           stopsCount: 0,
-          lastStop: null,
           parent: null,
-          has_decamilla: false
+          has_decamilla: false,
+          is_decamilla: false
         }];
         let queueHead = 0;
         let queueIterCount = 0;
@@ -32687,7 +32740,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const total_time = total_drive_hrs + curr.ch_hrs;
               const total_cost = Math.round((discounted_ch_cost + membership_fees + stopToll) * 100) / 100;
 
-              const final_leg_miles = curr.stopsCount === 0 ? total_miles : Math.round((total_miles - curr.lastStop.mile) * 10) / 10;
+              const final_leg_miles = curr.stopsCount === 0 ? total_miles : Math.round((total_miles - routeStations[curr.stationIdx].mile) * 10) / 10;
               const dest_arr_clock_s1 = formatClockTime(departure_hours + total_drive_hrs + curr.ch_hrs);
               candidates.push({
                 route: route,
@@ -32818,42 +32871,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
               const arrival_clock_decimal = departure_hours + leg_drive_hrs + curr.ch_hrs;
 
-              const stopPlan = {
-                station: st,
-                mile: st.mile,
-                arr_clock_dec: arrival_clock_decimal,
-                leg_drive_hrs: total_leg_hrs,
-                leg_drive_mins: Math.round(total_leg_hrs * 60.0),
-                leg_miles: (curr.stationIdx === -1) ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[curr.stationIdx].mile) * 10) / 10,
-                from_label: curr.stopsCount === 0 ? "from Start" : `from Stop ${curr.stopsCount}`,
-                is_plaza: true,
-                detour_mi: 0,
-                detour_miles: 0,
-                detour_mins: 0,
-                arr_soc: Math.round(arr_soc * 100),
-                tgt_soc: Math.round(target_soc * 100),
-                added_kwh: added_kwh,
-                charge_mins: stop_mins,
-                setup_mins: 0,
-                has_plug_and_go: false,
-                mins: stop_mins,
-                cost: 0.0,
-                rate: 0.0,
-                badge: "Free (Private L2)",
-                is_decamilla: true
-              };
-
               const postDeCamillaPackTemp = Math.max(arrTemp, Math.min(75.0, arrPackTemp + 5.0));
               queue.push({
                 stationIdx: j,
                 mile: st.mile,
                 soc: target_soc,
+                arr_soc: arr_soc,
+                added_kwh: added_kwh,
+                ch_mins: stop_mins,
+                setup_mins: 0,
+                stop_mins: stop_mins,
+                rate: 0.0,
+                cost: 0.0,
                 pack_temp_f: postDeCamillaPackTemp,
                 drive_hrs: leg_drive_hrs,
                 ch_hrs: leg_ch_hrs,
                 ch_cost: leg_total_cost,
-                stopsCount: curr.stopsCount + 1, lastStop: stopPlan, parent: curr,
-                has_decamilla: true
+                stopsCount: curr.stopsCount + 1,
+                parent: curr,
+                has_decamilla: true,
+                is_decamilla: true
               });
               continue;
             }
@@ -32936,44 +32973,34 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               }
               if (dominated) continue;
 
-              const filtered = frontier.filter(p => !(leg_total_hrs <= p.t && leg_total_cost <= p.c && target_soc >= p.soc));
-              filtered.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc });
-              paretoFrontier.set(stateKey, filtered);
-
-              const stopPlan = {
-                station: st,
-                mile: st.mile,
-                arr_clock_dec: arrival_clock_decimal,
-                leg_drive_hrs: total_leg_hrs,
-                leg_drive_mins: Math.round(total_leg_hrs * 60.0),
-                leg_miles: (curr.stationIdx === -1) ? Math.round(st.mile * 10) / 10 : Math.round((st.mile - routeStations[curr.stationIdx].mile) * 10) / 10,
-                from_label: curr.stopsCount === 0 ? "from Start" : `from Stop ${curr.stopsCount}`,
-                is_plaza: isPlaza,
-                detour_mi: st.detour_mi || 0,
-                detour_miles: detour_miles,
-                detour_mins: detour_mins,
-                arr_soc: Math.round(arr_soc * 100),
-                tgt_soc: Math.round(target_soc * 100),
-                added_kwh: Math.round(ch.added_kwh * 10) / 10,
-                charge_mins: Math.round(ch.mins),
-                setup_mins: setup_mins,
-                has_plug_and_go: has_plug_and_go,
-                mins: total_stop_mins,
-                cost: Math.round(ch.cost * 100) / 100,
-                rate: rate
-              };
+              for (let fIdx = frontier.length - 1; fIdx >= 0; fIdx--) {
+                const p = frontier[fIdx];
+                if (leg_total_hrs <= p.t && leg_total_cost <= p.c && target_soc >= p.soc) {
+                  frontier.splice(fIdx, 1);
+                }
+              }
+              frontier.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc });
 
               const postChargePackTemp = Math.max(95.0, arrTemp);
               queue.push({
                 stationIdx: j,
                 mile: st.mile,
                 soc: target_soc,
+                arr_soc: arr_soc,
+                added_kwh: ch.added_kwh,
+                ch_mins: ch.mins,
+                setup_mins: setup_mins,
+                stop_mins: total_stop_mins,
+                rate: rate,
+                cost: ch.cost,
                 pack_temp_f: postChargePackTemp,
                 drive_hrs: leg_drive_hrs,
                 ch_hrs: leg_ch_hrs,
                 ch_cost: leg_total_cost,
-                stopsCount: curr.stopsCount + 1, lastStop: stopPlan, parent: curr,
-                has_decamilla: curr.has_decamilla
+                stopsCount: curr.stopsCount + 1,
+                parent: curr,
+                has_decamilla: curr.has_decamilla,
+                is_decamilla: false
               });
             }
           }
@@ -33713,33 +33740,34 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         : [0.0];
 
       updateCalcProgress(90, "Polishing Schedules, Tariffs & Turn-by-Turn Telemetry...");
-      depHourOffsets.forEach((offsetHours, dIdx) => {
+      for (let dIdx = 0; dIdx < depHourOffsets.length; dIdx++) {
+        const offsetHours = depHourOffsets[dIdx];
         const polishPct = 90 + Math.round(((dIdx + 1) / depHourOffsets.length) * 8);
         updateCalcProgress(polishPct, `Polishing Schedules (${dIdx + 1}/${depHourOffsets.length})...`);
+        await new Promise(r => setTimeout(r, 0));
         const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
-        speedOffsetsToTry.forEach(testSpeedOffset => {
-          speedCapsToTry.forEach(testMaxCap => {
-            combinedTop.forEach(cand => {
-              const asChosen = polishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap);
-              const trimmed = polishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap);
-              if (asChosen) {
-                asChosen.departure_offset_hrs = offsetHours;
-                asChosen.departure_clock = formatClockTime(testDepHour);
-                asChosen.speed_offset = testSpeedOffset;
-                asChosen.max_speed_cap = testMaxCap;
-                polishedCandidates.push(asChosen);
-              }
-              if (trimmed && (!asChosen || trimmed.stops.some((s, i) => s.tgt_soc !== asChosen.stops[i].tgt_soc))) {
-                trimmed.departure_offset_hrs = offsetHours;
-                trimmed.departure_clock = formatClockTime(testDepHour);
-                trimmed.speed_offset = testSpeedOffset;
-                trimmed.max_speed_cap = testMaxCap;
-                polishedCandidates.push(trimmed);
-              }
-            });
-          });
-        });
-      });
+        for (let i = 0; i < combinedTop.length; i++) {
+          const cand = combinedTop[i];
+          const testSpeedOffset = cand.speed_offset != null ? cand.speed_offset : speed_offset;
+          const testMaxCap = cand.max_speed_cap != null ? cand.max_speed_cap : max_speed_cap;
+          const asChosen = polishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap);
+          const trimmed = polishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap);
+          if (asChosen) {
+            asChosen.departure_offset_hrs = offsetHours;
+            asChosen.departure_clock = formatClockTime(testDepHour);
+            asChosen.speed_offset = testSpeedOffset;
+            asChosen.max_speed_cap = testMaxCap;
+            polishedCandidates.push(asChosen);
+          }
+          if (trimmed && (!asChosen || trimmed.stops.some((s, idx) => s.tgt_soc !== asChosen.stops[idx].tgt_soc))) {
+            trimmed.departure_offset_hrs = offsetHours;
+            trimmed.departure_clock = formatClockTime(testDepHour);
+            trimmed.speed_offset = testSpeedOffset;
+            trimmed.max_speed_cap = testMaxCap;
+            polishedCandidates.push(trimmed);
+          }
+        }
+      }
 
       const finalPool = (polishedCandidates.length > 0) ? polishedCandidates : stage1_candidates;
       window.lastEvaluatedPool = finalPool;
@@ -33824,6 +33852,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (window.lucide) lucide.createIcons();
         }
         hideCalcProgress(600);
+      } finally {
+        window._cachedDOMParams = null;
       }
     }
 
