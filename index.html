@@ -1221,6 +1221,7 @@
     var BOTTLENECK_SPEEDS_DB = null;
     var HOLIDAY_OFFSETS_DB = null;
     var ROUTE_INTERSECTIONS_DB = null;
+    var STATION_AMENITIES_DB = null;
 
     // --- VERIFIED CHARGING NETWORK DATABASE (CCS1 / >= 100 kW) ---
     let ALL_STATIONS = [
@@ -1323,6 +1324,119 @@
       "Other": "#94a3b8"
     };
 
+    async function loadStationAmenitiesDatabase() {
+      if (STATION_AMENITIES_DB) return STATION_AMENITIES_DB;
+      const ts = Date.now();
+      try {
+        const resp = await fetch(`data/station_amenities_db.json?t=${ts}`);
+        if (resp.ok) {
+          STATION_AMENITIES_DB = await resp.json();
+          return STATION_AMENITIES_DB;
+        }
+      } catch (e) {
+        console.warn("Could not load local data/station_amenities_db.json, trying GitHub raw:", e);
+      }
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/billingsj1/equinox-ev-route-optimizer/main/data/station_amenities_db.json?t=${ts}`;
+        const resp2 = await fetch(rawUrl);
+        if (resp2.ok) {
+          STATION_AMENITIES_DB = await resp2.json();
+          return STATION_AMENITIES_DB;
+        }
+      } catch (e2) {
+        console.warn("Could not load station amenities database from GitHub:", e2);
+      }
+      return null;
+    }
+
+    function getStationAmenities(s, db = STATION_AMENITIES_DB) {
+      if (!s) return null;
+      if (s.amenities) return s.amenities;
+      if (!db) return null;
+      if (s.id && db[s.id]) return db[s.id];
+      if (s.lat != null && s.lon != null) {
+        for (const k in db) {
+          const item = db[k];
+          if (item.lat != null && item.lon != null) {
+            const dLat = Math.abs(item.lat - s.lat);
+            const dLon = Math.abs(item.lon - s.lon);
+            if (dLat < 0.003 && dLon < 0.003) {
+              return item;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function getStationAmenityPills(s) {
+      const am = getStationAmenities(s);
+      if (!am) return '';
+      const pills = [];
+
+      if (am.host) {
+        pills.push(`<span class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 shadow-sm" title="Host Property"><i data-lucide="store" class="w-2.5 h-2.5 text-cyan-400"></i>${am.host}</span>`);
+      }
+      if (am.is_24_7) {
+        pills.push(`<span class="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 shadow-sm" title="Open 24 Hours"><i data-lucide="clock" class="w-2.5 h-2.5 text-emerald-400"></i>24/7</span>`);
+      }
+      if (am.has_restrooms) {
+        pills.push(`<span class="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-950/70 text-teal-300 border border-teal-800/60 shadow-sm" title="Restrooms on site"><i data-lucide="bath" class="w-2.5 h-2.5 text-teal-400"></i>Restrooms</span>`);
+      }
+      if (am.has_coffee) {
+        const cBrand = (am.coffee_brands && am.coffee_brands.length > 0) ? `: ${am.coffee_brands[0]}` : '';
+        pills.push(`<span class="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-800/60 shadow-sm" title="Coffee on site"><i data-lucide="coffee" class="w-2.5 h-2.5 text-amber-400"></i>Coffee${cBrand}</span>`);
+      }
+      if (am.has_food) {
+        const fNames = (am.top_dining && am.top_dining.length > 0) ? am.top_dining.slice(0, 2).join(', ') : 'Food';
+        pills.push(`<span class="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-950/70 text-sky-300 border border-sky-800/60 shadow-sm" title="Dining options"><i data-lucide="utensils" class="w-2.5 h-2.5 text-sky-400"></i>${fNames}</span>`);
+      }
+      if (am.rating) {
+        const revCount = am.user_ratings_total ? ` (${am.user_ratings_total > 999 ? (am.user_ratings_total/1000).toFixed(1)+'k' : am.user_ratings_total})` : '';
+        pills.push(`<span class="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-yellow-950/70 text-yellow-300 border border-yellow-800/60 shadow-sm" title="Google Rating"><i data-lucide="star" class="w-2.5 h-2.5 text-yellow-400 fill-yellow-400"></i>${am.rating}${revCount}</span>`);
+      }
+
+      if (pills.length === 0) {
+        return `<div class="mt-1 text-[10px] text-slate-500 italic flex items-center gap-1"><i data-lucide="info" class="w-2.5 h-2.5 text-slate-500"></i><span>Standalone charger &bull; No amenities within 500ft</span></div>`;
+      }
+      return `<div class="flex items-center gap-1.5 flex-wrap mt-1.5">${pills.join('')}</div>`;
+    }
+
+    function getPopupAmenityHtml(s) {
+      const am = getStationAmenities(s);
+      if (!am) {
+        return `<div style="margin: 5px 0 3px 0; font-size:10px; color:#64748b; font-style:italic;">Standalone charger &bull; No amenities within 500ft</div>`;
+      }
+      const pills = [];
+
+      if (am.host) {
+        pills.push(`<span style="background:#1e293b; color:#38bdf8; padding:2px 6px; border-radius:4px; font-weight:600; font-size:10px; border:1px solid #334155;">🏪 ${am.host}</span>`);
+      }
+      if (am.is_24_7) {
+        pills.push(`<span style="background:#064e3b; color:#34d399; padding:2px 6px; border-radius:4px; font-weight:700; font-size:10px; border:1px solid #059669;">⏰ 24/7 Open</span>`);
+      }
+      if (am.has_restrooms) {
+        pills.push(`<span style="background:#134e4a; color:#5eead4; padding:2px 6px; border-radius:4px; font-size:10px; border:1px solid #0d9488;">🚻 Restrooms</span>`);
+      }
+      if (am.has_coffee) {
+        const cBrand = (am.coffee_brands && am.coffee_brands.length > 0) ? ` (${am.coffee_brands[0]})` : '';
+        pills.push(`<span style="background:#451a03; color:#fcd34d; padding:2px 6px; border-radius:4px; font-size:10px; border:1px solid #b45309;">☕ Coffee${cBrand}</span>`);
+      }
+      if (am.has_food) {
+        const fNames = (am.top_dining && am.top_dining.length > 0) ? am.top_dining.slice(0, 2).join(', ') : 'Dining';
+        pills.push(`<span style="background:#082f49; color:#7dd3fc; padding:2px 6px; border-radius:4px; font-size:10px; border:1px solid #0284c7;">🍔 ${fNames}</span>`);
+      }
+      if (am.rating) {
+        const revCount = am.user_ratings_total ? ` (${am.user_ratings_total > 999 ? (am.user_ratings_total/1000).toFixed(1)+'k' : am.user_ratings_total})` : '';
+        pills.push(`<span style="background:#422006; color:#fde047; padding:2px 6px; border-radius:4px; font-weight:700; font-size:10px; border:1px solid #ca8a04;">⭐ ${am.rating}${revCount}</span>`);
+      }
+
+      if (pills.length === 0) {
+        return `<div style="margin: 5px 0 3px 0; font-size:10px; color:#64748b; font-style:italic;">Standalone charger &bull; No amenities within 500ft</div>`;
+      }
+      return `<div style="margin: 6px 0 4px 0; display:flex; flex-wrap:wrap; gap:4px;">${pills.join('')}</div>`;
+    }
+
     function initMap() {
       map = L.map('map').setView([40.0, -78.5], 7);
       
@@ -1355,13 +1469,16 @@
           opacity: isVerified ? 0.85 : 0.5,
           fillOpacity: isVerified ? 0.8 : 0.4
         }).bindPopup(`
-          <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
-            <b>${s.name}</b><br>
-            <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW${s.stalls ? ` &bull; ${s.stalls} stalls` : ''})<br>
-            <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
-            ${isGmDiscountEligible(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
-            ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
-            ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
+          <div style="font-family:sans-serif; font-size:11px; line-height:1.4; min-width:220px; max-width:300px;">
+            <b style="font-size:12px; color:#0f172a;">${s.name}</b>
+            ${getPopupAmenityHtml(s)}
+            <div style="margin-top:5px; padding-top:5px; border-top:1px solid #e2e8f0; font-size:11px; color:#334155;">
+              <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW${s.stalls ? ` &bull; ${s.stalls} stalls` : ''})<br>
+              <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
+              ${isGmDiscountEligible(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+              ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
+              ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline; display:inline-block; margin-top:3px;">Inspect Details &nearr;</a>` : ''}
+            </div>
           </div>
         `).addTo(map);
         mapLayers.push(dot);
@@ -30243,7 +30360,8 @@
       { id: 'intersections', name: 'Intersections & Signals', fn: () => loadRouteIntersectionsDatabase() },
       { id: 'charger_detours', name: 'Charger Detours', fn: () => loadChargerDetoursCache() },
       { id: 'corridor_routes', name: 'Corridor Routes', fn: () => loadCorridorRoutesCache() },
-      { id: 'waypoint_sequences', name: 'Waypoint Sequences', fn: () => loadWaypointSequencesCache() }
+      { id: 'waypoint_sequences', name: 'Waypoint Sequences', fn: () => loadWaypointSequencesCache() },
+      { id: 'amenities', name: 'Station Amenities', fn: () => loadStationAmenitiesDatabase() }
     ];
 
     function updateEngineStatus(loadedCount, totalCount) {
@@ -33941,13 +34059,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const dwellBreakdown = s.is_decamilla ? 'Free L2 Charging' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}`;
         const stopMarker = L.marker([s.station.lat, s.station.lon], { icon: stopIcon })
           .bindPopup(`
-            <div style="font-family:sans-serif; font-size:12px; line-height:1.4;">
-              <b>Stop #${idx+1}: ${s.station.name}</b><br>
-              <span style="color:#64748b;">Capacity:</span> <b>${s.station.stalls ? `${s.station.stalls} Stalls &bull; ` : ''}${s.station.kw} kW</b> (${s.station.network || ''})<br>
-              <span style="color:#64748b;">Mile:</span> <b>Mile ${Math.round(s.mile)}</b> (${detourLabel})<br>
-              <span style="color:#64748b;">Charge:</span> <b>${s.arr_soc}% &rarr; ${s.tgt_soc}%</b> (+${s.added_kwh} kWh)<br>
-              <span style="color:#64748b;">Total Dwell:</span> <b>${s.mins} mins</b> (${dwellBreakdown}) | Cost: <b>$${s.cost.toFixed(2)}</b><br>
-              ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Open Details</a>` : ''}
+            <div style="font-family:sans-serif; font-size:12px; line-height:1.4; min-width:240px; max-width:320px;">
+              <b style="font-size:13px; color:#0f172a;">Stop #${idx+1}: ${s.station.name}</b>
+              ${getPopupAmenityHtml(s.station)}
+              <div style="margin-top:6px; padding-top:6px; border-top:1px solid #e2e8f0; font-size:11px; color:#334155;">
+                <span style="color:#64748b;">Capacity:</span> <b>${s.station.stalls ? `${s.station.stalls} Stalls &bull; ` : ''}${s.station.kw} kW</b> (${s.station.network || ''})<br>
+                <span style="color:#64748b;">Mile:</span> <b>Mile ${Math.round(s.mile)}</b> (${detourLabel})<br>
+                <span style="color:#64748b;">Charge:</span> <b>${s.arr_soc}% &rarr; ${s.tgt_soc}%</b> (+${s.added_kwh} kWh)<br>
+                <span style="color:#64748b;">Total Dwell:</span> <b>${s.mins} mins</b> (${dwellBreakdown}) | Cost: <b>$${s.cost.toFixed(2)}</b><br>
+                ${s.station.plug ? `<a href="${s.station.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline; display:inline-block; margin-top:4px;">Open Details &nearr;</a>` : ''}
+              </div>
             </div>
           `).addTo(map);
         mapLayers.push(stopMarker);
@@ -33976,13 +34097,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             opacity: isVerified ? 0.85 : 0.5,
             fillOpacity: isVerified ? 0.8 : 0.4
           }).bindPopup(`
-            <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
-              <b>${s.name}</b><br>
-              <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW${s.stalls ? ` &bull; ${s.stalls} stalls` : ''})<br>
-              <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
-              ${isGmDiscountEligible(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
-              ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
-              ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Inspect Details</a>` : ''}
+            <div style="font-family:sans-serif; font-size:11px; line-height:1.4; min-width:220px; max-width:300px;">
+              <b style="font-size:12px; color:#0f172a;">${s.name}</b>
+              ${getPopupAmenityHtml(s)}
+              <div style="margin-top:5px; padding-top:5px; border-top:1px solid #e2e8f0; font-size:11px; color:#334155;">
+                <span style="color:#64748b;">Network:</span> <b>${s.network}</b> (${s.kw} kW${s.stalls ? ` &bull; ${s.stalls} stalls` : ''})<br>
+                <span style="color:#64748b;">Rate:</span> <b>${rateText}</b><br>
+                ${isGmDiscountEligible(s) && isVerified ? '<b style="color:#059669;">10% GM Discount Active</b><br>' : ''}
+                ${s.ea_pass && isVerified ? '<span style="color:#38bdf8;">EA Pass+ Eligible</span><br>' : ''}
+                ${s.plug ? `<a href="${s.plug}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline; display:inline-block; margin-top:3px;">Inspect Details &nearr;</a>` : ''}
+              </div>
             </div>
           `).addTo(map);
           mapLayers.push(dot);
@@ -34123,8 +34247,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         row.innerHTML = `
           <td class="py-2.5 px-3 font-sans font-medium text-white flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-mono font-bold shrink-0">${idx+1}</span>
-            <div class="truncate">
-              <div class="font-semibold text-slate-100 flex items-center gap-1.5">
+            <div class="min-w-0 flex-1">
+              <div class="font-semibold text-slate-100 flex items-center gap-1.5 flex-wrap">
                 <span>${s.station.name}</span>
                 <span class="relative group cursor-pointer inline-flex items-center text-slate-400 hover:text-cyan-400">
                   <i data-lucide="info" class="w-3.5 h-3.5"></i>
@@ -34145,6 +34269,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 <span>&bull;</span>
                 <span>${s.station.network || ''}</span>
               </div>
+              ${getStationAmenityPills(s.station)}
             </div>
           </td>
           <td class="py-2.5 px-3 text-slate-200 font-semibold font-mono">
@@ -34971,6 +35096,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         saveStationsToStorage();
       }
 
+      // Load station amenities database
+      const amDb = await loadStationAmenitiesDatabase();
+      if (amDb) {
+        ALL_STATIONS.forEach(s => {
+          s.amenities = getStationAmenities(s, amDb);
+        });
+      }
+
       renderNetworkFilters();
       updateStationManagerBadge();
       renderUnverifiedStations();
@@ -35301,6 +35434,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             }
           });
         }
+        const amDb = await loadStationAmenitiesDatabase();
+        if (amDb) {
+          ALL_STATIONS.forEach(s => {
+            s.amenities = getStationAmenities(s, amDb);
+          });
+        }
+
         saveStationsToStorage();
         renderNetworkFilters();
         updateStationManagerBadge();
@@ -35470,6 +35610,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             }
           }
         });
+
+        const amDb = await loadStationAmenitiesDatabase();
+        if (amDb) {
+          ALL_STATIONS.forEach(s => {
+            s.amenities = getStationAmenities(s, amDb);
+          });
+        }
 
         saveStationsToStorage();
         updateStationManagerBadge();
@@ -35709,6 +35856,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         try {
           localStorage.setItem('USER_MANUAL_PRICES', JSON.stringify(manualDb));
         } catch (e) {}
+        const amDb = await loadStationAmenitiesDatabase();
+        if (amDb) {
+          ALL_STATIONS.forEach(s => {
+            s.amenities = getStationAmenities(s, amDb);
+          });
+        }
+
         saveStationsToStorage();
 
         try {
