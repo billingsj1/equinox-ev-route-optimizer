@@ -1,7 +1,7 @@
 # PROJECT STATE — 2025 Chevrolet Equinox EV Route Optimizer & Pricing Engine
 
-**Last Updated:** November 7, 2026 (2:00 PM EST)  
-**Current Git Head:** `4ba83df` (Branch: `main`)  
+**Last Updated:** November 7, 2026 (2:30 PM EST)  
+**Current Git Head:** `e08db88` (Branch: `main`)  
 **Workspace:** `c:\Users\joshb\Documents\antigravity\jolly-hopper`  
 **API Credit Status:** **\$189.70 Remaining** of fixed \$300.00 90-day credit (\$110.30 used: \$95.00 baseline Google Routes + \$15.30 Google Places amenities).
 
@@ -132,6 +132,16 @@ This section documents all major features, refactors, and data integrations star
   4. Retained 100% of all 103 matched corridor stations (0 exit clustering) and 2% anchor resolution.
   - **Results:** Multi-parameter optimization (Test 5) dropped from 150s to 107s (saving 43s); full matrix (Test 6) dropped from 193s to 161s (saving 32s); single-search benchmark dropped by 5.2s. 100% verified accuracy and zero console errors.
 
+### 17. Traffic Delay Baseline Alignment Strictly to Posted Speed Limits (`e08db88` / PR #2)
+- **Feature:** Replaced inflated free-flow target baseline `posted_speed + speed_offset` with true `unobstructed_speed = Math.min(free_flow_mph, max_cap)`.
+- **User Issue Mentioned:** When configuring `speed_offset = +10 mph`, driving smoothly at legal speed limits (50–65 mph) accumulated phantom "slowdowns" because the solver evaluated delay against +10 mph over legal limits. Additionally, open-road speeding previously masked real downstream traffic bottlenecks.
+- **How Addressed:**
+  1. Updated `precomputeStepsPhysicsLUT` so unobstructed baseline speed uses `free_flow_mph` without speed offset inflation.
+  2. Introduced monotonic congestion accumulation (`cum_delay_h`), calculating slice delay only when `target_mph < unobstructed_speed`. Speeding on clear sections no longer erases or masks downstream traffic backups.
+  3. Aligned TomTom on-demand precision sync to compute `traffic_delay_mins` strictly against `unobstructed_speed`, while preserving `v_pref` for aerodynamic energy delta math.
+  4. Verified 100% SHA-256 byte parity across `index.html`, `public/index.html`, and `ui/templates/index.html`.
+  - **Results:** 100% pass across all 7 scenarios in `tests/test_full_suite.py` with 0 console errors. Phantom slowdowns eliminated on legal free-flow stretches.
+
 ### 15. Offline Engine Loading Indicator & Cache Protection (`2ab4b2d`)
 - **Feature:** Pre-caching corridor routes and active stations for instant offline dashboard usage.
 - **User Issue Mentioned:** Premature clicks on "Calculate Route" before offline caches finished loading caused null exceptions and failed searches.
@@ -145,15 +155,13 @@ The following is a comprehensive list of all active bugs, edge cases, and regres
 
 1. **Background Schedule Task Stopped (Server Restart):**
    - The daily 7:05 PM EST automated TomTom campaign cron (`task-24782`) was halted due to an agent environment server restart. It must be rescheduled if ongoing multi-day TomTom harvesting is desired.
-2. **Speed Offset Delay Baseline Discrepancy:**
-   - In `simulateLegFromSteps`, `free_flow_target` is calculated using `Math.min(Math.max(posted_speed + speed_offset, free_flow_mph), max_cap)`. When the user configures `speed_offset = +10 mph`, the simulation treats 75 mph as the "free-flow" baseline. When driving on a legal 55 mph or 65 mph highway where traffic is moving smoothly at 55–65 mph, the simulation calculates `(slice_hours - slice_ff_hours)` against 75 mph, registering mild "slowdowns" (+0.3m to +0.5m per slice) even when there is zero congestion. Delay should be calculated strictly against the road's posted speed limit.
-3. **Google API Credit Budget Limit:**
+2. **Google API Credit Budget Limit:**
    - **Fixed \$300.00 total for 90 days** (\$110.30 spent; **\$189.70 remaining**). Strict guardrails must prevent any ad-hoc or unapproved batch scripts from calling Google Routes, Places, or Elevation APIs without explicit accounting.
-4. **Local Profile vs. Test Harness Station Evaporation:**
+3. **Local Profile vs. Test Harness Station Evaporation:**
    - Because stations are persisted in browser `localStorage`, any headless CDP test or browser profile launch that clears user data defaults to a fallback 40-station stub unless explicitly seeded with `data/active_stations_cache.json`.
-5. **Vercel Edge Cold-Start Latency:**
+4. **Vercel Edge Cold-Start Latency:**
    - While desktop calculations run in ~16–28s with 478 stations, serverless Vercel edge execution has memory and CPU constraints where large payload parsing (`bottleneck_speeds_db.json`, `corridor_elevations.json`, `station_amenities_db.json`) on cold start can approach Vercel's free-tier timeout threshold.
-6. **Route View Amenity Badge Persistence & Reflow:**
+5. **Route View Amenity Badge Persistence & Reflow:**
    - When toggling into "Route View" mode (where station map pins switch from branded logos to sequence numbers along the active itinerary), amenity badges on certain cards can wrap or reflow depending on screen width.
 
 ---
@@ -162,8 +170,8 @@ The following is a comprehensive list of all active bugs, edge cases, and regres
 
 1. **Traffic Delay Calibration Verification:**
    - Review with the user the updated Monday trip results showing total traffic delays reduced from **117 minutes down to 63 minutes** (saving 54 minutes of driving time and advancing arrival from 10:48 PM to 10:06 PM). Confirm whether the remaining 63 minutes of delay (concentrated in Monday evening rush hour on US-15 into Dillsburg and the Schuylkill/Camden corridor) matches user expectations.
-2. **Refining "Traffic Delay" Baseline:**
-   - Adjust `simulateLegFromSteps` so traffic delay measures delay caused by congestion below posted speed limits, rather than measuring the difference between posted speed and the driver's preferred +10 mph offset.
+2. **Refining "Traffic Delay" Baseline (RESOLVED in PR #2 / `e08db88`):**
+   - Adjusted `simulateLegFromSteps` and `queryStepsPhysicsLUT` with monotonic congestion accumulation (`cum_delay_h`) against `unobstructed_speed`, eliminating phantom slowdowns on legal stretches.
 3. **Pareto Frontier Accuracy vs. Performance Benchmark:**
    - Confirm that retaining all 103 corridor stations (zero clustering) with 2% anchors and 5% milestones reliably produces the optimal Pareto trade-off spread (Cheapest: \$61–\$67, Fastest: ~12h 06m–12h 10m) while keeping calculation times under 30 seconds.
 4. **Route View UI Amenities Verification:**
