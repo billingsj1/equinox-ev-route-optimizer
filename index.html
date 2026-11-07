@@ -32374,6 +32374,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const stationAmbientTemps = new Array(routeStations.length);
 
         for (let j = 0; j < routeStations.length; j++) {
+          if (j % 4 === 0) {
+            const stPct = 16 + Math.round((j / Math.max(1, routeStations.length)) * 4);
+            updateCalcProgress(stPct, `Projecting Corridor Stations (${j + 1}/${routeStations.length})...`);
+          }
           const st = routeStations[j];
           let arrTemp = temp_f;
           if (window.activeWeatherReport && !document.getElementById('manualWeatherOverride')?.checked) {
@@ -32450,8 +32454,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const totalCorridorSearches = totalPairs * Math.max(1, activeRoutesData.length);
           const currentSearchIdx = (pairIndex * activeRoutesData.length) + rIdx;
-          const searchTreePct = 20 + Math.round((currentSearchIdx / totalCorridorSearches) * 45);
-          updateCalcProgress(searchTreePct, `Exploring State Tree: Route ${rIdx + 1}/${activeRoutesData.length} (${route.name || route.id})...`);
+          const corridorStartPct = 20 + (currentSearchIdx / totalCorridorSearches) * 52;
+          const corridorEndPct = 20 + ((currentSearchIdx + 1) / totalCorridorSearches) * 52;
+          const corridorSpan = corridorEndPct - corridorStartPct;
+          let lastReportedPct = Math.floor(corridorStartPct);
+          let lastYieldTime = performance.now();
+          let maxExploredMile = 0.0;
+          updateCalcProgress(lastReportedPct, `Exploring State Tree: Route ${rIdx + 1}/${activeRoutesData.length} (${route.name || route.id})...`);
           await new Promise(r => setTimeout(r, 10));
 
         // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
@@ -32840,8 +32849,23 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const max_stops_budget = Math.max(5, Math.ceil(total_miles / 85.0));
           if (curr.stopsCount >= max_stops_budget) continue;
 
-          if (++queueIterCount % 4000 === 0) {
-            await new Promise(r => setTimeout(r, 0));
+          if (curr.mile > maxExploredMile) maxExploredMile = curr.mile;
+
+          if (++queueIterCount % 150 === 0) {
+            const now = performance.now();
+            const mileProgress = Math.min(1.0, maxExploredMile / Math.max(1, total_miles));
+            const queueProgress = Math.min(1.0, queueHead / Math.max(1, queueHead + (queue.length - queueHead) * 1.5));
+            const estFraction = Math.min(0.98, (mileProgress * 0.70) + (queueProgress * 0.30));
+            const currentPct = corridorStartPct + (estFraction * corridorSpan);
+            const intPct = Math.min(Math.floor(corridorEndPct - 1), Math.max(lastReportedPct, Math.floor(currentPct)));
+
+            if (intPct > lastReportedPct || (now - lastYieldTime > 120)) {
+              lastReportedPct = Math.max(lastReportedPct, intPct);
+              lastYieldTime = now;
+              const rName = route.name || route.id || `Route ${rIdx + 1}`;
+              updateCalcProgress(lastReportedPct, `State Tree: ${rName} (${Math.round(maxExploredMile)}/${Math.round(total_miles)} mi, ${queueHead.toLocaleString()} states)...`);
+              await new Promise(r => setTimeout(r, 0));
+            }
           }
 
           const startJ = (curr.stationIdx === -1) ? 0 : curr.stationIdx + 1;
@@ -33085,6 +33109,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
 
+        updateCalcProgress(Math.floor(corridorEndPct), `State Tree: ${route.name || route.id || ('Route ' + (rIdx + 1))} Done (${queueHead.toLocaleString()} states)`);
+        await new Promise(r => setTimeout(r, 0));
+
         // Push surviving exact Pareto candidates from destFrontier to corridor candidates pool
         destFrontier.forEach(d => {
           candidates.push(d.cand);
@@ -33154,7 +33181,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
       if (alertBanner) alertBanner.classList.add('hidden');
 
-      updateCalcProgress(68, `Filtering ${stage1_candidates.length.toLocaleString()} Combinations into Pareto Frontier...`);
+      updateCalcProgress(72, `Filtering ${stage1_candidates.length.toLocaleString()} Combinations into Pareto Frontier...`);
+      await new Promise(r => setTimeout(r, 20));
 
       // Metric 1: Count unique physical routes (stop combinations)
       const sequenceGroups = new Map();
@@ -33343,7 +33371,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       for (let i = 0; i < seqEntries.length; i += BATCH_SIZE) {
         const batch = seqEntries.slice(i, i + BATCH_SIZE);
         const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
-        const osrmPct = 72 + Math.round((completedSoFar / Math.max(1, seqEntries.length)) * 18);
+        const osrmPct = 74 + Math.round((completedSoFar / Math.max(1, seqEntries.length)) * 14);
         updateCalcProgress(osrmPct, `Verifying Route Geometry via OSRM (${completedSoFar}/${seqEntries.length} routes)...`);
 
         if (auditLogSummary) {
