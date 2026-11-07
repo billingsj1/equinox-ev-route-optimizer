@@ -28340,6 +28340,7 @@
       let cum_m = 0.0;
       let cum_h = 0.0;
       let cum_ff_h = 0.0;
+      let cum_delay_h = 0.0;
       let cum_k = 0.0;
       let cum_w_spd = 0.0;
 
@@ -28347,11 +28348,13 @@
         mile: 0.0,
         cum_hours: 0.0,
         cum_free_flow_hours: 0.0,
+        cum_delay_hours: 0.0,
         cum_kwh: 0.0,
         cum_weighted_spd: 0.0,
         step_len: 0.0,
         step_hours: 0.0,
         step_free_flow_hours: 0.0,
+        step_delay_hours: 0.0,
         step_kwh: 0.0,
         step_speed: fallback_speed || 70.0
       }];
@@ -28649,8 +28652,13 @@
 
         const v_ms = target_mph * 0.44704;
         const slice_hours = step_len / Math.max(15.0, target_mph);
-        const free_flow_target = Math.min(Math.max(posted_speed + speed_offset, free_flow_mph), max_cap);
-        const slice_ff_hours = step_len / Math.max(15.0, free_flow_target);
+        const unobstructed_speed = (speed_offset < 0)
+          ? Math.min(free_flow_mph, Math.min(posted_speed + speed_offset, max_cap))
+          : Math.min(free_flow_mph, max_cap);
+        const slice_ff_hours = step_len / Math.max(15.0, unobstructed_speed);
+        const slice_delay_hours = (target_mph < unobstructed_speed)
+          ? Math.max(0.0, slice_hours - slice_ff_hours)
+          : 0.0;
         const dist_m = step_len * 1609.34;
         // step_bearing already computed above for corridor traffic selection
 
@@ -28751,10 +28759,12 @@
         const slice_total_kwh = ((tractive_planar_kwh + kinetic_kwh) / (tractive_planar_kwh >= 0 ? batt_eff : 1.0)) + aux_kwh;
 
         const step_tot_ff_hours = slice_ff_hours + (idle_hours * 0.25) + maneuver_delay_hours;
+        const step_tot_delay_hours = slice_delay_hours + traffic_delay_hours;
 
         cum_m += step_len;
         cum_h += step_tot_hours;
         cum_ff_h += step_tot_ff_hours;
+        cum_delay_h += step_tot_delay_hours;
         cum_k += slice_total_kwh;
         cum_w_spd += (target_mph * step_len);
 
@@ -28762,11 +28772,13 @@
           mile: cum_m,
           cum_hours: cum_h,
           cum_free_flow_hours: cum_ff_h,
+          cum_delay_hours: cum_delay_h,
           cum_kwh: cum_k,
           cum_weighted_spd: cum_w_spd,
           step_len: step_len,
           step_hours: step_tot_hours,
           step_free_flow_hours: step_tot_ff_hours,
+          step_delay_hours: step_tot_delay_hours,
           step_kwh: slice_total_kwh,
           step_speed: target_mph
         });
@@ -28777,6 +28789,7 @@
         total_miles: cum_m,
         total_hours: cum_h,
         total_free_flow_hours: cum_ff_h,
+        total_delay_hours: cum_delay_h,
         total_kwh: cum_k
       };
     }
@@ -28786,9 +28799,9 @@
       if (recs.length <= 1) return { hours: 0, free_flow_hours: 0, traffic_delay_mins: 0, kwh: 0, target_mph: 65.0 };
 
       function getPoint(m) {
-        if (m <= 0.0) return { h: 0.0, ff_h: 0.0, k: 0.0, w: 0.0 };
+        if (m <= 0.0) return { h: 0.0, ff_h: 0.0, delay_h: 0.0, k: 0.0, w: 0.0 };
         const last = recs[recs.length - 1];
-        if (m >= last.mile) return { h: last.cum_hours, ff_h: last.cum_free_flow_hours || last.cum_hours, k: last.cum_kwh, w: last.cum_weighted_spd };
+        if (m >= last.mile) return { h: last.cum_hours, ff_h: last.cum_free_flow_hours || last.cum_hours, delay_h: last.cum_delay_hours || 0.0, k: last.cum_kwh, w: last.cum_weighted_spd };
 
         let low = 0, high = recs.length - 1, idx = 0;
         while (low <= high) {
@@ -28801,7 +28814,7 @@
           }
         }
 
-        if (idx >= recs.length - 1) return { h: last.cum_hours, ff_h: last.cum_free_flow_hours || last.cum_hours, k: last.cum_kwh, w: last.cum_weighted_spd };
+        if (idx >= recs.length - 1) return { h: last.cum_hours, ff_h: last.cum_free_flow_hours || last.cum_hours, delay_h: last.cum_delay_hours || 0.0, k: last.cum_kwh, w: last.cum_weighted_spd };
         const next = recs[idx + 1];
         const seg_len = next.step_len || 0.001;
         const frac = Math.max(0.0, Math.min(1.0, (m - recs[idx].mile) / seg_len));
@@ -28809,6 +28822,7 @@
         return {
           h: recs[idx].cum_hours + frac * next.step_hours,
           ff_h: (recs[idx].cum_free_flow_hours || recs[idx].cum_hours) + frac * (next.step_free_flow_hours || next.step_hours),
+          delay_h: (recs[idx].cum_delay_hours || 0.0) + frac * (next.step_delay_hours || 0.0),
           k: recs[idx].cum_kwh + frac * next.step_kwh,
           w: recs[idx].cum_weighted_spd + frac * (next.step_speed * next.step_len)
         };
@@ -28819,7 +28833,8 @@
       const d_mi = Math.max(0.001, end_mile - start_mile);
       const h_drive = Math.max(0.0001, p1.h - p0.h);
       const ff_drive = Math.max(0.0001, (p1.ff_h || p1.h) - (p0.ff_h || p0.h));
-      const delay_mins = Math.max(0, Math.round((h_drive - ff_drive) * 60.0));
+      const delay_hrs = Math.max(0.0, (p1.delay_h || 0.0) - (p0.delay_h || 0.0));
+      const delay_mins = Math.max(0, Math.round(delay_hrs * 60.0));
 
       return {
         hours: h_drive,
@@ -31043,7 +31058,11 @@
 
               const actual_travel_hours = miles / Math.max(10.0, v_eff);
               const no_traffic_hours = miles / Math.max(10.0, v_pref);
-              const delay_mins = Math.max(0, Math.round((actual_travel_hours - no_traffic_hours) * 60.0));
+              const unobstructed_speed = (speed_offset < 0) ? Math.min(v_ff, v_pref) : Math.min(v_ff, max_cap);
+              const free_flow_hours = miles / Math.max(10.0, unobstructed_speed);
+              const delay_mins = (v_eff < unobstructed_speed)
+                ? Math.max(0, Math.round((actual_travel_hours - free_flow_hours) * 60.0))
+                : 0;
 
               lObj.result = {
                 miles: miles,
