@@ -32439,7 +32439,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
 
-        // Precompute downstream reachable anchor targets per station (5% step deduplicated)
+        // Precompute downstream reachable anchor targets per station (2% step deduplicated)
         const downstreamAnchorTargets = new Array(routeStations.length);
         for (let j = 0; j < routeStations.length; j++) {
           const st = routeStations[j];
@@ -32453,7 +32453,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (satisfiesMinMins && nextLegMins <= max_mins) {
               const nextDetour = stationDetours[k];
               const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
-              const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 20.0) / 20.0;
+              const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 50.0) / 50.0;
               if (exactTgtKRaw <= 0.90) anchors.push(exactTgtKRaw);
             }
           }
@@ -32814,25 +32814,25 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (min_target_allowed > 0.90) continue;
 
             const targetSet = new Set();
-            // 1. Minimum charge floor (5% resolution)
-            const floorStep = Math.ceil(min_target_allowed * 20.0) / 20.0;
+            // 1. Minimum charge floor (2% resolution)
+            const floorStep = Math.ceil(min_target_allowed * 50.0) / 50.0;
             if (floorStep <= 0.90) targetSet.add(floorStep);
 
-            // 2. Exact finish target to destination (ensuring minimum charge floor)
+            // 2. Exact finish target to destination (ensuring minimum charge floor, 2% resolution)
             if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
-              const tgtFinish = Math.ceil(Math.max(min_target_allowed, dest_needed_soc) * 20.0) / 20.0;
+              const tgtFinish = Math.ceil(Math.max(min_target_allowed, dest_needed_soc) * 50.0) / 50.0;
               if (tgtFinish <= 0.90) targetSet.add(tgtFinish);
             }
 
-            // 3. Precomputed smart reach-next anchors (already 5% stepped)
+            // 3. Precomputed smart reach-next anchors (2% stepped)
             const precomputedAnchors = downstreamAnchorTargets[j];
             for (let ai = 0; ai < precomputedAnchors.length; ai++) {
               const anc = precomputedAnchors[ai];
               if (anc >= min_target_allowed && anc <= 0.90) targetSet.add(anc);
             }
 
-            // 4. Strategic standard SoC milestones (50%, 60%, 70%, 80%, 90%)
-            for (let t = 0.50; t <= 0.901; t += 0.10) {
+            // 4. Strategic standard SoC milestones (50%, 55%, 60%, 65%, 70%, 75%, 80%, 85%, 90%)
+            for (let t = 0.50; t <= 0.901; t += 0.05) {
               if (t >= min_target_allowed) targetSet.add(Math.round(t * 100) / 100.0);
             }
 
@@ -32853,8 +32853,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
 
-              // Pareto State Dominance Pruning (bucketed by 5% target SoC to eliminate combinatorial explosion)
-              const socBucket = Math.round(target_soc * 20) * 5;
+              // Pareto State Dominance Pruning (bucketed by 2% target SoC for high-precision trade-off fidelity)
+              const socBucket = Math.round(target_soc * 50) * 2;
               const stateKey = `${st.id || st.name}_${socBucket}_${curr.has_decamilla ? 1 : 0}`;
               if (!paretoFrontier.has(stateKey)) {
                 paretoFrontier.set(stateKey, []);
