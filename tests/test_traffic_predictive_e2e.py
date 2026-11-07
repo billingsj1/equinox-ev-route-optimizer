@@ -64,6 +64,14 @@ async def test_traffic_flow():
 
             await asyncio.sleep(2.0)
 
+            # Seed full active stations cache into localStorage
+            with open("data/active_stations_cache.json", "r", encoding="utf-8") as f:
+                cached_stations = json.load(f)
+            await eval_js(f"localStorage.setItem('equinox_custom_stations', {json.dumps(json.dumps(cached_stations))});")
+            await eval_js("initStationData();")
+            total_stations = await eval_js("ALL_STATIONS.length")
+            print(f"[INIT] Loaded {total_stations} active stations into browser memory from cache.")
+
             # Set Origin: DeCamilla (1185 Gettysburg Pike, Dillsburg, PA)
             # Set Destination: Marlton, NJ
             # Speed offset: +10 mph, Max cap: 80 mph
@@ -142,8 +150,12 @@ async def test_traffic_flow():
             if os.path.exists(key_path):
                 with open(key_path, "r", encoding="utf-8") as f:
                     api_key = f.read().strip()
+            if not api_key:
+                from dotenv import load_dotenv
+                load_dotenv()
+                api_key = os.getenv("TOMTOM_API_KEY", "")
 
-            assert api_key, "API key should be present in scratch/tomtom_api_key.txt"
+            assert api_key, "API key should be present in scratch/tomtom_api_key.txt or .env"
 
             # Inject TomTom API Key into window and localStorage
             await eval_js(f"""(() => {{
