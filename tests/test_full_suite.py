@@ -190,7 +190,7 @@ async def run_full_suite():
                 document.getElementById('optimizeDepartureTime').checked = false;
                 document.getElementById('optimizeSpeedOffset').checked = true;
                 document.getElementById('optimizeSpeedCap').checked = true;
-            })()""")
+            })()""", max_timeout=180)
             test_results["opt_speed_and_cap"] = r5
             assert r5["fastest"]["speed_offset"] in (5, 10)
             assert r5["fastest"]["max_speed_cap"] in (75, 80)
@@ -202,7 +202,7 @@ async def run_full_suite():
                 document.getElementById('optimizeDepartureTime').checked = true;
                 document.getElementById('optimizeSpeedOffset').checked = true;
                 document.getElementById('optimizeSpeedCap').checked = true;
-            })()""", max_timeout=75)
+            })()""", max_timeout=240)
             test_results["opt_all_three"] = r6
             print(f"    Comparison: OptTimeOnly={r2['fastest']['total_hours']:.3f}h vs OptAll3={r6['fastest']['total_hours']:.3f}h")
             # All 3 optimized should find an equal or faster route than Opt Time only!

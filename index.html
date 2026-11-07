@@ -29802,16 +29802,24 @@
       if (target_soc <= start_soc) return { added_kwh: 0, mins: 0, cost: 0 };
       const usable = 85.0;
       const needed_kwh = (target_soc - start_soc) * usable;
-      const max_amps = (typeof station === 'object' && station) ? getStationMaxAmps(station) : (station_kw >= 250 ? 500 : 350);
+      const max_amps = (typeof station === 'object' && station && station._maxAmps != null)
+        ? station._maxAmps
+        : (station && typeof station === 'object' ? (station._maxAmps = getStationMaxAmps(station)) : (station_kw >= 250 ? 500 : 350));
 
-      const lut = getCumulativeChargingLUT(station_kw, max_amps);
-      const lutAt = (soc) => {
-        const x = Math.max(0, Math.min(100, soc * 100));
-        const lo = Math.floor(x);
-        const hi = Math.min(100, lo + 1);
-        return lut[lo] + (lut[hi] - lut[lo]) * (x - lo);
-      };
-      const total_hours = Math.max(0.0, lutAt(target_soc) - lutAt(start_soc));
+      const lut = (station && station._chargingLut) || getCumulativeChargingLUT(station_kw, max_amps);
+      if (station && !station._chargingLut) station._chargingLut = lut;
+
+      const x0 = Math.max(0, Math.min(100, start_soc * 100));
+      const lo0 = Math.floor(x0);
+      const hi0 = Math.min(100, lo0 + 1);
+      const lut0 = lut[lo0] + (lut[hi0] - lut[lo0]) * (x0 - lo0);
+
+      const x1 = Math.max(0, Math.min(100, target_soc * 100));
+      const lo1 = Math.floor(x1);
+      const hi1 = Math.min(100, lo1 + 1);
+      const lut1 = lut[lo1] + (lut[hi1] - lut[lo1]) * (x1 - lo1);
+
+      const total_hours = Math.max(0.0, lut1 - lut0);
       const mins = total_hours * 60;
       const cost = needed_kwh * rate_per_kwh;
       return { added_kwh: needed_kwh, mins: mins, cost: cost };
@@ -32177,6 +32185,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const min_leg_mins = parseFloat(document.getElementById('minTimeSlider') ? document.getElementById('minTimeSlider').value : 70);
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 130);
       const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 10) / 100.0;
+      const has_ea_preowned = (typeof document !== 'undefined' && document.getElementById('hasEaPass')) ? document.getElementById('hasEaPass').checked : false;
+      const has_tesla_preowned = (typeof document !== 'undefined' && document.getElementById('hasTeslaMember')) ? document.getElementById('hasTeslaMember').checked : false;
+      const has_ezpass_checked = (typeof document !== 'undefined' && document.getElementById('hasEzPass')) ? document.getElementById('hasEzPass').checked : true;
+      const isPreheated = (typeof document !== 'undefined' && document.getElementById('scheduledDeparturePreheat')) ? document.getElementById('scheduledDeparturePreheat').checked : true;
+      const isManualWeather = (typeof document !== 'undefined' && document.getElementById('manualWeatherOverride')) ? document.getElementById('manualWeatherOverride').checked : false;
       const departure_hours = getDepartureHoursDecimal();
       const temp_f = parseFloat(document.getElementById('tempF').value);
       const wind_speed = parseFloat(document.getElementById('windSpeed').value);
@@ -32472,9 +32485,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         // Forward Tree Search Queue with Pareto State Dominance
-        const isPreheated = (typeof document !== 'undefined' && document.getElementById('scheduledDeparturePreheat'))
-          ? document.getElementById('scheduledDeparturePreheat').checked
-          : true;
+        // isPreheated hoisted at handleSearchRoute start
 
         const ambTemp0 = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
           ? window.activeWeatherReport.summary.avg_temp_f
@@ -32556,8 +32567,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
             if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
               const currStops = getRouteStops(curr);
-              const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
-              const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
+              // has_ea_preowned and has_tesla_preowned hoisted at handleSearchRoute start
 
               let ea_kwh = 0, ea_gross_savings = 0;
               let tesla_kwh = 0, tesla_gross_savings = 0;
@@ -32853,11 +32863,24 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const stage1Tariff = resolveStationTariff(st, timeAgnosticBaseline ? 12.0 : arrival_clock_decimal, false);
             const rate = timeAgnosticBaseline ? (st.on || stage1Tariff.rate) : stage1Tariff.rate;
 
+            const stLut = st._chargingLut || (st._chargingLut = getCumulativeChargingLUT(st.kw, (st._maxAmps || (st._maxAmps = getStationMaxAmps(st)))));
+            const x0 = Math.max(0, Math.min(100, arr_soc * 100));
+            const lo0 = Math.floor(x0);
+            const hi0 = Math.min(100, lo0 + 1);
+            const lut0 = stLut[lo0] + (stLut[hi0] - stLut[lo0]) * (x0 - lo0);
+
             const targetList = Array.from(targetSet).sort((a, b) => a - b);
             for (let tIdx = 0; tIdx < targetList.length; tIdx++) {
               const target_soc = targetList[tIdx];
-              const ch = calculateCharging(arr_soc, target_soc, st.kw, rate, st);
-              const total_stop_mins = Math.round(ch.mins + setup_mins);
+              const x1 = Math.max(0, Math.min(100, target_soc * 100));
+              const lo1 = Math.floor(x1);
+              const hi1 = Math.min(100, lo1 + 1);
+              const lut1 = stLut[lo1] + (stLut[hi1] - stLut[lo1]) * (x1 - lo1);
+              const ch_mins = Math.max(0.0, (lut1 - lut0) * 60.0);
+              const ch_kwh = (target_soc - arr_soc) * 85.0;
+              const ch_cost = ch_kwh * rate;
+              const ch = { added_kwh: ch_kwh, mins: ch_mins, cost: ch_cost };
+              const total_stop_mins = Math.round(ch_mins + setup_mins);
 
               const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
               const leg_ch_hrs = curr.ch_hrs + (total_stop_mins / 60.0);
@@ -32929,10 +32952,28 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Run forward search strictly adhering to user's min/max stop spacing guidelines
       let stage1_candidates = [];
+
+      // Determine maximum posted speed limit across all active corridor steps dynamically
+      const maxRoutePostedSpeed = activeRoutesData.reduce((maxSpd, r) => {
+        if (r.steps && r.steps.length > 0) {
+          const rMax = r.steps.reduce((m, s) => Math.max(m, s.posted_speed || 0), 0);
+          return Math.max(maxSpd, rMax);
+        }
+        return Math.max(maxSpd, r.speed_mph || 70.0);
+      }, 0) || 70.0;
+
       const stage1Pairs = [];
+      const seenSpeedConfigs = new Set();
       speedOffsetsToTry.forEach(off => {
         speedCapsToTry.forEach(cap => {
-          stage1Pairs.push({ off, cap });
+          // If the maximum cruising speed attainable on any step (maxRoutePostedSpeed + off)
+          // never reaches the cap, cruising speed across all steps is identical.
+          const effectiveTopSpeed = Math.min(maxRoutePostedSpeed + off, cap);
+          const configKey = `${off}_${effectiveTopSpeed}`;
+          if (!seenSpeedConfigs.has(configKey)) {
+            seenSpeedConfigs.add(configKey);
+            stage1Pairs.push({ off, cap });
+          }
         });
       });
 
@@ -33341,9 +33382,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let valid = true;
         
 
-        const isPreheated = (typeof document !== 'undefined' && document.getElementById('scheduledDeparturePreheat'))
-          ? document.getElementById('scheduledDeparturePreheat').checked
-          : true;
+        // isPreheated hoisted at handleSearchRoute start
         const ambTemp0 = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
           ? window.activeWeatherReport.summary.avg_temp_f
           : temp_f;
@@ -33504,8 +33543,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
 
         // Pass 1.5: Evaluate Membership ROI strictly on refined/trimmed energy
-        const has_ea_preowned = document.getElementById('hasEaPass') ? document.getElementById('hasEaPass').checked : false;
-        const has_tesla_preowned = document.getElementById('hasTeslaMember') ? document.getElementById('hasTeslaMember').checked : false;
+        // has_ea_preowned and has_tesla_preowned hoisted at handleSearchRoute start
 
         let p_ea_kwh = 0, p_ea_gross_savings = 0;
         let p_tesla_kwh = 0, p_tesla_gross_savings = 0;
@@ -33582,7 +33620,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           };
         });
 
-        const candTollObj = resolveCandidateToll(cand.route.origin, cand.route.destination, cand.route, polishedStops, document.getElementById('hasEzPass')?.checked);
+        const candTollObj = resolveCandidateToll(cand.route.origin, cand.route.destination, cand.route, polishedStops, has_ezpass_checked);
         const candToll = (candTollObj && candTollObj.total != null) ? candTollObj.total : (cand.route.toll || 0);
         const candTollSub = (candTollObj && candTollObj.subtitle) ? candTollObj.subtitle : cand.route.toll_subtitle;
         const p_membership_fees = Math.round((p_ea_fee + p_tesla_fee) * 100) / 100;
