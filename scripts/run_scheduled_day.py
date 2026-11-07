@@ -5,7 +5,7 @@ Executes:
   2. HTML synchronization across index.html, public/index.html, ui/templates/index.html
   3. SHA-256 byte parity verification
   4. Chrome V8 syntax compilation test (tests/test_js_syntax.py)
-  5. Full 7-scenario simulation suite verification (tests/test_full_suite.py)
+  5. Core simulation suite verification (tests/test_full_suite.py)
   6. Simulation history & logging test (tests/test_sim_history.py)
   7. Git commit & push directly to origin/main
   8. State update in data/scheduled_runs_state.json

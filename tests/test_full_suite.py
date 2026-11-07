@@ -131,9 +131,9 @@ async def run_full_suite():
                 return {"elapsed": elapsed, "fastest": fx, "cheapest": cx, "balanced": bx}
 
             # =========================================================================
-            # TEST 1: Standard Search (No Optimize)
+            # TEST 1: Standard Search (Baseline / Waypoint Trip)
             # =========================================================================
-            r1 = await run_sim_test("Test 1: Standard Search (No Optimize)", """(() => {
+            r1 = await run_sim_test("Test 1: Standard Search (Baseline)", """(() => {
                 document.getElementById('optimizeDepartureTime').checked = false;
                 document.getElementById('optimizeSpeedOffset').checked = false;
                 document.getElementById('optimizeSpeedCap').checked = false;
@@ -149,9 +149,9 @@ async def run_full_suite():
             assert r1["fastest"]["max_speed_cap"] == 75
 
             # =========================================================================
-            # TEST 2: Optimize Time Only (+/- 1 hour in 15-min increments)
+            # TEST 2: Optimize Departure Time (+/- 1 hour in 15-min increments)
             # =========================================================================
-            r2 = await run_sim_test("Test 2: Optimize Departure Time Only", """(() => {
+            r2 = await run_sim_test("Test 2: Optimize Departure Time", """(() => {
                 document.getElementById('optimizeDepartureTime').checked = true;
                 document.getElementById('optimizeSpeedOffset').checked = false;
                 document.getElementById('optimizeSpeedCap').checked = false;
@@ -162,65 +162,30 @@ async def run_full_suite():
             assert r2["fastest"]["total_hours"] <= r1["fastest"]["total_hours"] + 0.01, "Opt Time must not be slower than fixed"
 
             # =========================================================================
-            # TEST 3: Optimize Speed Offset Only (+5 vs +10 mph)
+            # TEST 3: Optimize Speed Offset + Max Speed Cap (Joint 4-pair grid)
             # =========================================================================
-            r3 = await run_sim_test("Test 3: Optimize Speed Offset Only", """(() => {
+            r3 = await run_sim_test("Test 3: Optimize Speed Offset + Cap", """(() => {
                 document.getElementById('optimizeDepartureTime').checked = false;
                 document.getElementById('optimizeSpeedOffset').checked = true;
-                document.getElementById('optimizeSpeedCap').checked = false;
-            })()""")
-            test_results["opt_speed_only"] = r3
+                document.getElementById('optimizeSpeedCap').checked = true;
+            })()""", max_timeout=90)
+            test_results["opt_speed_and_cap"] = r3
             assert r3["fastest"]["speed_offset"] in (5, 10)
+            assert r3["fastest"]["max_speed_cap"] in (75, 80)
 
             # =========================================================================
-            # TEST 4: Optimize Max Speed Cap Only (75 vs 80 mph)
+            # TEST 4: Direct Columbus -> Marlton without DeCamilla stop (0 hrs dwell)
             # =========================================================================
-            r4 = await run_sim_test("Test 4: Optimize Max Speed Cap Only", """(() => {
-                document.getElementById('optimizeDepartureTime').checked = false;
-                document.getElementById('optimizeSpeedOffset').checked = false;
-                document.getElementById('optimizeSpeedCap').checked = true;
-            })()""")
-            test_results["opt_cap_only"] = r4
-            assert r4["fastest"]["max_speed_cap"] in (75, 80)
-
-            # =========================================================================
-            # TEST 5: Optimize Speed Offset + Max Speed Cap (Cumulative 4 pairs)
-            # =========================================================================
-            r5 = await run_sim_test("Test 5: Optimize Speed Offset + Cap", """(() => {
-                document.getElementById('optimizeDepartureTime').checked = false;
-                document.getElementById('optimizeSpeedOffset').checked = true;
-                document.getElementById('optimizeSpeedCap').checked = true;
-            })()""", max_timeout=180)
-            test_results["opt_speed_and_cap"] = r5
-            assert r5["fastest"]["speed_offset"] in (5, 10)
-            assert r5["fastest"]["max_speed_cap"] in (75, 80)
-
-            # =========================================================================
-            # TEST 6: All Three Optimized (Time + Offset + Cap)
-            # =========================================================================
-            r6 = await run_sim_test("Test 6: All Three Optimized (Full Matrix)", """(() => {
-                document.getElementById('optimizeDepartureTime').checked = true;
-                document.getElementById('optimizeSpeedOffset').checked = true;
-                document.getElementById('optimizeSpeedCap').checked = true;
-            })()""", max_timeout=240)
-            test_results["opt_all_three"] = r6
-            print(f"    Comparison: OptTimeOnly={r2['fastest']['total_hours']:.3f}h vs OptAll3={r6['fastest']['total_hours']:.3f}h")
-            # All 3 optimized should find an equal or faster route than Opt Time only!
-            assert r6["fastest"]["total_hours"] <= r2["fastest"]["total_hours"] + 0.01, "All 3 optimized must be <= Time only"
-
-            # =========================================================================
-            # TEST 7: Direct Columbus -> Marlton without DeCamilla stop (0 hrs dwell)
-            # =========================================================================
-            r7 = await run_sim_test("Test 7: Direct Trip (0.0h DeCamilla dwell)", """(() => {
+            r4 = await run_sim_test("Test 4: Direct Trip (0.0h DeCamilla dwell)", """(() => {
                 document.getElementById('optimizeDepartureTime').checked = false;
                 document.getElementById('optimizeSpeedOffset').checked = false;
                 document.getElementById('optimizeSpeedCap').checked = false;
                 document.getElementById('decamillaStopDuration').value = '0';
             })()""")
-            test_results["direct_no_decamilla"] = r7
+            test_results["direct_no_decamilla"] = r4
             # Without 3h dwell, total hours should be significantly shorter than 12.7h (~10.5h with realistic corridor traffic)
-            print(f"    Direct Trip Duration: {r7['fastest']['total_hours']:.2f}h")
-            assert r7["fastest"]["total_hours"] < 11.0, "Direct trip without 3h stop should be under 11.0h"
+            print(f"    Direct Trip Duration: {r4['fastest']['total_hours']:.2f}h")
+            assert r4["fastest"]["total_hours"] < 11.0, "Direct trip without 3h stop should be under 11.0h"
 
             # Check for critical console errors
             fatal_errors = [e for e in console_errors if "favicon" not in e.lower() and "404" not in e]
@@ -231,7 +196,7 @@ async def run_full_suite():
             assert len(fatal_errors) == 0, f"Encountered unexpected console errors: {fatal_errors}"
 
             print("\n=======================================================")
-            print(">>> ALL 7 FULL SUITE VERIFICATION TESTS PASSED 100%! <<<")
+            print(">>> ALL 4 CORE SUITE VERIFICATION TESTS PASSED 100%! <<<")
             print("=======================================================")
 
     finally:

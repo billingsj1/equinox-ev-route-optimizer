@@ -34,7 +34,7 @@
 | `tests/test_weather_engine.py` | Weather forecasts, ERA5 historical data, air density, wind vectors | **PASSED** (6/6 tests) |
 | `tests/test_js_syntax.py` | Chrome V8 compilation of inline JavaScript in `index.html` (35,324 lines) | **PASSED** (0 syntax errors) |
 | `tests/test_loading_bar_ui.py` | DOM elements, progress width/label updates, calculation trigger, hiding | **PASSED** (100%) |
-| `tests/test_full_suite.py` | Full headless Chrome CDP lifecycle across all 7 route optimization scenarios | **PASSED** (All 7 passed, 0 critical console errors) |
+| `tests/test_full_suite.py` | Full headless Chrome CDP lifecycle across 4 core representative scenarios | **PASSED** (All 4 passed, 0 critical console errors) |
 
 ---
 
