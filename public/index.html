@@ -28125,15 +28125,16 @@
   ]
 };
 
-    function getDepartureDayOfWeek() {
-      const el = document.getElementById('departureDate');
-      if (!el || !el.value) {
+    function getDepartureDayOfWeek(explicitDateStr = null) {
+      const el = explicitDateStr != null ? null : document.getElementById('departureDate');
+      const val = explicitDateStr != null ? explicitDateStr : (el ? el.value : '');
+      if (!val) {
         return new Date().getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
       }
-      const parts = el.value.split('-');
+      const parts = val.split('-');
       if (parts.length < 3) return new Date().getDay();
       const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-      return d.getDay();
+      return isNaN(d.getDay()) ? new Date().getDay() : d.getDay();
     }
 
     function getTomTomSpeed(key, dow, hour, fallback) {
@@ -28336,17 +28337,19 @@
     // Precomputed O(1) Cumulative Physics Lookup Table (Prefix Sums)
     // Eliminates redundant loops across hundreds of sub-steps during forward search,
     // reducing thousands of leg calculations from seconds of UI freeze down to under 5ms.
-    function precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, start_clock_hours) {
+    function precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, start_clock_hours, depDateVal = null, decamillaStopVal = null, depVal = null) {
       const curb_kg = 2233.0;
       const total_mass_kg = curb_kg + (payload_lbs * 0.453592);
       const temp_c = (temp_f - 32) * 5 / 9;
       const rho = 1.225 * (288.15 / Math.max(240, temp_c + 273.15));
       const v_wind_ms = wind_speed * 0.44704;
 
-      const depHour = (start_clock_hours != null) ? start_clock_hours : getDepartureHoursDecimal();
-      const depDow = getDepartureDayOfWeek();
-      const decamillaVal = (typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) 
-        ? document.getElementById('decamillaStopDuration').value : '0';
+      const depHour = (start_clock_hours != null) ? start_clock_hours : getDepartureHoursDecimal(depVal);
+      const depDow = getDepartureDayOfWeek(depDateVal);
+      const decamillaVal = (decamillaStopVal != null)
+        ? decamillaStopVal
+        : ((typeof document !== 'undefined' && document.getElementById('decamillaStopDuration')) 
+            ? document.getElementById('decamillaStopDuration').value : '0');
       const decamillaDwell = (decamillaVal === 'overnight') ? 8.0 : parseFloat(decamillaVal || 0);
       let hasPassedDecamilla = false;
 
@@ -28881,7 +28884,7 @@
       const lutKey = `${payload_lbs}_${speed_offset}_${max_cap}_${traffic_profile}_${depDateVal}_${clockKey}_${decamillaStopVal}_${weatherKey}`;
       steps._luts = steps._luts || {};
       if (!steps._luts[lutKey]) {
-        steps._luts[lutKey] = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, quantizedClockHours);
+        steps._luts[lutKey] = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, quantizedClockHours, depDateVal, decamillaStopVal, depVal);
       }
       steps._lut = steps._luts[lutKey];
       steps._lutKey = lutKey;
@@ -29187,10 +29190,11 @@
       disp.innerText = formatClockTime(h + (m / 60.0));
     }
 
-    function getDepartureHoursDecimal() {
-      const el = document.getElementById('departureTime');
-      if (!el || !el.value) return 8.0;
-      const parts = el.value.split(':');
+    function getDepartureHoursDecimal(explicitTimeStr = null) {
+      const el = explicitTimeStr != null ? null : document.getElementById('departureTime');
+      const val = explicitTimeStr != null ? explicitTimeStr : (el ? el.value : '08:00');
+      if (!val) return 8.0;
+      const parts = val.split(':');
       if (parts.length < 2) return 8.0;
       const h = parseInt(parts[0], 10);
       const m = parseInt(parts[1], 10);
@@ -33826,25 +33830,40 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         updateCalcProgress(polishPct, `Polishing Schedules (${dIdx + 1}/${depHourOffsets.length})...`);
         await new Promise(r => setTimeout(r, 0));
         const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
+        const speedRegimesToPolish = [];
+        if (shouldOptimizeSpeed || shouldOptimizeCap) {
+          speedOffsetsToTry.forEach(off => {
+            speedCapsToTry.forEach(cap => {
+              speedRegimesToPolish.push({ offset: off, cap: cap });
+            });
+          });
+        }
         for (let i = 0; i < combinedTop.length; i++) {
           const cand = combinedTop[i];
-          const testSpeedOffset = cand.speed_offset != null ? cand.speed_offset : speed_offset;
-          const testMaxCap = cand.max_speed_cap != null ? cand.max_speed_cap : max_speed_cap;
-          const asChosen = polishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap);
-          const trimmed = polishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap);
-          if (asChosen) {
-            asChosen.departure_offset_hrs = offsetHours;
-            asChosen.departure_clock = formatClockTime(testDepHour);
-            asChosen.speed_offset = testSpeedOffset;
-            asChosen.max_speed_cap = testMaxCap;
-            polishedCandidates.push(asChosen);
-          }
-          if (trimmed && (!asChosen || trimmed.stops.some((s, idx) => s.tgt_soc !== asChosen.stops[idx].tgt_soc))) {
-            trimmed.departure_offset_hrs = offsetHours;
-            trimmed.departure_clock = formatClockTime(testDepHour);
-            trimmed.speed_offset = testSpeedOffset;
-            trimmed.max_speed_cap = testMaxCap;
-            polishedCandidates.push(trimmed);
+          const candSpeedOffset = cand.speed_offset != null ? cand.speed_offset : speed_offset;
+          const candMaxCap = cand.max_speed_cap != null ? cand.max_speed_cap : max_speed_cap;
+          const regimes = (speedRegimesToPolish.length > 0)
+            ? speedRegimesToPolish
+            : [{ offset: candSpeedOffset, cap: candMaxCap }];
+
+          for (let rIdx = 0; rIdx < regimes.length; rIdx++) {
+            const { offset: testSpeedOffset, cap: testMaxCap } = regimes[rIdx];
+            const asChosen = polishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap);
+            const trimmed = polishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap);
+            if (asChosen) {
+              asChosen.departure_offset_hrs = offsetHours;
+              asChosen.departure_clock = formatClockTime(testDepHour);
+              asChosen.speed_offset = testSpeedOffset;
+              asChosen.max_speed_cap = testMaxCap;
+              polishedCandidates.push(asChosen);
+            }
+            if (trimmed && (!asChosen || trimmed.stops.some((s, idx) => s.tgt_soc !== asChosen.stops[idx].tgt_soc))) {
+              trimmed.departure_offset_hrs = offsetHours;
+              trimmed.departure_clock = formatClockTime(testDepHour);
+              trimmed.speed_offset = testSpeedOffset;
+              trimmed.max_speed_cap = testMaxCap;
+              polishedCandidates.push(trimmed);
+            }
           }
         }
       }
