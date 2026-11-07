@@ -73,6 +73,7 @@ API keys are loaded in `ui/app.py` from system environment variables or a local 
 
 | Key | Purpose | Required For |
 |---|---|---|
+| `GEMINI_API_KEY` | Automated headless plan architecture review | `scripts/review_plan.py` |
 | `TOMTOM_API_KEY` | Turn-by-turn predictive speeds & corridor traffic | Precision speed sync, traffic profiling |
 | `HERE_API_KEY` | Highway speed limits & toll plaza rate lookups | Speed validation, toll calculations |
 | `GOOGLEMAPS_API_KEY` | Google Elevation API & Google Places amenities | Elevation profiles, charger amenities |
@@ -205,6 +206,7 @@ python tests/test_full_suite.py
 │   ├── weather_preview.html
 │   └── data/                   # Mirror of active data caches for static web access
 ├── scripts/                    # Automation, cache harvesting, and maintenance utilities
+│   └── review_plan.py          # Headless plan audit runner (Gemini API)
 ├── tests/                      # Python unit tests and Chrome CDP integration tests
 ├── ui/
 │   ├── app.py                  # FastAPI server and REST endpoints
@@ -262,7 +264,7 @@ Windows users can also double-click `start.bat` to immediately launch `index.htm
 
 ### 7.1. Autonomous Single-Session Plan Review Pipeline
 
-**Trigger:** Any request containing *"create a reviewed implementation plan"*, *"plan [feature] with an external review"*, *"complete a peer review for the plan"* or equivalent reviewed planning intent.
+**Trigger:** Any request containing *"create an implementation plan"*, *"plan [feature]"*, *"create a reviewed implementation plan"*, or equivalent planning intent.
 
 Whenever a plan is requested, execute this automated review sequence within your session before writing application code:
 
@@ -276,13 +278,19 @@ Whenever a plan is requested, execute this automated review sequence within your
      python scripts/review_plan.py
      ```
    - Inspect the terminal output and `.scratch/plan_review.md`.
-3. **Handle Review Verdicts:**
+3. **Handle Review Verdicts & Output Impact Summary:**
    - **If exit code is non-zero or contains `Status: CHANGES REQUESTED`:**
      - Address each flagged blocker or fidelity concern.
      - Update both `.scratch/plan.md` and `.scratch/plans/YYYY-MM-DD_<feature_name>.md`.
-     - Re-run `python scripts/review_plan.py` until it exits 0.
+     - Re-run `python scripts/review_plan.py` until it exits 0 (`Status: APPROVED`).
    - **If exit code is 0 and contains `Status: APPROVED`:**
-     - Present a concise 2-sentence summary of the approved plan to the user.
+     - **Mandatory Review Impact Summary:** Include an explicit summary in your response:
+       ```markdown
+       ### Plan Review Impact Summary
+       - **Reviewer Feedback:** (Key observations, edge cases, or blockers flagged)
+       - **Adjustments Made:** (Concrete changes made to the plan based on the review)
+       ```
+       *(If approved on the first pass with zero changes required, explicitly state: "Approved on initial pass with zero architectural modifications required.")*
      - Delete `.scratch/plan.md` and `.scratch/plan_review.md`.
      - Proceed directly to code implementation and local testing gates.
 
@@ -290,8 +298,23 @@ Whenever a plan is requested, execute this automated review sequence within your
 
 ### 7.2. Git Execution Modes & CodeRabbit Integration
 
-#### Mode A: Direct Mode (Fast / Default)
-* **Scope:** Routine, low-risk changes (single-file fixes, UI styling tweaks, copy updates, test scripts).
+#### Mode 0: Fast-Track / Super Quick Mode (Bypass All Reviews)
+* **Trigger:** Explicit keywords such as *"super quick"*, *"quick fix"*, *"fast-track"*, *"skip reviews"*, or *"quick tweak"*.
+* **Scope:** CSS tweaks, UI wording, quick typo fixes, minor styling, or simple isolated script tweaks where full planning and PR audits add unnecessary friction.
+* **Execution Rules:**
+  1. **Skip all reviews:** Do NOT generate `.scratch/plan.md` or run `review_plan.py`. Do NOT open a PR for CodeRabbit.
+  2. **Synchronize File Parity:** If touching UI, still update all three files: `index.html`, `public/index.html`, and `ui/templates/index.html`.
+  3. **Targeted Essential Test Only:** Run ONLY the minimal gate required for the affected layer:
+     - **UI / Frontend edits:** Run only `python tests/test_js_syntax.py`.
+     - **Backend / Math edits:** Run only `python -m unittest tests/test_engine.py`.
+     - **Docs / Comments / Static assets:** Skip test runners entirely.
+  4. Commit and push directly to `main`:
+     ```bash
+     git add -A && git commit -m "quick: <brief summary>" && git push
+     ```
+
+#### Mode A: Direct Mode (Fast / Standard)
+* **Scope:** Routine, low-risk changes (single-file fixes, standard feature work, non-core refactors).
 * **Execution:**
   1. Make edits ensuring the 3-file HTML synchronization rule is respected.
   2. Run local test gates: `python -m unittest tests/test_engine.py` and `python tests/test_js_syntax.py`.
@@ -320,11 +343,25 @@ Whenever a plan is requested, execute this automated review sequence within your
   6. **Monitor CodeRabbit Review:**
      - Poll review status: `gh pr view --comments` or `gh pr checks`.
      - CodeRabbit automatically runs and comments inline on the PR.
-  7. **Resolve Review Feedback:**
+  7. **Resolve Review Feedback & Output Impact Summary:**
      - **Actionable Bugs / Edge Cases:** Immediately fix the code locally, rerun test gates, and push the follow-up commit (`git push`).
      - **Stylistic / Irrelevant Comments:** Disregard minor comments that violate established project patterns (e.g., CDN loading, single-file SPA).
-  8. **Merge:** Once CodeRabbit checks pass and no unresolved blockers remain, merge the PR:
-     ```bash
-     gh pr merge --squash --delete-branch
-     ```
-     Return to `main` (`git checkout main && git pull`).
+  8. **Merge & Report:**
+     - Merge the PR:
+       ```bash
+       gh pr merge --squash --delete-branch
+       ```
+     - Return to `main` (`git checkout main && git pull`).
+     - **Mandatory Review Impact Summary:** In your final response, provide a summary:
+       ```markdown
+       ### CodeRabbit Review Impact Summary
+       - **Issues Flagged:** (Specific bugs, unhandled exceptions, or regressions noted by CodeRabbit)
+       - **Fixes Applied:** (Exact commits/changes made in response before merging)
+       ```
+       *(If no actionable issues were raised, state: "CodeRabbit approved clean with no functional blockers flagged.")*
+
+#### Mode C: Full Pipeline Mode (Plan Review + CodeRabbit PR)
+* **Trigger:** Requests matching *"Full pipeline for [feature]"*, *"Plan and build [feature] with PR review"*, or *"End-to-end review mode"*.
+* **Workflow:**
+  1. Automatically execute Section 7.1 (`scripts/review_plan.py`) until approved and document plan impact.
+  2. Transition directly into Section 7.2 Mode B (feature branch, local test gates, PR creation, CodeRabbit comment resolution, squash-merge, and code review impact report).
