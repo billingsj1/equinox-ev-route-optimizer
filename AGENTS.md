@@ -341,9 +341,16 @@ Whenever a plan is requested, execute this automated review sequence within your
      gh pr create --title "<Descriptive Title>" --body "<Summary and changes of passed test verified>"
      gh pr comment --body "@coderabbitai review"
      ```
-  6. **Monitor CodeRabbit Review:**
-     - Wait ~30–60 seconds, then poll status: `gh pr view --comments` or `gh pr checks`.
-     - CodeRabbit will post its evaluation inline on the PR.
+  6. **Monitor CodeRabbit Review (Low-Token Polling):**
+     - Do not poll repeatedly in short intervals.
+     - **Preferred CLI Watch (Zero Turn Overhead):** Use GitHub CLI's native watch mode set to a 60-second refresh interval:
+       ```bash
+       gh pr checks --watch -i 60
+       ```
+     - **Fallback Polling Loop:** If checking via command line loops:
+       - Wait an initial baseline of 120 seconds before the first check.
+       - Poll status using `gh pr checks` or `gh pr view --comments` no more frequently than once every 60–90 seconds (e.g., `sleep 60`).
+     - Stop polling as soon as the CodeRabbit status changes from pending to completed, or once inline review comments appear.
   7. **Resolve Review Feedback & Output Impact Summary:**
      - **Actionable Bugs / Edge Cases:** Immediately fix the code locally, rerun test gates, and push the follow-up commit (`git push`).
      - **Stylistic / Irrelevant Comments:** Disregard minor comments that violate established project patterns (e.g., CDN loading, single-file SPA).
