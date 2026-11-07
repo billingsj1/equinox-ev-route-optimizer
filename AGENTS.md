@@ -336,13 +336,14 @@ Whenever a plan is requested, execute this automated review sequence within your
      ```bash
      git push -u origin feature/<descriptive-name>
      ```
-  5. Open a Pull Request using GitHub CLI:
+  5. Open a Pull Request and summon CodeRabbit:
      ```bash
-     gh pr create --title "<Descriptive Title>" --body "<Summary and changes of passes test verified>"
+     gh pr create --title "<Descriptive Title>" --body "<Summary and changes of passed test verified>"
+     gh pr comment --body "@coderabbitai review"
      ```
   6. **Monitor CodeRabbit Review:**
-     - Poll review status: `gh pr view --comments` or `gh pr checks`.
-     - CodeRabbit automatically runs and comments inline on the PR.
+     - Wait ~30–60 seconds, then poll status: `gh pr view --comments` or `gh pr checks`.
+     - CodeRabbit will post its evaluation inline on the PR.
   7. **Resolve Review Feedback & Output Impact Summary:**
      - **Actionable Bugs / Edge Cases:** Immediately fix the code locally, rerun test gates, and push the follow-up commit (`git push`).
      - **Stylistic / Irrelevant Comments:** Disregard minor comments that violate established project patterns (e.g., CDN loading, single-file SPA).

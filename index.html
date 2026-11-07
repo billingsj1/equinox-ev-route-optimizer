@@ -28177,6 +28177,16 @@
       'vinest_west': 'vinest_benfranklin_west',
       'columbus_i70_split_east': 'columbus_i70_east',
       'columbus_i70_split_west': 'columbus_i70_west',
+      'columbus_i70_east_slice1': 'columbus_i70_east',
+      'columbus_i70_east_slice2': 'columbus_i70_east',
+      'columbus_i70_west_slice1': 'columbus_i70_west',
+      'columbus_i70_west_slice2': 'columbus_i70_west',
+      'schuylkill_east_slice1': 'schuylkill_east',
+      'schuylkill_east_slice2': 'schuylkill_east',
+      'schuylkill_east_slice3': 'schuylkill_east',
+      'schuylkill_west_slice1': 'schuylkill_west',
+      'schuylkill_west_slice2': 'schuylkill_west',
+      'schuylkill_west_slice3': 'schuylkill_west',
       'i276_east': 'i276_paturnpike_east',
       'i276_west': 'i276_paturnpike_west',
       'patp_carlisle_node_east': 'pa_turnpike_east_carlisle',
@@ -28254,7 +28264,10 @@
       }
 
       // 2. Fall back to TomTom 168h calibrated speeds
-      return getTomTomSpeed(key, dow, hour, fallback);
+      const ttKey = (typeof TOMTOM_CORRIDOR_SPEEDS !== 'undefined' && TOMTOM_CORRIDOR_SPEEDS[key])
+        ? key
+        : (CORRIDOR_KEY_ALIASES[key] || key);
+      return getTomTomSpeed(ttKey, dow, hour, fallback);
     }
 
     function getDirectionalTomTomSpeed(eastOrNorthKey, westOrSouthKey, isEastOrNorth, dow, hour, fallback) {
