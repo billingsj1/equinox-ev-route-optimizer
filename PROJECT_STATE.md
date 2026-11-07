@@ -1,7 +1,7 @@
 # PROJECT STATE — 2025 Chevrolet Equinox EV Route Optimizer & Pricing Engine
 
-**Last Updated:** November 7, 2026 (11:15 AM EST)  
-**Current Git Head:** `1fc6d6f` (Branch: `main`)  
+**Last Updated:** November 7, 2026 (2:00 PM EST)  
+**Current Git Head:** `4ba83df` (Branch: `main`)  
 **Workspace:** `c:\Users\joshb\Documents\antigravity\jolly-hopper`  
 **API Credit Status:** **\$189.70 Remaining** of fixed \$300.00 90-day credit (\$110.30 used: \$95.00 baseline Google Routes + \$15.30 Google Places amenities).
 
@@ -77,7 +77,7 @@ This section documents all major features, refactors, and data integrations star
 - **User Issue Mentioned:** User noticed that the "Fastest" route reported with 2% anchors / 5% milestones (\$97.07) was more expensive than under 5%/10% (\$95.45) and questioned how evaluating more options could produce a more expensive result ("Somehow you didn't even realize that the 2% anchors and 5% milestones fastest/cheapest routes were both more expensive than the 5%/10% fastest/cheapest. That makes no sense if it's supposedly evaluating MORE options.").
 - **How Addressed:** Explained the exact mathematical mechanics of the solver: the `fastest` objective strictly minimizes `total_hours` (arrival time). Under 2%/5%, it evaluated 2,460 combinations and discovered an itinerary arriving **1 minute earlier** (12h 43m vs 12h 44m), which cost \$1.62 more in charging fees. The optimizer correctly prioritized the faster arrival time for the Fastest title. The cheaper options (\$61–\$67) were preserved under the Cheapest and Balanced categories.
 
-### 8. Out-of-Control 117-Minute Traffic Slowdowns (`1fc6d6f`)
+### 8. Out-of-Control 117-Minute Traffic Slowdowns (`4ba83df`)
 - **Feature:** Live and calibrated traffic speed injection from Google Routes and TomTom 168h models.
 - **User Issue Mentioned:** A Monday morning simulation leaving after rush hour (10:00 AM) produced an unrealistic **117 minutes of traffic slowdown**, with individual legs reporting +17m, +36m, +13m, +19m, +11m, +21m ("It feels like the traffic delays have gotten way out of control as well. Running a simulation on a Monday leaving after rush hour somehow shows 117min total min of slowdowns. And it seems that every single calculation is like this.").
 - **How Addressed:** Traced step-by-step and uncovered three compounding bugs:
@@ -121,6 +121,16 @@ This section documents all major features, refactors, and data integrations star
 - **Feature:** Added interactive Pareto selection tiles: Fastest, Balanced Fast, Balanced, Balanced Cheap, and Cheapest.
 - **User Issue Mentioned:** User wanted to see a clear spread of trade-off routes between time and cost rather than a single arbitrary solution.
 - **How Addressed:** Implemented 5 selectable Pareto cards with real-time delta badges (e.g. "+12m / -$8.50").
+
+### 16. Forward State Tree Solver Acceleration & Route-Aware Speed Deduplication (4ba83df)
+- **Feature:** Optimized charging calculations using O(1) precomputed Ultium charging integral lookup tables, hoisted DOM reads, and dynamic route-aware speed configuration deduplication.
+- **User Issue Mentioned:** User noticed multi-parameter optimizations taking almost or over 3 minutes on Vercel/browser runs ('Taking almost (or over) 3 min for a couple of those runs is not at all ideal... Figure out what's going on and why it is taking so long').
+- **How Addressed:**
+  1. Cached station charging LUTs directly on station objects, evaluating arrival SoC once per station loop.
+  2. Built dynamic route-aware cruising speed deduplication: scans all corridor steps for max_posted_speed and prunes redundant duplicate speed pairs (e.g., (5, 75) and (5, 80) which drive at the exact same 75 mph everywhere on 70 mph maximum speed limit roads).
+  3. Hoisted repeated DOM access (hasEaPass, hasTeslaMember, scheduledDeparturePreheat, hasEzPass) to calculation initialization, eliminating ~160,000 DOM crossings.
+  4. Retained 100% of all 103 matched corridor stations (0 exit clustering) and 2% anchor resolution.
+  - **Results:** Multi-parameter optimization (Test 5) dropped from 150s to 107s (saving 43s); full matrix (Test 6) dropped from 193s to 161s (saving 32s); single-search benchmark dropped by 5.2s. 100% verified accuracy and zero console errors.
 
 ### 15. Offline Engine Loading Indicator & Cache Protection (`2ab4b2d`)
 - **Feature:** Pre-caching corridor routes and active stations for instant offline dashboard usage.
