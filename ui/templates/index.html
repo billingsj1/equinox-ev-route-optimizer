@@ -54,37 +54,53 @@
         <p class="text-xs text-slate-400">Multi-Objective Pareto EV Router & Physical Highway Simulator</p>
       </div>
     </div>
-    <div class="flex items-center space-x-3 flex-wrap gap-y-2">
-      <!-- Offline Engine & Cache Readiness Badge -->
-      <div id="dbEngineBadge" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-lg border border-amber-500/30 text-slate-300 flex items-center gap-2 transition-all duration-300 shadow-sm cursor-default" title="Downloading offline corridor, elevation, and speed caches...">
-        <i id="dbEngineIcon" data-lucide="loader" class="w-3.5 h-3.5 text-amber-400 animate-spin"></i>
-        <span id="dbEngineText" class="font-mono text-[11px] text-amber-300 flex items-center gap-1.5">
-          <span>Loading Engine</span>
-          <span id="dbEngineCount" class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">0/10</span>
+    <div class="flex flex-col items-end gap-1.5 w-full md:w-auto">
+      <div class="flex items-center space-x-3 flex-wrap gap-y-2 justify-end">
+        <!-- Offline Engine & Cache Readiness Badge -->
+        <div id="dbEngineBadge" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-lg border border-amber-500/30 text-slate-300 flex items-center gap-2 transition-all duration-300 shadow-sm cursor-default" title="Downloading offline corridor, elevation, and speed caches...">
+          <i id="dbEngineIcon" data-lucide="loader" class="w-3.5 h-3.5 text-amber-400 animate-spin"></i>
+          <span id="dbEngineText" class="font-mono text-[11px] text-amber-300 flex items-center gap-1.5">
+            <span>Loading Engine</span>
+            <span id="dbEngineCount" class="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">0/10</span>
+          </span>
+        </div>
+
+        <div id="liveMassBadge" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700 text-slate-300 flex items-center gap-1.5">
+          <i data-lucide="scale" class="w-4 h-4 text-emerald-400"></i>
+          <span>Vehicle Mass: <b id="massDisplay" class="text-white">5,373 lbs</b> (2,437 kg)</span>
+        </div>
+        <button onclick="handleSearchRoute()" id="searchBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition shadow-lg shadow-emerald-500/20 cursor-pointer">
+          <i data-lucide="search" class="w-4 h-4"></i>
+          <span>Calculate Route</span>
+        </button>
+        <button onclick="handleTomTomPrecisionSync()" id="precisionSyncBtn" class="bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-semibold px-3.5 py-2 rounded-lg text-sm flex items-center gap-1.5 transition shadow-lg shadow-amber-500/20 cursor-pointer" title="Query TomTom Predictive API for exact turn-by-turn speeds across all legs">
+          <i data-lucide="zap" class="w-4 h-4 fill-slate-950"></i>
+          <span id="precisionSyncBtnText">⚡ TomTom Precision</span>
+        </button>
+        <span id="precisionStatusBadge" class="hidden text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-1 rounded-md flex items-center gap-1">
+          <i data-lucide="check-circle" class="w-3 h-3 text-amber-400"></i>
+          <span>Precision Active</span>
         </span>
+        <button onclick="openSimHistoryModal()" id="simHistoryBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 transition cursor-pointer shadow-sm" title="View, compare, or copy previous simulation debug runs">
+          <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i>
+          <span>History</span>
+          <span id="simHistoryCountBadge" class="hidden bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold">0</span>
+        </button>
       </div>
 
-      <div id="liveMassBadge" class="text-xs bg-slate-800/80 px-3 py-1.5 rounded-md border border-slate-700 text-slate-300 flex items-center gap-1.5">
-        <i data-lucide="scale" class="w-4 h-4 text-emerald-400"></i>
-        <span>Vehicle Mass: <b id="massDisplay" class="text-white">5,373 lbs</b> (2,437 kg)</span>
+      <!-- Dynamic Calculation Progress Bar -->
+      <div id="calcProgressContainer" class="hidden w-full max-w-lg transition-all duration-300 mt-0.5">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-300 mb-1">
+          <span id="calcProgressStageText" class="flex items-center gap-1.5 text-emerald-400 font-medium truncate max-w-[320px]">
+            <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
+            <span id="calcProgressStageLabel" class="truncate">Initializing search...</span>
+          </span>
+          <span id="calcProgressPct" class="text-white font-bold font-mono shrink-0 ml-2">0%</span>
+        </div>
+        <div class="w-full bg-slate-950/80 rounded-full h-2 overflow-hidden border border-slate-700/80 p-0.5 shadow-inner">
+          <div id="calcProgressBar" class="bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-150 shadow-sm shadow-emerald-500/50" style="width: 0%;"></div>
+        </div>
       </div>
-      <button onclick="handleSearchRoute()" id="searchBtn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition shadow-lg shadow-emerald-500/20 cursor-pointer">
-        <i data-lucide="search" class="w-4 h-4"></i>
-        <span>Calculate Route</span>
-      </button>
-      <button onclick="handleTomTomPrecisionSync()" id="precisionSyncBtn" class="bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-semibold px-3.5 py-2 rounded-lg text-sm flex items-center gap-1.5 transition shadow-lg shadow-amber-500/20 cursor-pointer" title="Query TomTom Predictive API for exact turn-by-turn speeds across all legs">
-        <i data-lucide="zap" class="w-4 h-4 fill-slate-950"></i>
-        <span id="precisionSyncBtnText">⚡ TomTom Precision</span>
-      </button>
-      <span id="precisionStatusBadge" class="hidden text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-1 rounded-md flex items-center gap-1">
-        <i data-lucide="check-circle" class="w-3 h-3 text-amber-400"></i>
-        <span>Precision Active</span>
-      </span>
-      <button onclick="openSimHistoryModal()" id="simHistoryBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5 transition cursor-pointer shadow-sm" title="View, compare, or copy previous simulation debug runs">
-        <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i>
-        <span>History</span>
-        <span id="simHistoryCountBadge" class="hidden bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold">0</span>
-      </button>
     </div>
   </header>
 
@@ -30777,6 +30793,54 @@
       return `${o}|${d}|${date}|${time}|${soc}|${offset}|${cap}|${minT}|${maxT}|${decamilla}|${profile}|${optDep}|${optSpd}|${optCap}`;
     }
 
+    let calcProgressHideTimer = null;
+    function updateCalcProgress(pct, stageLabel) {
+      if (calcProgressHideTimer) {
+        clearTimeout(calcProgressHideTimer);
+        calcProgressHideTimer = null;
+      }
+      const container = document.getElementById('calcProgressContainer');
+      const bar = document.getElementById('calcProgressBar');
+      const pctEl = document.getElementById('calcProgressPct');
+      const labelEl = document.getElementById('calcProgressStageLabel');
+      const searchBtn = document.getElementById('searchBtn');
+
+      const clampedPct = Math.min(100, Math.max(0, Math.round(pct)));
+
+      if (container && container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+      }
+      if (bar) {
+        bar.style.width = clampedPct + '%';
+      }
+      if (pctEl) {
+        pctEl.innerText = clampedPct + '%';
+      }
+      if (labelEl && stageLabel) {
+        labelEl.innerText = stageLabel;
+      }
+      if (searchBtn && searchBtn.disabled) {
+        searchBtn.innerHTML = `<i data-lucide="cpu" class="w-4 h-4 text-slate-950"></i><span>Calculating (${clampedPct}%)</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function hideCalcProgress(delayMs = 1200) {
+      if (calcProgressHideTimer) clearTimeout(calcProgressHideTimer);
+      calcProgressHideTimer = setTimeout(() => {
+        const container = document.getElementById('calcProgressContainer');
+        if (container) {
+          container.classList.add('hidden');
+          const bar = document.getElementById('calcProgressBar');
+          if (bar) bar.style.width = '0%';
+          const pctEl = document.getElementById('calcProgressPct');
+          if (pctEl) pctEl.innerText = '0%';
+          const labelEl = document.getElementById('calcProgressStageLabel');
+          if (labelEl) labelEl.innerText = 'Ready';
+        }
+      }, delayMs);
+    }
+
     async function handleTomTomPrecisionSync() {
       const btn = document.getElementById('precisionSyncBtn');
       const btnText = document.getElementById('precisionSyncBtnText');
@@ -30799,6 +30863,7 @@
       const originalText = btnText.innerHTML;
 
       try {
+        updateCalcProgress(5, "TomTom: Preparing Candidate Route Pool...");
         // Step 1: If calculations haven't been done or inputs changed, run base route calculation first
         const currentSig = getCurrentInputSignature();
         if (!activeRoutesData || activeRoutesData.length === 0 || !calculatedResults || !calculatedResults.fastest_x || lastCalculatedInputSignature !== currentSig) {
@@ -30810,8 +30875,11 @@
         if (!activeRoutesData || activeRoutesData.length === 0 || !calculatedResults || !calculatedResults.fastest_x) {
           alert("Could not generate base routes. Please check your origin and destination.");
           btnText.innerHTML = originalText;
+          hideCalcProgress(500);
           return;
         }
+
+        updateCalcProgress(12, "TomTom: Decomposing Candidates into Unique Legs...");
 
         // Step 2: Extract top candidates across both Route X (min stops) and Route Y (next stop count)
         const candidatePool = [];
@@ -30922,7 +30990,9 @@
 
         for (let i = 0; i < uniqueLegList.length; i++) {
           const [lKey, lObj] = uniqueLegList[i];
+          const pct = 15 + Math.round(((i + 1) / uniqueLegList.length) * 75);
           btnText.innerText = `Syncing (${i + 1}/${uniqueLegList.length})...`;
+          updateCalcProgress(pct, `TomTom Precision: Querying Leg ${i + 1}/${uniqueLegList.length}...`);
 
           const coordsStr = `${lObj.start[0]},${lObj.start[1]}:${lObj.end[0]},${lObj.end[1]}`;
           const url = `https://api.tomtom.com/routing/1/calculateRoute/${coordsStr}/json?key=${key}&traffic=true&departAt=${encodeURIComponent(lObj.iso)}&routeType=fastest&computeTravelTimeFor=all${lObj.avoidTolls ? '&avoid=tollRoads' : ''}`;
@@ -31126,6 +31196,8 @@
           }
         });
 
+        updateCalcProgress(92, "TomTom Precision: Recalculating Dynamic Physics & Arrival Clock...");
+
         // Step 6: Re-select winners for Route X and Route Y using applyRouteSelectionFromPool
         applyRouteSelectionFromPool(candidatePool, calculatedResults.nonStop);
 
@@ -31137,10 +31209,14 @@
         btn.classList.remove('from-amber-500', 'to-amber-400');
         btn.classList.add('bg-emerald-500', 'text-slate-950');
 
+        updateCalcProgress(100, "TomTom Precision Sync Complete!");
+        hideCalcProgress(1500);
+
       } catch (err) {
         console.error("Precision Sync error:", err);
         alert("Precision Sync error: " + err.message);
         btnText.innerHTML = originalText;
+        hideCalcProgress(600);
       } finally {
         btn.disabled = false;
         if (window.lucide) lucide.createIcons();
@@ -31154,10 +31230,11 @@ async function handleSearchRoute() {
 
       // Ensure all offline databases are loaded before running calculations
       if (!window.isEngineReady && window.ENGINE_READY_PROMISE) {
+        updateCalcProgress(2, `Loading Engine Caches (${window.ENGINE_LOADED_COUNT || 0}/9)...`);
         const searchBtn = document.getElementById('searchBtn');
         if (searchBtn) {
           searchBtn.disabled = true;
-          searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Loading Caches (${window.ENGINE_LOADED_COUNT || 0}/9)...</span>`;
+          searchBtn.innerHTML = `<i data-lucide="cpu" class="w-4 h-4"></i><span>Loading Caches (${window.ENGINE_LOADED_COUNT || 0}/9)...</span>`;
           if (window.lucide) lucide.createIcons();
         }
         const auditStatusText = document.getElementById('auditStatusText');
@@ -31174,8 +31251,7 @@ async function handleSearchRoute() {
 
       const searchBtn = document.getElementById('searchBtn');
       searchBtn.disabled = true;
-      searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Finding Routes...</span>`;
-      lucide.createIcons();
+      updateCalcProgress(4, "Geocoding Origin & Destination...");
 
       const auditStatusText = document.getElementById('auditStatusText');
       if (auditStatusText) auditStatusText.innerText = "Finding Corridors...";
@@ -31197,6 +31273,7 @@ async function handleSearchRoute() {
 
         // Fetch Live Road Route via OSRM with full steps & speed metadata
         profiler.startStage("OSRM Corridors Fetch");
+        updateCalcProgress(8, "Fetching Highway Corridors & Road Steps...");
         let routesFound = false;
 
         // Check offline corridor routes cache first
@@ -31513,6 +31590,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         // Pull smart along-route weather (or apply manual override)
         profiler.startStage("Along-Route Weather Engine");
+        updateCalcProgress(14, "Fetching Along-Route Weather Forecasts...");
         await fetchRouteWeatherData(destText, activeRoutesData[0]);
 
         await recomputeCurrentRoute(profiler);
@@ -31524,10 +31602,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (st) st.innerText = 'Location not found';
           alert(err.message);
         }
+        hideCalcProgress(600);
       } finally {
         searchBtn.disabled = false;
         searchBtn.innerHTML = `<i data-lucide="search" class="w-4 h-4"></i><span>Calculate Route</span>`;
         lucide.createIcons();
+        hideCalcProgress(1500);
       }
     }
 
@@ -32120,9 +32200,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
       if (searchBtn) {
         searchBtn.disabled = true;
-        searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Generating Routes...</span>`;
-        if (window.lucide) lucide.createIcons();
       }
+      updateCalcProgress(18, "Precomputing Elevation & Station Detours...");
       // Micro-yield to allow browser UI thread to repaint
       await new Promise(r => setTimeout(r, 60));
 
@@ -32285,7 +32364,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       // =========================================================================
       // STAGE 1: FORWARD STATE-SPACE SEARCH TREE (EXPANDED TARGETS & DYNAMIC PROGRAMMING)
       // =========================================================================
-      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false, sOffset = speed_offset, sCap = max_cap) {
+      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false, sOffset = speed_offset, sCap = max_cap, pairIndex = 0, totalPairs = 1) {
         const candidates = [];
 
         for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
@@ -32297,6 +32376,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const decamillaIdx = cData.decamillaIdx;
           const stationDetours = cData.stationDetours;
           const stationAmbientTemps = cData.stationAmbientTemps;
+
+          const totalCorridorSearches = totalPairs * Math.max(1, activeRoutesData.length);
+          const currentSearchIdx = (pairIndex * activeRoutesData.length) + rIdx;
+          const searchTreePct = 20 + Math.round((currentSearchIdx / totalCorridorSearches) * 45);
+          updateCalcProgress(searchTreePct, `Exploring State Tree: Route ${rIdx + 1}/${activeRoutesData.length} (${route.name || route.id})...`);
+          await new Promise(r => setTimeout(r, 10));
 
         // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
         const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
@@ -32839,7 +32924,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       for (let pIdx = 0; pIdx < stage1Pairs.length; pIdx++) {
         const pair = stage1Pairs[pIdx];
-        const res = await runStage1Search(min_leg_mins, max_leg_mins, false, pair.off, pair.cap);
+        const res = await runStage1Search(min_leg_mins, max_leg_mins, false, pair.off, pair.cap, pIdx, stage1Pairs.length);
         stage1_candidates = stage1_candidates.concat(res);
       }
       window.lastStage1Candidates = stage1_candidates;
@@ -32863,12 +32948,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
         if (searchBtn) {
           searchBtn.disabled = false;
-          searchBtn.innerHTML = `<i data-lucide="compass" class="w-4 h-4"></i><span>Calculate Route</span>`;
+          searchBtn.innerHTML = `<i data-lucide="search" class="w-4 h-4"></i><span>Calculate Route</span>`;
           if (window.lucide) lucide.createIcons();
         }
+        hideCalcProgress(600);
         return;
       }
       if (alertBanner) alertBanner.classList.add('hidden');
+
+      updateCalcProgress(68, `Filtering ${stage1_candidates.length.toLocaleString()} Combinations into Pareto Frontier...`);
 
       // Metric 1: Count unique physical routes (stop combinations)
       const sequenceGroups = new Map();
@@ -33040,10 +33128,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           </div>
         `;
       }
-      if (searchBtn) {
-        searchBtn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Analyzing ${combinedTop.length} Variations...</span>`;
-        if (window.lucide) lucide.createIcons();
-      }
+      updateCalcProgress(72, `Analyzing ${combinedTop.length} Top Candidates across ${uniqueSequencesMap.size} Unique Routes...`);
       await new Promise(r => setTimeout(r, 60));
 
       // Query OSRM with 3-tier resolution: Option A (Pre-seeded Cache) -> Live OSRM + Local Persistence -> Option B (Corridor Slicing Fallback)
@@ -33060,6 +33145,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       for (let i = 0; i < seqEntries.length; i += BATCH_SIZE) {
         const batch = seqEntries.slice(i, i + BATCH_SIZE);
         const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
+        const osrmPct = 72 + Math.round((completedSoFar / Math.max(1, seqEntries.length)) * 18);
+        updateCalcProgress(osrmPct, `Verifying Route Geometry via OSRM (${completedSoFar}/${seqEntries.length} routes)...`);
 
         if (auditLogSummary) {
           auditLogSummary.innerHTML = `
@@ -33541,7 +33628,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         ? [-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0]
         : [0.0];
 
-      depHourOffsets.forEach(offsetHours => {
+      updateCalcProgress(90, "Polishing Schedules, Tariffs & Turn-by-Turn Telemetry...");
+      depHourOffsets.forEach((offsetHours, dIdx) => {
+        const polishPct = 90 + Math.round(((dIdx + 1) / depHourOffsets.length) * 8);
+        updateCalcProgress(polishPct, `Polishing Schedules (${dIdx + 1}/${depHourOffsets.length})...`);
         const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
         speedOffsetsToTry.forEach(testSpeedOffset => {
           speedCapsToTry.forEach(testMaxCap => {
@@ -33571,6 +33661,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       window.lastEvaluatedPool = finalPool;
 
       profiler.startStage("UI & Map Rendering");
+      updateCalcProgress(99, "Rendering Pareto Frontier & Map Layers...");
       // Select fastest, cheapest, balanced according to duration cap and checkbox settings
       applyRouteSelectionFromPool(finalPool, fastestNonStop);
       lastCalculatedInputSignature = getCurrentInputSignature();
@@ -33601,11 +33692,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         auditTimestamp.innerText = `Calculated at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
       }
 
+      updateCalcProgress(100, "Calculations Complete!");
       if (searchBtn) {
         searchBtn.disabled = false;
-        searchBtn.innerHTML = `<i data-lucide="compass" class="w-4 h-4"></i><span>Calculate Route</span>`;
+        searchBtn.innerHTML = `<i data-lucide="search" class="w-4 h-4"></i><span>Calculate Route</span>`;
         if (window.lucide) lucide.createIcons();
       }
+      hideCalcProgress(1500);
 
       if (auditLogSummary) {
                 auditLogSummary.innerHTML = `
@@ -33643,9 +33736,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
         if (searchBtn) {
           searchBtn.disabled = false;
-          searchBtn.innerHTML = `<i data-lucide="compass" class="w-4 h-4"></i><span>Calculate Route</span>`;
+          searchBtn.innerHTML = `<i data-lucide="search" class="w-4 h-4"></i><span>Calculate Route</span>`;
           if (window.lucide) lucide.createIcons();
         }
+        hideCalcProgress(600);
       }
     }
 
