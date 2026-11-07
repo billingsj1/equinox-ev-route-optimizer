@@ -32267,6 +32267,45 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let routeStations = projection.matched.slice();
         const total_miles = projection.total_dist || route.distance;
 
+        // Highway Exit Clustering for Forward Search Tree:
+        // When hundreds of stations are cached, multiple fast chargers sit at the exact same highway exit (within 2.5 miles).
+        // To eliminate redundant permutations, retain top diverse chargers per exit cluster (preserving DeCamilla, top Tesla, and top CCS).
+        if (routeStations.length > 25) {
+          const clusteredStations = [];
+          const exitClusters = [];
+          let currExit = [];
+          for (let i = 0; i < routeStations.length; i++) {
+            const st = routeStations[i];
+            if (currExit.length === 0) {
+              currExit.push(st);
+            } else {
+              if (Math.abs(st.mile - currExit[0].mile) <= 2.5) {
+                currExit.push(st);
+              } else {
+                exitClusters.push(currExit);
+                currExit = [st];
+              }
+            }
+          }
+          if (currExit.length > 0) exitClusters.push(currExit);
+
+          exitClusters.forEach(cl => {
+            const dec = cl.find(s => s.is_decamilla);
+            if (dec) clusteredStations.push(dec);
+
+            const tesla = cl.find(s => s.network && s.network.includes('Tesla'));
+            if (tesla && tesla !== dec) clusteredStations.push(tesla);
+
+            const nonTesla = cl.filter(s => s !== dec && (!s.network || !s.network.includes('Tesla')));
+            if (nonTesla.length > 0) {
+              nonTesla.sort((a,b) => (b.kw || 150) - (a.kw || 150) || (a.detour_mi || 0) - (b.detour_mi || 0));
+              clusteredStations.push(nonTesla[0]);
+            }
+          });
+          clusteredStations.sort((a, b) => a.mile - b.mile);
+          routeStations = clusteredStations;
+        }
+
         let decamillaStationObj = null;
         let decamillaIdx = -1;
         if (route.decamilla_stop && route.decamilla_stop.hours > 0) {
@@ -32437,7 +32476,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
 
-        // Precompute downstream reachable anchor targets per station
+        // Precompute downstream reachable anchor targets per station (5% step deduplicated)
         const downstreamAnchorTargets = new Array(routeStations.length);
         for (let j = 0; j < routeStations.length; j++) {
           const st = routeStations[j];
@@ -32451,11 +32490,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (satisfiesMinMins && nextLegMins <= max_mins) {
               const nextDetour = stationDetours[k];
               const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
-              const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 100 - 1e-9) / 100.0;
-              anchors.push(exactTgtKRaw);
+              const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 20.0) / 20.0;
+              if (exactTgtKRaw <= 0.90) anchors.push(exactTgtKRaw);
             }
           }
-          downstreamAnchorTargets[j] = anchors;
+          downstreamAnchorTargets[j] = Array.from(new Set(anchors));
         }
 
         // Forward Tree Search Queue with Pareto State Dominance
@@ -32681,7 +32720,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const max_stops_budget = Math.max(5, Math.ceil(total_miles / 85.0));
           if (curr.stopsCount >= max_stops_budget) continue;
 
-          if (++queueIterCount % 1000 === 0) {
+          if (++queueIterCount % 4000 === 0) {
             await new Promise(r => setTimeout(r, 0));
           }
 
@@ -32812,26 +32851,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (min_target_allowed > 0.90) continue;
 
             const targetSet = new Set();
-            // 1. Strict floor target (1% precision)
-            targetSet.add(min_target_allowed);
+            // 1. Minimum charge floor (5% resolution)
+            const floorStep = Math.ceil(min_target_allowed * 20.0) / 20.0;
+            if (floorStep <= 0.90) targetSet.add(floorStep);
 
-            // 2. Exact finish target to destination (ensuring it satisfies the minimum charge floor)
+            // 2. Exact finish target to destination (ensuring minimum charge floor)
             if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
-              const tgtFinish = Math.ceil(Math.max(min_target_allowed, dest_needed_soc) * 100 - 1e-9) / 100.0;
+              const tgtFinish = Math.ceil(Math.max(min_target_allowed, dest_needed_soc) * 20.0) / 20.0;
               if (tgtFinish <= 0.90) targetSet.add(tgtFinish);
             }
 
-            // 3. Exact reach-next anchors to downstream reachable stations along this corridor (Tier 1 Smart Anchors)
+            // 3. Precomputed smart reach-next anchors (already 5% stepped)
             const precomputedAnchors = downstreamAnchorTargets[j];
             for (let ai = 0; ai < precomputedAnchors.length; ai++) {
-              const exactTgtK = Math.max(min_target_allowed, precomputedAnchors[ai]);
-              if (exactTgtK <= 0.90) targetSet.add(exactTgtK);
+              const anc = precomputedAnchors[ai];
+              if (anc >= min_target_allowed && anc <= 0.90) targetSet.add(anc);
             }
 
-            // 4. Strategic standard SoC milestones above the floor (up to 90%)
-            const startStep = Math.ceil(min_target_allowed * 20.0) / 20.0;
-            for (let t = startStep; t <= 0.901; t += 0.05) {
-              targetSet.add(Math.round(t * 100) / 100.0);
+            // 4. Strategic standard SoC milestones (50%, 60%, 70%, 80%, 90%)
+            for (let t = 0.50; t <= 0.901; t += 0.10) {
+              if (t >= min_target_allowed) targetSet.add(Math.round(t * 100) / 100.0);
             }
 
             const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
@@ -32851,8 +32890,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
 
-              // Pareto State Dominance Pruning (scoped to exact station and 5% target SoC)
-              const stateKey = `${st.id || st.name}_${curr.stopsCount + 1}_${Math.round(target_soc * 100)}_${curr.has_decamilla ? 1 : 0}`;
+              // Pareto State Dominance Pruning (bucketed by 5% target SoC to eliminate combinatorial explosion)
+              const socBucket = Math.round(target_soc * 20) * 5;
+              const stateKey = `${st.id || st.name}_${socBucket}_${curr.has_decamilla ? 1 : 0}`;
               if (!paretoFrontier.has(stateKey)) {
                 paretoFrontier.set(stateKey, []);
               }
@@ -32860,15 +32900,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               let dominated = false;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const prev = frontier[fIdx];
-                if (prev.t <= (leg_total_hrs + 0.01) && prev.c <= (leg_total_cost + 0.05)) {
+                if (prev.t <= (leg_total_hrs + 0.015) && prev.c <= (leg_total_cost + 0.10) && prev.soc >= (target_soc - 0.005)) {
                   dominated = true;
                   break;
                 }
               }
               if (dominated) continue;
 
-              const filtered = frontier.filter(p => !(leg_total_hrs <= p.t && leg_total_cost <= p.c));
-              filtered.push({ t: leg_total_hrs, c: leg_total_cost });
+              const filtered = frontier.filter(p => !(leg_total_hrs <= p.t && leg_total_cost <= p.c && target_soc >= p.soc));
+              filtered.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc });
               paretoFrontier.set(stateKey, filtered);
 
               const stopPlan = {
