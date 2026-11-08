@@ -31570,7 +31570,7 @@ async function handleSearchRoute() {
 
       // Ensure all offline databases are loaded before running calculations
       if (!window.isEngineReady && window.ENGINE_READY_PROMISE) {
-        updateCalcProgress(2, `Loading Engine Caches (${window.ENGINE_LOADED_COUNT || 0}/9)...`);
+        updateCalcProgress(1, `Loading Engine Caches (${window.ENGINE_LOADED_COUNT || 0}/9)...`);
         const searchBtn = document.getElementById('searchBtn');
         if (searchBtn) {
           searchBtn.disabled = true;
@@ -31591,7 +31591,7 @@ async function handleSearchRoute() {
 
       const searchBtn = document.getElementById('searchBtn');
       searchBtn.disabled = true;
-      updateCalcProgress(4, "Geocoding Origin & Destination...");
+      updateCalcProgress(2, "Geocoding Origin & Destination...");
 
       const auditStatusText = document.getElementById('auditStatusText');
       if (auditStatusText) auditStatusText.innerText = "Finding Corridors...";
@@ -31613,7 +31613,7 @@ async function handleSearchRoute() {
 
         // Fetch Live Road Route via OSRM with full steps & speed metadata
         profiler.startStage("OSRM Corridors Fetch");
-        updateCalcProgress(8, "Fetching Highway Corridors & Road Steps...");
+        updateCalcProgress(3, "Fetching Highway Corridors & Road Steps...");
         let routesFound = false;
 
         // Check offline corridor routes cache first
@@ -31930,7 +31930,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         // Pull smart along-route weather (or apply manual override)
         profiler.startStage("Along-Route Weather Engine");
-        updateCalcProgress(14, "Fetching Along-Route Weather Forecasts...");
+        updateCalcProgress(4, "Fetching Along-Route Weather Forecasts...");
         await fetchRouteWeatherData(destText, activeRoutesData[0]);
 
         await recomputeCurrentRoute(profiler);
@@ -32590,7 +32590,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (searchBtn) {
         searchBtn.disabled = true;
       }
-      updateCalcProgress(18, "Precomputing Elevation & Station Detours...");
+      updateCalcProgress(5, "Precomputing Elevation & Station Detours...");
       // Micro-yield to allow browser UI thread to repaint
       await new Promise(r => setTimeout(r, 60));
 
@@ -32694,9 +32694,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const stationAmbientTemps = new Array(routeStations.length);
 
         for (let j = 0; j < routeStations.length; j++) {
-          if (j % 4 === 0) {
-            const stPct = 16 + Math.round((j / Math.max(1, routeStations.length)) * 4);
-            updateCalcProgress(stPct, `Projecting Corridor Stations (${j + 1}/${routeStations.length})...`);
+          if (j % 10 === 0) {
+            updateCalcProgress(5, `Projecting Corridor Stations (${j + 1}/${routeStations.length})...`);
           }
           const st = routeStations[j];
           let arrTemp = temp_f;
@@ -32774,14 +32773,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const totalCorridorSearches = totalPairs * Math.max(1, activeRoutesData.length);
           const currentSearchIdx = (pairIndex * activeRoutesData.length) + rIdx;
-          const corridorStartPct = 20 + (currentSearchIdx / totalCorridorSearches) * 52;
-          const corridorEndPct = 20 + ((currentSearchIdx + 1) / totalCorridorSearches) * 52;
+          // State tree accounts for ~75% of program time: scale 5% to 80%
+          const corridorStartPct = 5 + (currentSearchIdx / totalCorridorSearches) * 75;
+          const corridorEndPct = 5 + ((currentSearchIdx + 1) / totalCorridorSearches) * 75;
           const corridorSpan = corridorEndPct - corridorStartPct;
           let lastReportedPct = Math.floor(corridorStartPct);
           let lastYieldTime = performance.now();
           let maxExploredMile = 0.0;
           updateCalcProgress(lastReportedPct, `Exploring State Tree: Route ${rIdx + 1}/${activeRoutesData.length} (${route.name || route.id})...`);
-          await new Promise(r => setTimeout(r, 10));
+          await new Promise(r => setTimeout(r, 5));
 
         // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
         const leg0 = simulateLegFromSteps(route.steps, 0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
@@ -33171,19 +33171,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           if (curr.mile > maxExploredMile) maxExploredMile = curr.mile;
 
-          if (++queueIterCount % 150 === 0) {
+          if (++queueIterCount % 25 === 0) {
             const now = performance.now();
             const mileProgress = Math.min(1.0, maxExploredMile / Math.max(1, total_miles));
-            const queueProgress = Math.min(1.0, queueHead / Math.max(1, queueHead + (queue.length - queueHead) * 1.5));
-            const estFraction = Math.min(0.98, (mileProgress * 0.70) + (queueProgress * 0.30));
+            const queueProgress = Math.min(1.0, queueHead / Math.max(1, queueHead + (queue.length - queueHead) * 1.2));
+            const estFraction = Math.min(0.99, (mileProgress * 0.65) + (queueProgress * 0.35));
             const currentPct = corridorStartPct + (estFraction * corridorSpan);
-            const intPct = Math.min(Math.floor(corridorEndPct - 1), Math.max(lastReportedPct, Math.floor(currentPct)));
 
-            if (intPct > lastReportedPct || (now - lastYieldTime > 120)) {
-              lastReportedPct = Math.max(lastReportedPct, intPct);
+            // Smooth 1% step progression without massive leaps
+            if (currentPct >= lastReportedPct + 1.0 && lastReportedPct < Math.floor(corridorEndPct)) {
+              lastReportedPct++;
               lastYieldTime = now;
               const rName = route.name || route.id || `Route ${rIdx + 1}`;
               updateCalcProgress(lastReportedPct, `State Tree: ${rName} (${Math.round(maxExploredMile)}/${Math.round(total_miles)} mi, ${queueHead.toLocaleString()} states)...`);
+              await new Promise(r => setTimeout(r, 0));
+            } else if (now - lastYieldTime > 80) {
+              lastYieldTime = now;
               await new Promise(r => setTimeout(r, 0));
             }
           }
@@ -33429,7 +33432,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         }
 
-        updateCalcProgress(Math.floor(corridorEndPct), `State Tree: ${route.name || route.id || ('Route ' + (rIdx + 1))} Done (${queueHead.toLocaleString()} states)`);
+        const rNameDone = route.name || route.id || ('Route ' + (rIdx + 1));
+        while (lastReportedPct < Math.floor(corridorEndPct)) {
+          lastReportedPct++;
+          updateCalcProgress(lastReportedPct, `State Tree: ${rNameDone} (${lastReportedPct}%)`);
+          await new Promise(r => setTimeout(r, 3));
+        }
         await new Promise(r => setTimeout(r, 0));
 
         // Push surviving exact Pareto candidates from destFrontier to corridor candidates pool
@@ -33686,13 +33694,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
       const osrmResponses = new Map();
       const seqEntries = Array.from(uniqueSequencesMap.entries());
-      const BATCH_SIZE = 5;
+      const BATCH_SIZE = 2;
+      let lastOsrmPct = 83;
+      updateCalcProgress(83, `Verifying Route Geometry via OSRM (0/${seqEntries.length} routes)...`);
 
       for (let i = 0; i < seqEntries.length; i += BATCH_SIZE) {
         const batch = seqEntries.slice(i, i + BATCH_SIZE);
         const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
-        const osrmPct = 74 + Math.round((completedSoFar / Math.max(1, seqEntries.length)) * 14);
-        updateCalcProgress(osrmPct, `Verifying Route Geometry via OSRM (${completedSoFar}/${seqEntries.length} routes)...`);
+        const targetOsrmPct = 83 + Math.round((completedSoFar / Math.max(1, seqEntries.length)) * 10);
+        while (lastOsrmPct < targetOsrmPct && lastOsrmPct < 93) {
+          lastOsrmPct++;
+          updateCalcProgress(lastOsrmPct, `Verifying Route Geometry via OSRM (${completedSoFar}/${seqEntries.length} routes)...`);
+          await new Promise(r => setTimeout(r, 4));
+        }
 
         if (auditLogSummary) {
           auditLogSummary.innerHTML = `
@@ -34171,12 +34185,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         ? [-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0]
         : [0.0];
 
-      updateCalcProgress(90, "Polishing Schedules, Tariffs & Turn-by-Turn Telemetry...");
+      const totalPolishEvals = depHourOffsets.length * Math.max(1, combinedTop.length);
+      let evalsDone = 0;
+      let lastPolishPct = 93;
+      updateCalcProgress(93, "Polishing Schedules, Tariffs & Turn-by-Turn Telemetry...");
+      await new Promise(r => setTimeout(r, 5));
+
       for (let dIdx = 0; dIdx < depHourOffsets.length; dIdx++) {
         const offsetHours = depHourOffsets[dIdx];
-        const polishPct = 90 + Math.round(((dIdx + 1) / depHourOffsets.length) * 8);
-        updateCalcProgress(polishPct, `Polishing Schedules (${dIdx + 1}/${depHourOffsets.length})...`);
-        await new Promise(r => setTimeout(r, 0));
         const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
         const speedRegimesToPolish = [];
         if (shouldOptimizeSpeed || shouldOptimizeCap) {
@@ -34187,6 +34203,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           });
         }
         for (let i = 0; i < combinedTop.length; i++) {
+          evalsDone++;
+          const targetPolishPct = 93 + Math.floor((evalsDone / Math.max(1, totalPolishEvals)) * 6);
+          while (lastPolishPct < targetPolishPct && lastPolishPct < 99) {
+            lastPolishPct++;
+            updateCalcProgress(lastPolishPct, `Polishing Schedules (${evalsDone}/${totalPolishEvals})...`);
+            await new Promise(r => setTimeout(r, 2));
+          }
           const cand = combinedTop[i];
           const candSpeedOffset = cand.speed_offset != null ? cand.speed_offset : speed_offset;
           const candMaxCap = cand.max_speed_cap != null ? cand.max_speed_cap : max_speed_cap;
