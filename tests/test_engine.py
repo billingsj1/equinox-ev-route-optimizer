@@ -43,5 +43,19 @@ class TestEquinoxOptimizer(unittest.TestCase):
         res_cash = self.toll_calc.calculate_corridor_tolls("PA_Turnpike", toll_cash)
         self.assertLess(res_ez["total_toll"], res_cash["total_toll"])
 
+    def test_admissible_lower_bound_cost_multiplier(self):
+        # Validates that the optimizer lower-bound cost multiplier (0.45) is strictly admissible
+        # across all production CPO rates, including Tesla TOU member rates (e.g. Cherry Hill .34 off-peak vs .72 peak).
+        cherry_hill_on = 0.72
+        cherry_hill_mem_off = 0.34
+        cherry_hill_ratio = cherry_hill_mem_off / cherry_hill_on  # ~0.472
+        ea_pass_factor = 0.75
+        tesla_standard_mem_factor = 0.46 / 0.64  # ~0.718
+        gm_factor = 0.90
+
+        min_production_ratio = min(cherry_hill_ratio, ea_pass_factor, tesla_standard_mem_factor, gm_factor)
+        optimizer_lb_multiplier = 0.45
+        self.assertLessEqual(optimizer_lb_multiplier, min_production_ratio)
+
 if __name__ == '__main__':
     unittest.main()

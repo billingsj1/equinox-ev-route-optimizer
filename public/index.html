@@ -32995,13 +32995,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
               const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
               const total_time = total_drive_hrs + curr.ch_hrs;
-              const candidate_lb_cost = ((curr.ch_cost || 0.0) * 0.40) + min_possible_corridor_toll;
+              const candidate_lb_cost = ((curr.ch_cost || 0.0) * 0.45) + min_possible_corridor_toll;
 
               // Component A: Provably Admissible Fast-Filter against destFrontier
               let destDominated = false;
               for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
                 const d = destFrontier[dIdx];
-                if (d.total_hours < total_time && d.total_cost <= candidate_lb_cost) {
+                if (d.total_hours <= total_time && d.total_cost <= candidate_lb_cost) {
                   destDominated = true;
                   break;
                 }
@@ -33200,7 +33200,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             // If DeCamilla is mandatory and not yet visited, cannot skip past DeCamilla!
             if (decamillaStationObj && !curr.has_decamilla && j > decamillaIdx) {
-              continue;
+              break;
             }
 
             const legToDestFromSt = destLegPerStation[j];
@@ -33210,7 +33210,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (!legSim) continue;
             const leg_mins = legSim.hours * 60.0;
 
-            if (leg_mins > max_mins) continue;
+            if (leg_mins > max_mins) break;
             // No minimum drive time constraint for legs to/from DeCamilla L2 stop (charger before/after DeCamilla can be as little as 1 min)
             if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
 
@@ -33228,7 +33228,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             // Component E: Admissible Pareto Branch-and-Bound with Regeneration Clamping
             if (destFrontier.length > 0) {
               const lb_time = curr.drive_hrs + curr.ch_hrs + total_leg_hrs + legToDestFromSt.hours;
-              const lb_cost = ((curr.ch_cost || 0.0) * 0.40) + min_possible_corridor_toll;
+              const lb_cost = ((curr.ch_cost || 0.0) * 0.45) + min_possible_corridor_toll;
               let bbPruned = false;
               for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
                 const d = destFrontier[dIdx];
