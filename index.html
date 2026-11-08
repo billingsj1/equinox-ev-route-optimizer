@@ -32995,7 +32995,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
               const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
               const total_time = total_drive_hrs + curr.ch_hrs;
-              const candidate_lb_cost = ((curr.ch_cost || 0.0) * 0.70) + min_possible_corridor_toll;
+              const candidate_lb_cost = ((curr.ch_cost || 0.0) * 0.45) + min_possible_corridor_toll;
 
               // Component A: Provably Admissible Fast-Filter against destFrontier
               let destDominated = false;
@@ -33228,7 +33228,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             // Component E: Admissible Pareto Branch-and-Bound with Regeneration Clamping
             if (destFrontier.length > 0) {
               const lb_time = curr.drive_hrs + curr.ch_hrs + total_leg_hrs + legToDestFromSt.hours;
-              const lb_cost = ((curr.ch_cost || 0.0) * 0.70) + min_possible_corridor_toll;
+              const lb_cost = ((curr.ch_cost || 0.0) * 0.45) + min_possible_corridor_toll;
               let bbPruned = false;
               for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
                 const d = destFrontier[dIdx];
@@ -33263,11 +33263,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               if (warmEff > coldEff) {
                 adjusted_leg_kwh *= (coldEff / warmEff);
               }
-            }
-
-            // Mainline highway battery depletion barrier: if pure highway transit consumes more than available reserve, downstream stations cannot be reached
-            if ((adjusted_leg_kwh / 85.0) > (curr.soc - min_buffer_soc)) {
-              break;
             }
 
             const total_leg_energy = adjusted_leg_kwh + (stDetour.kwh / 2.0) + precond_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);

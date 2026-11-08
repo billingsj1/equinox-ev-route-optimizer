@@ -44,19 +44,18 @@ class TestEquinoxOptimizer(unittest.TestCase):
         self.assertLess(res_ez["total_toll"], res_cash["total_toll"])
 
     def test_admissible_lower_bound_cost_multiplier(self):
-        # The forward state tree uses 0.70 * curr.ch_cost as an admissible lower bound on total cost.
-        # This test mathematically validates that no CPO network discount exceeds 30%:
-        # 1. Electrify America Pass+: 25% discount (factor 0.75)
-        # 2. Tesla Supercharger Membership: off-peak/on-peak discount is at most ~28% (factor 0.72)
-        # 3. GM In-App Discount: 10% discount (factor 0.90)
-        ea_discount = 0.25
-        tesla_max_discount = (0.64 - 0.46) / 0.64  # ~28.1%
-        gm_discount = 0.10
-        self.assertLessEqual(ea_discount, 0.30)
-        self.assertLessEqual(tesla_max_discount, 0.30)
-        self.assertLessEqual(gm_discount, 0.30)
-        min_factor = 1.0 - max(ea_discount, tesla_max_discount, gm_discount)
-        self.assertGreaterEqual(min_factor, 0.70)
+        # Validates that the optimizer lower-bound cost multiplier (0.45) is strictly admissible
+        # across all production CPO rates, including Tesla TOU member rates (e.g. Cherry Hill .34 off-peak vs .72 peak).
+        cherry_hill_on = 0.72
+        cherry_hill_mem_off = 0.34
+        cherry_hill_ratio = cherry_hill_mem_off / cherry_hill_on  # ~0.472
+        ea_pass_factor = 0.75
+        tesla_standard_mem_factor = 0.46 / 0.64  # ~0.718
+        gm_factor = 0.90
+
+        min_production_ratio = min(cherry_hill_ratio, ea_pass_factor, tesla_standard_mem_factor, gm_factor)
+        optimizer_lb_multiplier = 0.45
+        self.assertLessEqual(optimizer_lb_multiplier, min_production_ratio)
 
 if __name__ == '__main__':
     unittest.main()
