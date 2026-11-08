@@ -33354,14 +33354,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const stage1Tariff = resolveStationTariff(st, timeAgnosticBaseline ? 12.0 : arrival_clock_decimal, false);
             const rate = timeAgnosticBaseline ? (st.on || stage1Tariff.rate) : stage1Tariff.rate;
 
-            // 4. Strategic Pareto Milestones (fast-charging band up to 80% across all stations, plus deep arbitrage at cheap stations)
-            for (let t = 0.50; t <= 0.801; t += 0.05) {
+            // 4. Strategic SoC milestones (50% - 90% in 5% steps)
+            for (let t = 0.50; t <= 0.901; t += 0.05) {
               if (t > min_target_allowed) addTarget(t);
-            }
-            const isEconomicStation = st.is_decamilla || st.gm || st.ea_pass || st.network === "Private" || rate <= 0.48;
-            if (isEconomicStation) {
-              if (0.85 > min_target_allowed) addTarget(0.85);
-              if (0.90 > min_target_allowed) addTarget(0.90);
             }
 
             const stLut = st._chargingLut || (st._chargingLut = getCumulativeChargingLUT(st.kw, (st._maxAmps || (st._maxAmps = getStationMaxAmps(st)))));
@@ -33393,9 +33388,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               if (!frontier) {
                 paretoFrontier[stateKey] = frontier = [];
               }
-              const EPS_T = 1e-4;
-              const EPS_C = 1e-4;
-              const EPS_SOC = 1e-5;
+              const EPS_T = 1e-9;
+              const EPS_C = 1e-9;
+              const EPS_SOC = 1e-9;
 
               let dominated = false;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
