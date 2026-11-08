@@ -35,7 +35,10 @@ def run_cli():
     results = opt.optimize(routes, weather, payload, profile, toll_config, initial_soc=1.00)
 
     print("\n--- OPTIMIZATION RESULTS ---")
-    for key, itin in results.items():
+    for key in ("fastest", "cheapest", "balanced"):
+        itin = results.get(key)
+        if not itin or not hasattr(itin, "itinerary_type"):
+            continue
         print(f"\n[{itin.itinerary_type.upper()}] - {itin.route_name}")
         print(f"  Total Distance : {itin.total_distance_miles} miles")
         print(f"  Total Time     : {itin.total_time_hours} hrs (Driving: {itin.driving_time_hours}h, Charging: {itin.charging_time_hours}h)")

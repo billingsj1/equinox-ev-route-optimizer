@@ -28663,15 +28663,15 @@
             target_mph = Math.min(base_mph + effective_offset, max_cap);
             target_mph = Math.min(target_mph, Math.min(posted_speed + speed_offset, max_cap));
           }
-          target_mph = Math.max(12.0, target_mph);
+          target_mph = Math.max(10.0, target_mph);
         }
 
         const v_ms = target_mph * 0.44704;
-        const slice_hours = step_len / Math.max(15.0, target_mph);
+        const slice_hours = step_len / Math.max(10.0, target_mph);
         const unobstructed_speed = (speed_offset < 0)
           ? Math.min(free_flow_mph, Math.min(posted_speed + speed_offset, max_cap))
           : Math.min(free_flow_mph, max_cap);
-        const slice_ff_hours = step_len / Math.max(15.0, unobstructed_speed);
+        const slice_ff_hours = step_len / Math.max(10.0, unobstructed_speed);
         const slice_delay_hours = (target_mph < unobstructed_speed)
           ? Math.max(0.0, slice_hours - slice_ff_hours)
           : 0.0;
@@ -28861,6 +28861,26 @@
       };
     }
 
+    function findElevationProfileIndex(prof, target_mile) {
+      if (!prof || prof.length === 0) return 0;
+      let lo = 0;
+      let hi = prof.length - 1;
+      if (target_mile <= prof[0][0]) return 0;
+      if (target_mile >= prof[hi][0]) return hi;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const m = prof[mid][0];
+        if (m < target_mile) {
+          lo = mid + 1;
+        } else if (m > target_mile) {
+          hi = mid - 1;
+        } else {
+          return mid;
+        }
+      }
+      return (target_mile - prof[hi][0] < prof[lo][0] - target_mile) ? hi : lo;
+    }
+
     function simulateLegFromSteps(steps, start_mile, end_mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, start_clock_hours) {
       if (!steps || steps.length === 0) {
         return simulateLegPhysics(end_mile - start_mile, fallback_speed || 70, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap);
@@ -28903,9 +28923,8 @@
       // Integrates across all 0.5-mi sampled intervals so every Appalachian climb and descent is preserved
       if (steps._elevationProfile && steps._elevationProfile.length >= 2) {
         const prof = steps._elevationProfile;
-        const spacing = 0.5;
-        const i0 = Math.max(0, Math.min(prof.length - 1, Math.round(start_mile / spacing)));
-        const i1 = Math.max(0, Math.min(prof.length - 1, Math.round(end_mile / spacing)));
+        const i0 = findElevationProfileIndex(prof, start_mile);
+        const i1 = findElevationProfileIndex(prof, end_mile);
         if (i1 > i0) {
           const climb_m = prof[i1][2] - prof[i0][2];
           const regen_m = prof[i1][3] - prof[i0][3];

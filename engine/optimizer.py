@@ -90,22 +90,52 @@ class MultiObjectiveOptimizer:
         chosen_stations: List[ChargingStation]
     ) -> List[List[RouteSegment]]:
         """
-        Partitions the route's segments into legs between chosen stations and final destination.
+        Partitions the route's segments into legs between chosen stations and final destination
+        based on geographical proximity to coordinates along the route.
         """
         if not chosen_stations:
             return [route.segments]
 
-        legs = []
         n_segs = len(route.segments)
-        num_stops = len(chosen_stations)
-        step = max(1, n_segs // (num_stops + 1))
+        if n_segs <= 1:
+            return [route.segments]
 
-        current_idx = 0
-        for i in range(num_stops):
-            next_idx = min(n_segs, (i + 1) * step)
-            legs.append(route.segments[current_idx:next_idx])
-            current_idx = next_idx
-        legs.append(route.segments[current_idx:])
+        # Find closest coordinate/segment index for each station
+        cut_indices = []
+        coords = route.coordinates
+        for station in chosen_stations:
+            best_idx = 0
+            min_dist = float('inf')
+            for idx, pt in enumerate(coords):
+                # pt is [lon, lat, ...]
+                d = (pt[0] - station.longitude)**2 + (pt[1] - station.latitude)**2
+                if d < min_dist:
+                    min_dist = d
+                    best_idx = idx
+            # Bound segment index between 1 and n_segs - 1
+            cut_idx = max(1, min(n_segs - 1, best_idx))
+            cut_indices.append(cut_idx)
+
+        # Ensure cut indices are strictly monotonic
+        cut_indices.sort()
+        cleaned_cuts = []
+        last_c = 0
+        for c in cut_indices:
+            if c > last_c and c < n_segs:
+                cleaned_cuts.append(c)
+                last_c = c
+
+        if not cleaned_cuts:
+            # Fallback to even split if points overlapped
+            step = max(1, n_segs // (len(chosen_stations) + 1))
+            cleaned_cuts = [min(n_segs - 1, (i + 1) * step) for i in range(len(chosen_stations))]
+
+        legs = []
+        curr = 0
+        for cut in cleaned_cuts:
+            legs.append(route.segments[curr:cut])
+            curr = cut
+        legs.append(route.segments[curr:])
         return legs
 
     def evaluate_candidate_plan(
@@ -413,7 +443,7 @@ class MultiObjectiveOptimizer:
             # 2-stop combinations
             if len(chargers) >= 2:
                 for i in range(len(chargers)):
-                    for j in range(i + 1, min(len(chargers), i + 4)):
+                    for j in range(i + 1, len(chargers)):
                         itin_2 = self.evaluate_candidate_plan(
                             route, [chargers[i], chargers[j]], weather, payload, profile, toll_config, initial_soc, weather_report=weather_report,
                             scheduled_departure_preheat=scheduled_departure_preheat

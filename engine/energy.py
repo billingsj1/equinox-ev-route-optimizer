@@ -77,18 +77,26 @@ class EnergySimulator:
         delta_elev_m = segment.end_elevation_m - segment.start_elevation_m
         grade_fraction = (delta_elev_m / segment.distance_meters) if segment.distance_meters > 0 else 0.0
 
-        # Wind & Aerodynamics
-        # Weather headwind component (m/s)
-        headwind_mph = weather.get_effective_headwind_mph(segment.bearing_deg)
+        # Wind & Aerodynamics (2D Vector Wind with Crosswind Yaw Penalty)
+        rel_angle_rad = math.radians(segment.bearing_deg - weather.wind_direction_deg)
+        headwind_mph = weather.wind_speed_mph * math.cos(rel_angle_rad)
+        crosswind_mph = abs(weather.wind_speed_mph * math.sin(rel_angle_rad))
         v_headwind_ms = headwind_mph * MPH_TO_MS
-        v_airspeed_ms = max(0.0, v_ground_ms + v_headwind_ms)
+        v_crosswind_ms = crosswind_mph * MPH_TO_MS
+        v_airspeed_ms = max(0.0, math.hypot(v_ground_ms + v_headwind_ms, v_crosswind_ms))
 
-        # Temperature adjusted air density: rho = rho_0 * (273.15 / (T_c + 273.15))
+        # Crosswind yaw angle drag coefficient adjustment (matches weather_engine and frontend)
+        yaw_rad = math.atan2(v_crosswind_ms, max(0.1, v_ground_ms + v_headwind_ms))
+        yaw_deg = min(25.0, math.degrees(abs(yaw_rad)))
+        cd_effective = self.vehicle.cd * (1.0 + 0.008 * yaw_deg)
+        effective_drag_area = cd_effective * self.vehicle.frontal_area_m2
+
+        # Temperature adjusted air density: rho = rho_0 * (288.15 / (T_c + 273.15))
         temp_c = (weather.temperature_f - 32.0) * 5.0 / 9.0
         air_density = AIR_DENSITY_STP * (288.15 / max(240.0, temp_c + 273.15))
 
         # Aero drag force: F_drag = 0.5 * rho * Cd * A * v_air^2
-        f_aero = 0.5 * air_density * self.vehicle.drag_area_m2 * (v_airspeed_ms ** 2)
+        f_aero = 0.5 * air_density * effective_drag_area * (v_airspeed_ms ** 2)
 
         # Rolling resistance: F_rr = Crr * m * g * cos(theta)
         crr = self.get_rolling_resistance_coef(weather.road_condition)
