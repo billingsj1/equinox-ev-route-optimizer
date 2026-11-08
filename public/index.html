@@ -32951,7 +32951,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const min_possible_corridor_toll = 0.0;
 
         // Component B: Scalable Flat Numeric Array Key Indexing (station << 8 | socBucket << 1 | has_decamilla)
-        const paretoFrontier = new Array((routeStations.length + 1) << 8);
+        const paretoFrontier = new Array((routeStations.length + 1) << 2);
 
         // Component C: Scoped Reusable Float64Array target buffer (stateless, zero GC pressure)
         const targetBuffer = new Float64Array(32);
@@ -33348,16 +33348,21 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               addTarget(precomputedAnchors[ai]);
             }
 
-            // 4. Strategic standard SoC milestones (50%, 55%, 60%, 65%, 70%, 75%, 80%, 85%, 90%)
-            for (let t = 0.50; t <= 0.901; t += 0.05) {
-              addTarget(t);
-            }
-
             const has_plug_and_go = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
             const setup_mins = has_plug_and_go ? 1.0 : 3.0;
             const arrival_clock_decimal = departure_hours + curr.drive_hrs + curr.ch_hrs + total_leg_hrs;
             const stage1Tariff = resolveStationTariff(st, timeAgnosticBaseline ? 12.0 : arrival_clock_decimal, false);
             const rate = timeAgnosticBaseline ? (st.on || stage1Tariff.rate) : stage1Tariff.rate;
+
+            // 4. Strategic Pareto Milestones (fast-charging band up to 80% across all stations, plus deep arbitrage at cheap stations)
+            for (let t = 0.50; t <= 0.801; t += 0.05) {
+              if (t > min_target_allowed) addTarget(t);
+            }
+            const isEconomicStation = st.is_decamilla || st.gm || st.ea_pass || st.network === "Private" || rate <= 0.48;
+            if (isEconomicStation) {
+              if (0.85 > min_target_allowed) addTarget(0.85);
+              if (0.90 > min_target_allowed) addTarget(0.90);
+            }
 
             const stLut = st._chargingLut || (st._chargingLut = getCumulativeChargingLUT(st.kw, (st._maxAmps || (st._maxAmps = getStationMaxAmps(st)))));
             const x0 = Math.max(0, Math.min(100, arr_soc * 100));
@@ -33382,17 +33387,20 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
 
-              // Component B: Scalable Flat Numeric Array Key Indexing (station << 8 | socBucket << 1 | has_decamilla)
-              const socBucket = Math.round(target_soc * 50) * 2;
-              const stateKey = (j << 8) | (socBucket << 1) | (curr.has_decamilla ? 1 : 0);
+              // Component B: Unified 3D Station Pareto Dominance (t, c, soc) eliminating the silo flaw
+              const stateKey = (j << 1) | (curr.has_decamilla ? 1 : 0);
               let frontier = paretoFrontier[stateKey];
               if (!frontier) {
                 paretoFrontier[stateKey] = frontier = [];
               }
+              const EPS_T = 1e-4;
+              const EPS_C = 1e-4;
+              const EPS_SOC = 1e-5;
+
               let dominated = false;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const prev = frontier[fIdx];
-                if (prev.t <= (leg_total_hrs + 0.015) && prev.c <= (leg_total_cost + 0.10) && prev.soc >= (target_soc - 0.005)) {
+                if (prev.t <= (leg_total_hrs + EPS_T) && prev.c <= (leg_total_cost + EPS_C) && prev.soc >= (target_soc - EPS_SOC)) {
                   dominated = true;
                   break;
                 }
@@ -33401,7 +33409,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
               for (let fIdx = frontier.length - 1; fIdx >= 0; fIdx--) {
                 const p = frontier[fIdx];
-                if (leg_total_hrs <= p.t && leg_total_cost <= p.c && target_soc >= p.soc) {
+                if (leg_total_hrs <= (p.t + EPS_T) && leg_total_cost <= (p.c + EPS_C) && target_soc >= (p.soc - EPS_SOC)) {
                   frontier.splice(fIdx, 1);
                 }
               }
