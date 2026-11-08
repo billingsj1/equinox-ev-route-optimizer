@@ -879,7 +879,13 @@
 
                 </div>
 
-                <div class="text-2xl font-black text-white" id="fastestTime_x">--</div>
+                <div class="flex items-baseline gap-2">
+
+                  <div class="text-2xl font-black text-white" id="fastestTime_x">--</div>
+
+                  <span id="fastestTimeDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-emerald-800/60 bg-emerald-950/60 text-emerald-400 hidden">--</span>
+
+                </div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="fastestSchedule_x">
 
@@ -907,13 +913,25 @@
 
                 <span id="fastestStopsCount" class="hidden">--</span>
 
-              </div>
+                <!-- Subtle line between time info (top) and cost info (middle) -->
 
-              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-baseline">
+                <div class="border-t border-slate-800/80 my-2.5"></div>
 
-                <span id="fastestCost_x" class="text-xl font-black font-mono text-white">--</span>
+                <!-- Middle: Cost info and mileage -->
 
-                <span id="fastestMiles_x" class="text-xs font-mono text-slate-400">--</span>
+                <div class="flex justify-between items-baseline">
+
+                  <div class="flex items-baseline gap-2">
+
+                    <span id="fastestCost_x" class="text-xl font-black font-mono text-white">--</span>
+
+                    <span id="fastestCostDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
+
+                  </div>
+
+                  <span id="fastestMiles_x" class="text-xs font-mono text-slate-400">--</span>
+
+                </div>
 
               </div>
 
@@ -947,7 +965,13 @@
 
                 </div>
 
-                <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
+                <div class="flex items-baseline gap-2">
+
+                  <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
+
+                  <span id="balancedTimeDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
+
+                </div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="balancedSchedule_x">
 
@@ -961,9 +985,43 @@
 
                 <div class="mt-1 flex items-center justify-between font-mono" id="balancedSpeedRow_x"><span id="balancedSpeed_x" class="text-xs font-mono font-medium text-slate-300">--</span></div>
 
-                <!-- Interactive Pareto Stepper (X Stops) moved to bottom of card above total cost and mileage -->
+                <span id="balancedTime" class="hidden">--</span>
 
-                <div class="mt-2.5 mb-1 bg-slate-950/80 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono select-none" onclick="event.stopPropagation()">
+                <span id="balancedCost" class="hidden">--</span>
+
+                <span id="balancedMiles" class="hidden">--</span>
+
+                <span id="balancedStopsBadge" class="hidden">--</span>
+
+                <span id="balancedArrivalBadge" class="hidden">--</span>
+
+                <!-- Subtle line between time info (top) and cost info (middle) -->
+
+                <div class="border-t border-slate-800/80 my-2.5"></div>
+
+                <!-- Middle: Cost info and mileage -->
+
+                <div class="flex justify-between items-baseline">
+
+                  <div class="flex items-baseline gap-2">
+
+                    <span id="balancedCost_x" class="text-xl font-black font-mono text-blue-300">--</span>
+
+                    <span id="balancedCostDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-emerald-800/60 bg-emerald-950/60 text-emerald-400 hidden">--</span>
+
+                  </div>
+
+                  <span id="balancedMiles_x" class="text-xs font-mono text-slate-400">--</span>
+
+                </div>
+
+              </div>
+
+              <!-- Bottom: Subtle line and adjustment buttons (pareto only) -->
+
+              <div class="mt-2.5 pt-2 border-t border-slate-800/80">
+
+                <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono select-none" onclick="event.stopPropagation()">
 
                   <button type="button" id="paretoFasterBtn_x" onclick="stepParetoCurve('x', -1)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-emerald-300 disabled:opacity-30 disabled:hover:bg-slate-800/80 disabled:hover:text-slate-200 flex items-center gap-1 transition cursor-pointer" title="Trade cost for speed (arrive earlier)">
 
@@ -973,11 +1031,11 @@
 
                   </button>
 
-                  <div class="text-center px-1">
+                  <div class="text-center px-2">
 
-                    <div id="paretoStepLabel_x" class="text-blue-300 font-bold text-[10px] tracking-tight">Option 3 of 5 (Knee)</div>
+                    <span id="paretoStepLabel_x" class="text-blue-300 font-bold text-xs font-mono tracking-tight">1 / 3</span>
 
-                    <div id="paretoDeltaLabel_x" class="text-[9px] text-slate-400 font-mono">Baseline (Fastest)</div>
+                    <span id="paretoDeltaLabel_x" class="hidden"></span>
 
                   </div>
 
@@ -990,24 +1048,6 @@
                   </button>
 
                 </div>
-
-                <span id="balancedTime" class="hidden">--</span>
-
-                <span id="balancedCost" class="hidden">--</span>
-
-                <span id="balancedMiles" class="hidden">--</span>
-
-                <span id="balancedStopsBadge" class="hidden">--</span>
-
-                <span id="balancedArrivalBadge" class="hidden">--</span>
-
-              </div>
-
-              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-baseline">
-
-                <span id="balancedCost_x" class="text-xl font-black font-mono text-blue-300">--</span>
-
-                <span id="balancedMiles_x" class="text-xs font-mono text-slate-400">--</span>
 
               </div>
 
@@ -1035,7 +1075,13 @@
 
                 </div>
 
-                <div class="text-2xl font-black text-white" id="cheapestTime_x">--</div>
+                <div class="flex items-baseline gap-2">
+
+                  <div class="text-2xl font-black text-white" id="cheapestTime_x">--</div>
+
+                  <span id="cheapestTimeDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
+
+                </div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="cheapestSchedule_x">
 
@@ -1059,13 +1105,25 @@
 
                 <span id="cheapestArrivalBadge" class="hidden">--</span>
 
-              </div>
+                <!-- Subtle line between time info (top) and cost info (middle) -->
 
-              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-baseline">
+                <div class="border-t border-slate-800/80 my-2.5"></div>
 
-                <span id="cheapestCost_x" class="text-xl font-black font-mono text-amber-300">--</span>
+                <!-- Middle: Cost info and mileage -->
 
-                <span id="cheapestMiles_x" class="text-xs font-mono text-slate-400">--</span>
+                <div class="flex justify-between items-baseline">
+
+                  <div class="flex items-baseline gap-2">
+
+                    <span id="cheapestCost_x" class="text-xl font-black font-mono text-amber-300">--</span>
+
+                    <span id="cheapestCostDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-emerald-800/60 bg-emerald-950/60 text-emerald-400 hidden">--</span>
+
+                  </div>
+
+                  <span id="cheapestMiles_x" class="text-xs font-mono text-slate-400">--</span>
+
+                </div>
 
               </div>
 
@@ -1121,7 +1179,13 @@
 
                 </div>
 
-                <div class="text-2xl font-black text-white" id="fastestTime_y">--</div>
+                <div class="flex items-baseline gap-2">
+
+                  <div class="text-2xl font-black text-white" id="fastestTime_y">--</div>
+
+                  <span id="fastestTimeDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-emerald-800/60 bg-emerald-950/60 text-emerald-400 hidden">--</span>
+
+                </div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="fastestSchedule_y">
 
@@ -1135,13 +1199,25 @@
 
                 <div class="mt-1 flex items-center justify-between font-mono" id="fastestSpeedRow_y"><span id="fastestSpeed_y" class="text-xs font-mono font-medium text-slate-300">--</span></div>
 
-              </div>
+                <!-- Subtle line between time info (top) and cost info (middle) -->
 
-              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-baseline">
+                <div class="border-t border-slate-800/80 my-2.5"></div>
 
-                <span id="fastestCost_y" class="text-xl font-black font-mono text-white">--</span>
+                <!-- Middle: Cost info and mileage -->
 
-                <span id="fastestMiles_y" class="text-xs font-mono text-slate-400">--</span>
+                <div class="flex justify-between items-baseline">
+
+                  <div class="flex items-baseline gap-2">
+
+                    <span id="fastestCost_y" class="text-xl font-black font-mono text-white">--</span>
+
+                    <span id="fastestCostDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
+
+                  </div>
+
+                  <span id="fastestMiles_y" class="text-xs font-mono text-slate-400">--</span>
+
+                </div>
 
               </div>
 
@@ -1175,7 +1251,13 @@
 
                 </div>
 
-                <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
+                <div class="flex items-baseline gap-2">
+
+                  <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
+
+                  <span id="balancedTimeDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
+
+                </div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="balancedSchedule_y">
 
@@ -1189,9 +1271,33 @@
 
                 <div class="mt-1 flex items-center justify-between font-mono" id="balancedSpeedRow_y"><span id="balancedSpeed_y" class="text-xs font-mono font-medium text-slate-300">--</span></div>
 
-                <!-- Interactive Pareto Stepper (Y Stops) moved to bottom of card above total cost and mileage -->
+                <!-- Subtle line between time info (top) and cost info (middle) -->
 
-                <div class="mt-2.5 mb-1 bg-slate-950/80 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono select-none" onclick="event.stopPropagation()">
+                <div class="border-t border-slate-800/80 my-2.5"></div>
+
+                <!-- Middle: Cost info and mileage -->
+
+                <div class="flex justify-between items-baseline">
+
+                  <div class="flex items-baseline gap-2">
+
+                    <span id="balancedCost_y" class="text-xl font-black font-mono text-blue-300">--</span>
+
+                    <span id="balancedCostDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-emerald-800/60 bg-emerald-950/60 text-emerald-400 hidden">--</span>
+
+                  </div>
+
+                  <span id="balancedMiles_y" class="text-xs font-mono text-slate-400">--</span>
+
+                </div>
+
+              </div>
+
+              <!-- Bottom: Subtle line and adjustment buttons (pareto only) -->
+
+              <div class="mt-2.5 pt-2 border-t border-slate-800/80">
+
+                <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-1.5 flex items-center justify-between text-[11px] font-mono select-none" onclick="event.stopPropagation()">
 
                   <button type="button" id="paretoFasterBtn_y" onclick="stepParetoCurve('y', -1)" class="px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-200 hover:text-emerald-300 disabled:opacity-30 disabled:hover:bg-slate-800/80 disabled:hover:text-slate-200 flex items-center gap-1 transition cursor-pointer" title="Trade cost for speed (arrive earlier)">
 
@@ -1201,11 +1307,11 @@
 
                   </button>
 
-                  <div class="text-center px-1">
+                  <div class="text-center px-2">
 
-                    <div id="paretoStepLabel_y" class="text-blue-300 font-bold text-[10px] tracking-tight">Option 3 of 5 (Knee)</div>
+                    <span id="paretoStepLabel_y" class="text-blue-300 font-bold text-xs font-mono tracking-tight">1 / 3</span>
 
-                    <div id="paretoDeltaLabel_y" class="text-[9px] text-slate-400 font-mono">Baseline (Fastest)</div>
+                    <span id="paretoDeltaLabel_y" class="hidden"></span>
 
                   </div>
 
@@ -1218,14 +1324,6 @@
                   </button>
 
                 </div>
-
-              </div>
-
-              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-baseline">
-
-                <span id="balancedCost_y" class="text-xl font-black font-mono text-blue-300">--</span>
-
-                <span id="balancedMiles_y" class="text-xs font-mono text-slate-400">--</span>
 
               </div>
 
@@ -1253,7 +1351,13 @@
 
                 </div>
 
-                <div class="text-2xl font-black text-white" id="cheapestTime_y">--</div>
+                <div class="flex items-baseline gap-2">
+
+                  <div class="text-2xl font-black text-white" id="cheapestTime_y">--</div>
+
+                  <span id="cheapestTimeDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
+
+                </div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="cheapestSchedule_y">
 
@@ -1267,13 +1371,25 @@
 
                 <div class="mt-1 flex items-center justify-between font-mono" id="cheapestSpeedRow_y"><span id="cheapestSpeed_y" class="text-xs font-mono font-medium text-slate-300">--</span></div>
 
-              </div>
+                <!-- Subtle line between time info (top) and cost info (middle) -->
 
-              <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-baseline">
+                <div class="border-t border-slate-800/80 my-2.5"></div>
 
-                <span id="cheapestCost_y" class="text-xl font-black font-mono text-amber-300">--</span>
+                <!-- Middle: Cost info and mileage -->
 
-                <span id="cheapestMiles_y" class="text-xs font-mono text-slate-400">--</span>
+                <div class="flex justify-between items-baseline">
+
+                  <div class="flex items-baseline gap-2">
+
+                    <span id="cheapestCost_y" class="text-xl font-black font-mono text-amber-300">--</span>
+
+                    <span id="cheapestCostDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-emerald-800/60 bg-emerald-950/60 text-emerald-400 hidden">--</span>
+
+                  </div>
+
+                  <span id="cheapestMiles_y" class="text-xs font-mono text-slate-400">--</span>
+
+                </div>
 
               </div>
 
@@ -34378,6 +34494,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (bx) {
         updateBalancedCardUI('x');
       }
+      updateRouteCardDeltas('x');
 
       // ROW 2 (Y Stops)
       const rowYContainer = document.getElementById('rowYContainer');
@@ -34418,6 +34535,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         if (by) {
           updateBalancedCardUI('y');
         }
+        updateRouteCardDeltas('y');
       } else {
         // If Y stops not available, show clear informative banner instead of silently hiding Row 2
         if (rowYContainer) rowYContainer.classList.remove('hidden');
@@ -34436,7 +34554,91 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       selectItinerary(currentItineraryKey || 'fastest_x');
     }
 
-    function updateBalancedCardUI(row) {
+        function updateRouteCardDeltas(row) {
+      if (!calculatedResults) return;
+      const f = calculatedResults[`fastest_${row}`];
+      const c = calculatedResults[`cheapest_${row}`];
+      const b = calculatedResults[`balanced_${row}`];
+      if (!f) return;
+
+      const setBadge = (id, text, type) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (!text) {
+          el.classList.add('hidden');
+          return;
+        }
+        el.innerText = text;
+        el.classList.remove('hidden', 'text-emerald-400', 'bg-emerald-950/60', 'border-emerald-800/60',
+                           'text-amber-400', 'bg-amber-950/60', 'border-amber-800/60',
+                           'text-slate-300', 'bg-slate-800/60', 'border-slate-700/60');
+        if (type === 'emerald') {
+          el.classList.add('text-emerald-400', 'bg-emerald-950/60', 'border-emerald-800/60');
+        } else if (type === 'amber') {
+          el.classList.add('text-amber-400', 'bg-amber-950/60', 'border-amber-800/60');
+        } else {
+          el.classList.add('text-slate-300', 'bg-slate-800/60', 'border-slate-700/60');
+        }
+      };
+
+      // 1. FASTEST CARD DELTAS:
+      if (c) {
+        const timeSavedMins = Math.round((c.total_hours - f.total_hours) * 60);
+        const extraCost = f.total_cost - c.total_cost;
+        if (timeSavedMins > 0) {
+          setBadge(`fastestTimeDelta_${row}`, `-${timeSavedMins}m vs cheap`, 'emerald');
+        } else {
+          setBadge(`fastestTimeDelta_${row}`, 'Fastest', 'emerald');
+        }
+        if (extraCost > 0.01) {
+          setBadge(`fastestCostDelta_${row}`, `+$${extraCost.toFixed(2)} vs cheap`, 'amber');
+        } else {
+          setBadge(`fastestCostDelta_${row}`, 'Cheapest', 'emerald');
+        }
+      } else {
+        setBadge(`fastestTimeDelta_${row}`, 'Fastest', 'emerald');
+        setBadge(`fastestCostDelta_${row}`, '', 'neutral');
+      }
+
+      // 2. CHEAPEST CARD DELTAS:
+      if (c) {
+        const timeAddedMins = Math.round((c.total_hours - f.total_hours) * 60);
+        const moneySaved = f.total_cost - c.total_cost;
+        if (timeAddedMins > 0) {
+          setBadge(`cheapestTimeDelta_${row}`, `+${timeAddedMins}m vs fast`, 'amber');
+        } else {
+          setBadge(`cheapestTimeDelta_${row}`, 'Fastest', 'emerald');
+        }
+        if (moneySaved > 0.01) {
+          setBadge(`cheapestCostDelta_${row}`, `-$${moneySaved.toFixed(2)} vs fast`, 'emerald');
+        } else {
+          setBadge(`cheapestCostDelta_${row}`, 'Cheapest', 'emerald');
+        }
+      }
+
+      // 3. BALANCED CARD DELTAS:
+      if (b) {
+        const deltaHours = b.total_hours - f.total_hours;
+        const deltaCost = b.total_cost - f.total_cost;
+        const deltaMins = Math.round(deltaHours * 60);
+
+        if (deltaMins > 0) {
+          setBadge(`balancedTimeDelta_${row}`, `+${deltaMins}m vs fast`, 'amber');
+        } else {
+          setBadge(`balancedTimeDelta_${row}`, 'Fastest', 'emerald');
+        }
+
+        if (deltaCost < -0.01) {
+          setBadge(`balancedCostDelta_${row}`, `-$${Math.abs(deltaCost).toFixed(2)} vs fast`, 'emerald');
+        } else if (deltaCost > 0.01) {
+          setBadge(`balancedCostDelta_${row}`, `+$${deltaCost.toFixed(2)} vs fast`, 'amber');
+        } else {
+          setBadge(`balancedCostDelta_${row}`, '$0.00 vs fast', 'neutral');
+        }
+      }
+    }
+
+function updateBalancedCardUI(row) {
       if (!calculatedResults) return;
       const bKey = `balanced_${row}`;
       const fKey = `fastest_${row}`;
@@ -34498,12 +34700,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (cheaperBtn) cheaperBtn.disabled = (idx >= curve.length - 1 || curve.length <= 1);
 
       if (stepLabel) {
-        let tag = '';
-        if (idx === kneeIdx && curve.length > 1) {
-          tag = ' (Knee)';
-        }
-        stepLabel.innerText = `Option ${idx + 1} of ${Math.max(1, curve.length)}${tag}`;
+        stepLabel.innerText = `${idx + 1} / ${Math.max(1, curve.length)}`;
       }
+      if (deltaLabel) {
+        deltaLabel.innerText = '';
+      }
+      updateRouteCardDeltas(row);
 
       if (deltaLabel && f) {
         const deltaHours = b.total_hours - f.total_hours;
