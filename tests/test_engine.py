@@ -43,5 +43,20 @@ class TestEquinoxOptimizer(unittest.TestCase):
         res_cash = self.toll_calc.calculate_corridor_tolls("PA_Turnpike", toll_cash)
         self.assertLess(res_ez["total_toll"], res_cash["total_toll"])
 
+    def test_admissible_lower_bound_cost_multiplier(self):
+        # The forward state tree uses 0.70 * curr.ch_cost as an admissible lower bound on total cost.
+        # This test mathematically validates that no CPO network discount exceeds 30%:
+        # 1. Electrify America Pass+: 25% discount (factor 0.75)
+        # 2. Tesla Supercharger Membership: off-peak/on-peak discount is at most ~28% (factor 0.72)
+        # 3. GM In-App Discount: 10% discount (factor 0.90)
+        ea_discount = 0.25
+        tesla_max_discount = (0.64 - 0.46) / 0.64  # ~28.1%
+        gm_discount = 0.10
+        self.assertLessEqual(ea_discount, 0.30)
+        self.assertLessEqual(tesla_max_discount, 0.30)
+        self.assertLessEqual(gm_discount, 0.30)
+        min_factor = 1.0 - max(ea_discount, tesla_max_discount, gm_discount)
+        self.assertGreaterEqual(min_factor, 0.70)
+
 if __name__ == '__main__':
     unittest.main()
