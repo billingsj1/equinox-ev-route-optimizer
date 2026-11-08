@@ -953,13 +953,7 @@
 
                 </div>
 
-                <div class="flex items-baseline gap-2">
-
-                  <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
-
-                  <span id="balancedTimeDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
-
-                </div>
+                <div class="text-2xl font-black text-white" id="balancedTime_x">--</div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="balancedSchedule_x">
 
@@ -991,13 +985,7 @@
 
                 <div class="flex justify-between items-baseline">
 
-                  <div class="flex items-baseline gap-2">
-
-                    <span id="balancedCost_x" class="text-xl font-black font-mono text-blue-300">--</span>
-
-                    <span id="balancedCostDelta_x" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
-
-                  </div>
+                  <span id="balancedCost_x" class="text-xl font-black font-mono text-blue-300">--</span>
 
                   <span id="balancedMiles_x" class="text-xs font-mono text-slate-400">--</span>
 
@@ -1215,13 +1203,7 @@
 
                 </div>
 
-                <div class="flex items-baseline gap-2">
-
-                  <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
-
-                  <span id="balancedTimeDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
-
-                </div>
+                <div class="text-2xl font-black text-white" id="balancedTime_y">--</div>
 
                 <div class="mt-1.5 flex items-center justify-between font-mono" id="balancedSchedule_y">
 
@@ -1243,13 +1225,7 @@
 
                 <div class="flex justify-between items-baseline">
 
-                  <div class="flex items-baseline gap-2">
-
-                    <span id="balancedCost_y" class="text-xl font-black font-mono text-blue-300">--</span>
-
-                    <span id="balancedCostDelta_y" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border border-amber-800/60 bg-amber-950/60 text-amber-400 hidden">--</span>
-
-                  </div>
+                  <span id="balancedCost_y" class="text-xl font-black font-mono text-blue-300">--</span>
 
                   <span id="balancedMiles_y" class="text-xs font-mono text-slate-400">--</span>
 
@@ -34446,8 +34422,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (bx) {
         updateBalancedCardUI('x');
       }
-      updateRouteCardDeltas('x');
-
       // ROW 2 (Y Stops)
       const rowYContainer = document.getElementById('rowYContainer');
       const rowYCards = document.getElementById('rowYCards');
@@ -34487,7 +34461,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         if (by) {
           updateBalancedCardUI('y');
         }
-        updateRouteCardDeltas('y');
+
       } else {
         // If Y stops not available, show clear informative banner instead of silently hiding Row 2
         if (rowYContainer) rowYContainer.classList.remove('hidden');
@@ -34506,59 +34480,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       selectItinerary(currentItineraryKey || 'fastest_x');
     }
 
-        function updateRouteCardDeltas(row) {
-      if (!calculatedResults) return;
-      const f = calculatedResults[`fastest_${row}`];
-      const c = calculatedResults[`cheapest_${row}`];
-      const b = calculatedResults[`balanced_${row}`];
-      if (!b) return;
-
-      const setBadge = (id, text, type) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (!text) {
-          el.classList.add('hidden');
-          return;
-        }
-        el.innerText = text;
-        el.classList.remove('hidden', 'text-emerald-400', 'bg-emerald-950/60', 'border-emerald-800/60',
-                           'text-amber-400', 'bg-amber-950/60', 'border-amber-800/60',
-                           'text-slate-300', 'bg-slate-800/60', 'border-slate-700/60');
-        if (type === 'emerald') {
-          el.classList.add('text-emerald-400', 'bg-emerald-950/60', 'border-emerald-800/60');
-        } else if (type === 'amber') {
-          el.classList.add('text-amber-400', 'bg-amber-950/60', 'border-amber-800/60');
-        } else {
-          el.classList.add('text-slate-300', 'bg-slate-800/60', 'border-slate-700/60');
-        }
-      };
-
-      // BALANCED CARD DELTAS ONLY:
-      // Time comparison is vs FASTEST
-      if (f) {
-        const deltaHours = b.total_hours - f.total_hours;
-        const deltaMins = Math.round(deltaHours * 60);
-
-        if (deltaMins > 0) {
-          setBadge(`balancedTimeDelta_${row}`, `+${deltaMins}m vs fast`, 'amber');
-        } else {
-          setBadge(`balancedTimeDelta_${row}`, 'Fastest', 'emerald');
-        }
-      }
-
-      // Cost comparison is vs CHEAPEST
-      const compTarget = c || f;
-      if (compTarget) {
-        const extraCost = b.total_cost - compTarget.total_cost;
-        if (extraCost > 0.01) {
-          setBadge(`balancedCostDelta_${row}`, `+$${extraCost.toFixed(2)} vs cheap`, 'amber');
-        } else {
-          setBadge(`balancedCostDelta_${row}`, '$0.00 vs cheap', 'emerald');
-        }
-      }
-    }
-
-    function updateBalancedCardUI(row) {
+        function updateBalancedCardUI(row) {
       if (!calculatedResults) return;
       const bKey = `balanced_${row}`;
       const fKey = `fastest_${row}`;
@@ -34625,8 +34547,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       if (deltaLabel) {
         deltaLabel.innerText = '';
       }
-      updateRouteCardDeltas(row);
-
       if (deltaLabel && f) {
         const deltaHours = b.total_hours - f.total_hours;
         const deltaCost = b.total_cost - f.total_cost;
