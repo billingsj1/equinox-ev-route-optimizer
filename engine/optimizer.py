@@ -92,47 +92,47 @@ class MultiObjectiveOptimizer:
         """
         Partitions the route's segments into legs between chosen stations and final destination
         based on geographical proximity to coordinates along the route.
+        Guarantees exactly len(chosen_stations) + 1 legs.
         """
         if not chosen_stations:
             return [route.segments]
 
         n_segs = len(route.segments)
-        if n_segs <= 1:
-            return [route.segments]
+        num_stops = len(chosen_stations)
+        if n_segs <= num_stops:
+            legs = [[s] for s in route.segments]
+            while len(legs) <= num_stops:
+                legs.append([])
+            return legs
 
-        # Find closest coordinate/segment index for each station
-        cut_indices = []
+        # Find closest coordinate index for each station
+        raw_cuts = []
         coords = route.coordinates
         for station in chosen_stations:
             best_idx = 0
             min_dist = float('inf')
             for idx, pt in enumerate(coords):
-                # pt is [lon, lat, ...]
                 d = (pt[0] - station.longitude)**2 + (pt[1] - station.latitude)**2
                 if d < min_dist:
                     min_dist = d
                     best_idx = idx
-            # Bound segment index between 1 and n_segs - 1
             cut_idx = max(1, min(n_segs - 1, best_idx))
-            cut_indices.append(cut_idx)
+            raw_cuts.append(cut_idx)
 
-        # Ensure cut indices are strictly monotonic
-        cut_indices.sort()
-        cleaned_cuts = []
+        # Enforce strictly monotonic cut indices to guarantee len(legs) == num_stops + 1
+        raw_cuts.sort()
+        cuts = []
         last_c = 0
-        for c in cut_indices:
-            if c > last_c and c < n_segs:
-                cleaned_cuts.append(c)
-                last_c = c
-
-        if not cleaned_cuts:
-            # Fallback to even split if points overlapped
-            step = max(1, n_segs // (len(chosen_stations) + 1))
-            cleaned_cuts = [min(n_segs - 1, (i + 1) * step) for i in range(len(chosen_stations))]
+        for i, c in enumerate(raw_cuts):
+            remaining_stops = num_stops - i
+            max_allowed = n_segs - remaining_stops
+            cut = max(last_c + 1, min(max_allowed, c))
+            cuts.append(cut)
+            last_c = cut
 
         legs = []
         curr = 0
-        for cut in cleaned_cuts:
+        for cut in cuts:
             legs.append(route.segments[curr:cut])
             curr = cut
         legs.append(route.segments[curr:])
@@ -460,14 +460,17 @@ class MultiObjectiveOptimizer:
                     legs = self._partition_route_by_stations(route, [mid_ch])
                     total_dur = sum(s.distance_meters for s in route.segments) / (65.0 * 0.44704 * 3600.0)
                     ch_res = self.vehicle.calculate_charge_session(0.20, max(0.60, profile.target_arrival_soc + 0.35), mid_ch.power_kw, 0.45)
+                    is_p_and_go = mid_ch.gm_discount_eligible or mid_ch.network.lower() in ["ionna", "evgo", "chargepoint"]
+                    setup_mins = 1.0 if is_p_and_go else 3.0
+                    total_ch_mins = ch_res["duration_minutes"] + setup_mins
                     candidates.append(Itinerary(
                         itinerary_type="Fallback",
                         route_name=route.name,
                         route_id=route.route_id,
                         total_distance_miles=route.total_distance_miles,
                         driving_time_hours=round(total_dur, 2),
-                        charging_time_hours=round(ch_res["duration_minutes"]/60.0, 2),
-                        total_time_hours=round(total_dur + ch_res["duration_minutes"]/60.0, 2),
+                        charging_time_hours=round(total_ch_mins / 60.0, 2),
+                        total_time_hours=round(total_dur + total_ch_mins / 60.0, 2),
                         charging_cost=round(ch_res["cost"], 2),
                         toll_cost=round(self.toll_calc.calculate_corridor_tolls(route.corridor, toll_config)["total_toll"], 2),
                         total_cost=round(ch_res["cost"] + 15.0, 2),
@@ -476,7 +479,7 @@ class MultiObjectiveOptimizer:
                             arrival_soc=20.0,
                             target_soc=round(max(0.60, profile.target_arrival_soc + 0.35) * 100, 1),
                             energy_added_kwh=ch_res["energy_added_kwh"],
-                            charge_duration_minutes=ch_res["duration_minutes"],
+                            charge_duration_minutes=round(total_ch_mins, 1),
                             charging_cost=ch_res["cost"],
                             rate_per_kwh=0.45,
                             network=mid_ch.network,
