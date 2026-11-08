@@ -140,9 +140,6 @@ class EquinoxEVFWD:
             total_hours += step_energy_kwh / max(1.0, power_kw)
 
         duration_minutes = total_hours * 60.0
-        
-        # Add 3 minutes plug-in / handshake / payment overhead
-        duration_minutes += 3.0
 
         total_cost = (energy_needed_kwh * rate_per_kwh) + session_fee
         avg_power = energy_needed_kwh / (total_hours) if total_hours > 0 else 0.0
