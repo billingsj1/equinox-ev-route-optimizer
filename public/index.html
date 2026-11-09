@@ -46126,6 +46126,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let T_at_cheapest = null;
         let cheapestCandObj = null;
         let hitIterationCap1B = false;
+        let phase1BProvenOptimal = false;
 
         // Phase 1A: Fast A* Extremes Discovery (Fastest Route)
         try {
@@ -46387,7 +46388,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const best1B = new Array((routeStations.length + 1) << 1);
           let p1bIters = 0;
-          let phase1BProvenOptimal = false;
+          phase1BProvenOptimal = false;
 
           while (heap1B.size() > 0 && ++p1bIters < 5000) {
             const curr = heap1B.pop();
