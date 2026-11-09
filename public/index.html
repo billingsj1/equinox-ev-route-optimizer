@@ -33380,7 +33380,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const stage1Tariff = resolveStationTariff(st, timeAgnosticBaseline ? 12.0 : arrival_clock_decimal, false);
             const rate = timeAgnosticBaseline ? (st.on || stage1Tariff.rate) : stage1Tariff.rate;
 
-            // 4. Physical Battery Curve Knees (70% high-power ceiling, 80% taper cliff, 90% deep arbitrage)
+            // 4. Physical Battery Curve Knees (60% peak sweet-spot, 70% high-power ceiling, 80% taper cliff, 90% deep arbitrage)
+            if (0.60 > min_target_allowed) addTarget(0.60);
             if (0.70 > min_target_allowed) addTarget(0.70);
             if (0.80 > min_target_allowed) addTarget(0.80);
             if (0.90 > min_target_allowed) addTarget(0.90);
@@ -33408,14 +33409,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
 
-              // Early Destination Lower-Bound Pruning
+              // Early Destination Lower-Bound Pruning (accounting for potential 25% Pass+/Tesla discount)
               if (destFrontier.length > 0) {
                 const minRemainingHrs = destLegPerStation[j] ? destLegPerStation[j].hours : 0;
                 const minProjectedHrs = leg_total_hrs + minRemainingHrs;
+                const minProjectedCost = leg_total_cost * 0.70;
                 let dominatedByDest = false;
                 for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
                   const d = destFrontier[dIdx];
-                  if (d.total_hours <= minProjectedHrs && d.total_cost <= leg_total_cost) {
+                  if (d.total_hours <= minProjectedHrs && d.total_cost <= minProjectedCost) {
                     dominatedByDest = true;
                     break;
                   }
