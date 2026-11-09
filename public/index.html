@@ -33380,7 +33380,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const stage1Tariff = resolveStationTariff(st, timeAgnosticBaseline ? 12.0 : arrival_clock_decimal, false);
             const rate = timeAgnosticBaseline ? (st.on || stage1Tariff.rate) : stage1Tariff.rate;
 
-            // 4. Strategic SoC milestones (50% - 90% in 5% steps) for full fidelity overcharge arbitrage
+            // 4. Strategic SoC milestones (50% - 90% in 5% steps)
             for (let t = 0.50; t <= 0.901; t += 0.05) {
               if (t > min_target_allowed) addTarget(t);
             }
@@ -33407,8 +33407,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_ch_hrs = curr.ch_hrs + (total_stop_mins / 60.0);
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
-
-
 
               // Component B: Unified 3D Station Pareto Dominance (t, c, soc) eliminating the silo flaw
               const stateKey = (j << 1) | (curr.has_decamilla ? 1 : 0);
