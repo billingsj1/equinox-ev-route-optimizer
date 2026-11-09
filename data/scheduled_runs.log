@@ -12,3 +12,100 @@
 [2026-11-06 21:46:56] Successfully pushed Day 2 deployment to origin/main.
 [2026-11-06 21:46:56] === COMPLETED AUTOMATED TOMTOM CAMPAIGN: DAY 2 ===
 
+[2026-11-08 23:42:33] Day 3 Harvester succeeded.
+[2026-11-08 23:42:33] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-08 23:42:34] HTML sync successful! Byte-parity verified: ccd71b51961547f224c0055b7c50610940e1ee932ded60d7d5c10b80184ffcba
+[2026-11-08 23:42:34] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-08 23:42:37] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-08 23:42:40] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-08 23:46:29] ERROR running Full Engine Test Suite:
+STDOUT:
+[INIT] Loaded 478 active stations into browser memory from cache.
+[CHECK 1] HERE Legal Speed Limits Database: 710 segments loaded.
+[CHECK 1b] Spatial match test on PA Turnpike I-76: 70 mph.
+
+--- Running: Test 1: Standard Search (Baseline) ---
+    Status: Optimization Complete in 52.91s
+    Fastest: 12.91h | $101.71 | 5 stops | 7:30 AM | +10mph cap 75
+
+--- Running: Test 2: Optimize Departure Time ---
+    Status: Optimization Complete in 53.27s
+    Fastest: 12.78h | $103.12 | 5 stops | 8:15 AM | +10mph cap 75
+    Comparison: Fixed=12.911h vs OptTime=12.781h
+
+--- Running: Test 3: Optimize Speed Offset + Cap ---
+    Status: Exploring Forward State Tree... in 115.71s
+    Fastest: 12.78h | $103.12 | 5 stops | 8:15 AM | +10mph cap 75
+
+STDERR:
+Traceback (most recent call last):
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 206, in <module>
+    asyncio.run(run_full_suite())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 167, in run_full_suite
+    r3 = await run_sim_test("Test 3: Optimize Speed Offset + Cap", """(() => {
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    })()""", max_timeout=90)
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 127, in run_sim_test
+    assert done and st == "Optimization Complete", f"{name} failed to complete in {max_timeout}s"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Test 3: Optimize Speed Offset + Cap failed to complete in 90s
+
+[2026-11-08 23:46:29] Full test suite failed!
+[2026-11-08 23:48:29] === STARTING AUTOMATED TOMTOM CAMPAIGN: DAY 3 ===
+[2026-11-08 23:48:29] Skipping harvester execution for Day 3 (already completed).
+[2026-11-08 23:48:29] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-08 23:48:29] HTML sync successful! Byte-parity verified: 376e554f5c729f76c4814ad5d17803c98be2bf180505196149d10227d8697f00
+[2026-11-08 23:48:29] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-08 23:48:31] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-08 23:48:33] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-08 23:50:12] ERROR running Full Engine Test Suite:
+STDOUT:
+[INIT] Loaded 478 active stations into browser memory from cache.
+[CHECK 1] HERE Legal Speed Limits Database: 710 segments loaded.
+[CHECK 1b] Spatial match test on PA Turnpike I-76: 70 mph.
+
+--- Running: Test 1: Standard Search (Baseline) ---
+    Status: Error in 93.25s
+
+STDERR:
+Traceback (most recent call last):
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 206, in <module>
+    asyncio.run(run_full_suite())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 136, in run_full_suite
+    r1 = await run_sim_test("Test 1: Standard Search (Baseline)", """(() => {
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    })()""")
+    ^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 127, in run_sim_test
+    assert done and st == "Optimization Complete", f"{name} failed to complete in {max_timeout}s"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Test 1: Standard Search (Baseline) failed to complete in 90s
+
+[2026-11-08 23:50:12] Full test suite failed!
+[2026-11-09 00:03:00] All verification test suites passed 100% (test_engine, test_js_syntax, test_full_suite, test_sim_history).
+[2026-11-09 00:03:00] Successfully completed and verified Day 3 harvest and integration.
+[2026-11-09 00:03:00] === COMPLETED AUTOMATED TOMTOM CAMPAIGN: DAY 3 ===
+

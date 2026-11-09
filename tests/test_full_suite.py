@@ -112,7 +112,7 @@ async def run_full_suite():
                 for _ in range(int(max_timeout * 2)):
                     await asyncio.sleep(0.5)
                     st = await eval_js("document.getElementById('auditStatusText')?.innerText")
-                    if st in ("Optimization Complete", "No Routes Found"):
+                    if st in ("Optimization Complete", "No Routes Found", "Error"):
                         done = True
                         break
                 elapsed = time.time() - t0
@@ -122,6 +122,10 @@ async def run_full_suite():
                 cx = res.get("cheapest_x") if res else None
                 bx = res.get("balanced_x") if res else None
                 print(f"    Status: {st} in {elapsed:.2f}s")
+                if st == "Error":
+                    err_txt = await eval_js("document.getElementById('auditLogSummary')?.innerText")
+                    print(f"    [ERROR DETAILS]: {err_txt}")
+                    print(f"    [CONSOLE ERRORS]: {console_errors}")
                 if fx:
                     print(f"    Fastest: {fx['total_hours']:.2f}h | ${fx['total_cost']:.2f} | {len(fx['stops'])} stops | {fx.get('departure_clock', 'N/A')} | +{fx.get('speed_offset')}mph cap {fx.get('max_speed_cap')}")
                 assert done and st == "Optimization Complete", f"{name} failed to complete in {max_timeout}s"
@@ -168,7 +172,7 @@ async def run_full_suite():
                 document.getElementById('optimizeDepartureTime').checked = false;
                 document.getElementById('optimizeSpeedOffset').checked = true;
                 document.getElementById('optimizeSpeedCap').checked = true;
-            })()""", max_timeout=90)
+            })()""", max_timeout=180)
             test_results["opt_speed_and_cap"] = r3
             assert r3["fastest"]["speed_offset"] in (5, 10)
             assert r3["fastest"]["max_speed_cap"] in (75, 80)

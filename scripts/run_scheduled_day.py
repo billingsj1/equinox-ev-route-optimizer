@@ -4,11 +4,12 @@ Executes:
   1. Harvester execution (scripts/harvest_tomtom_day{X}.py)
   2. HTML synchronization across index.html, public/index.html, ui/templates/index.html
   3. SHA-256 byte parity verification
-  4. Chrome V8 syntax compilation test (tests/test_js_syntax.py)
-  5. Core simulation suite verification (tests/test_full_suite.py)
-  6. Simulation history & logging test (tests/test_sim_history.py)
-  7. Git commit & push directly to origin/main
-  8. State update in data/scheduled_runs_state.json
+  4. Mandatory Python Engine Unit Test (tests/test_engine.py per AGENTS.md Section 4 & 4.1)
+  5. Chrome V8 syntax compilation test (tests/test_js_syntax.py)
+  6. Core simulation suite verification (tests/test_full_suite.py)
+  7. Simulation history & logging test (tests/test_sim_history.py)
+  8. Git commit & push directly to origin/main (Direct Mode)
+  9. State update in data/scheduled_runs_state.json
 """
 
 import argparse
@@ -82,54 +83,64 @@ def sync_html_files():
     log(f"HTML sync successful! Byte-parity verified: {hashes[0]}")
     return True
 
-def run_day(day_num):
+def run_day(day_num, skip_harvest=False):
     log(f"=== STARTING AUTOMATED TOMTOM CAMPAIGN: DAY {day_num} ===")
 
     script_path = f"scripts/harvest_tomtom_day{day_num}.py"
-    if not os.path.exists(script_path):
-        log(f"ERROR: Harvester script {script_path} does not exist!")
-        return False
+    if not skip_harvest:
+        if not os.path.exists(script_path):
+            log(f"ERROR: Harvester script {script_path} does not exist!")
+            return False
 
-    # 1. Run Harvester
-    ok, out = run_cmd([sys.executable, script_path], f"Day {day_num} Harvester")
-    if not ok:
-        log(f"Day {day_num} Harvester failed!")
-        return False
-    log(f"Day {day_num} Harvester succeeded.")
+        # 1. Run Harvester
+        ok, out = run_cmd([sys.executable, script_path], f"Day {day_num} Harvester")
+        if not ok:
+            log(f"Day {day_num} Harvester failed!")
+            return False
+        log(f"Day {day_num} Harvester succeeded.")
+    else:
+        log(f"Skipping harvester execution for Day {day_num} (already completed).")
 
     # 2. Sync to HTML files
     if not sync_html_files():
         return False
 
-    # 3. Run JS Syntax verification
+    # 3. Mandatory Python Engine Unit Test (AGENTS.md Section 4 & 4.1)
+    ok, out = run_cmd([sys.executable, "-m", "unittest", "tests/test_engine.py"], "Python Engine Unit Test")
+    if not ok:
+        log("Python engine unit test failed!")
+        return False
+
+    # 4. Mandatory Chrome V8 JS Syntax Verification (AGENTS.md Section 4 & 4.1)
     ok, out = run_cmd([sys.executable, "tests/test_js_syntax.py"], "Chrome V8 Syntax Test")
     if not ok:
         log("JS Syntax test failed!")
         return False
 
-    # 4. Run Full Simulation Suite
+    # 5. Run Full Simulation Suite
     ok, out = run_cmd([sys.executable, "tests/test_full_suite.py"], "Full Engine Test Suite")
     if not ok:
         log("Full test suite failed!")
         return False
 
-    # 5. Run Sim History Test
+    # 6. Run Sim History Test
     ok, out = run_cmd([sys.executable, "tests/test_sim_history.py"], "Simulation History Test")
     if not ok:
         log("Sim history test failed!")
         return False
 
-    # 6. Git commit & push
-    run_cmd(["git", "add", "data/tomtom_corridors_168h.json", "public/data/tomtom_corridors_168h.json", "index.html", "public/index.html", "ui/templates/index.html", STATE_FILE, LOG_FILE], "Git Add")
+    # 7. Git commit & push (AGENTS.md Section 5 Parity & Section 7.2 Direct Mode)
+    run_cmd(["git", "add", "data/tomtom_corridors_168h.json", "public/data/tomtom_corridors_168h.json", "index.html", "public/index.html", "ui/templates/index.html", "tests/test_full_suite.py", "scripts/run_scheduled_day.py", STATE_FILE, LOG_FILE], "Git Add")
     commit_msg = f"feat: automated TomTom Day {day_num} harvest and 100% verified integration"
     run_cmd(["git", "commit", "-m", commit_msg], "Git Commit")
+    run_cmd(["git", "pull", "--rebase", "origin", "main"], "Git Pull Rebase")
     ok, out = run_cmd(["git", "push", "origin", "main"], "Git Push")
     if ok:
         log(f"Successfully pushed Day {day_num} deployment to origin/main.")
     else:
         log("WARNING: Git push encountered an issue, will retry next run.")
 
-    # 7. Update state
+    # 8. Update state
     state = load_state()
     if day_num not in state.get("completed_days", []):
         state.setdefault("completed_days", []).append(day_num)
@@ -143,6 +154,7 @@ def run_day(day_num):
 def main():
     parser = argparse.ArgumentParser(description="Run scheduled TomTom harvest & integration")
     parser.add_argument("--day", type=int, default=0, help="Day number (3..6). If 0, auto-detects next day.")
+    parser.add_argument("--skip-harvest", action="store_true", help="Skip harvester execution if harvest data is already present.")
     args = parser.parse_args()
 
     state = load_state()
@@ -153,7 +165,7 @@ def main():
         print("All campaign days completed.")
         return
 
-    run_day(day_to_run)
+    run_day(day_to_run, skip_harvest=args.skip_harvest)
 
 if __name__ == "__main__":
     main()
