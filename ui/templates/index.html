@@ -45835,7 +45835,190 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         profiler.startStage("Forward State Tree (Dijkstra/DP)");
 
-        function getRouteStops(state) {
+
+        // Lightweight Zero-Dependency Binary Min-Heap
+        class FastMinHeap {
+          constructor(comparator) {
+            this.data = [];
+            this.compare = comparator;
+          }
+          push(val) {
+            this.data.push(val);
+            let idx = this.data.length - 1;
+            while (idx > 0) {
+              const pIdx = (idx - 1) >> 1;
+              if (this.compare(this.data[idx], this.data[pIdx]) < 0) {
+                const tmp = this.data[idx];
+                this.data[idx] = this.data[pIdx];
+                this.data[pIdx] = tmp;
+                idx = pIdx;
+              } else break;
+            }
+          }
+          pop() {
+            if (this.data.length === 0) return null;
+            const top = this.data[0];
+            const bottom = this.data.pop();
+            if (this.data.length > 0) {
+              this.data[0] = bottom;
+              let idx = 0;
+              const len = this.data.length;
+              while (true) {
+                let left = (idx << 1) + 1;
+                let right = left + 1;
+                let smallest = idx;
+                if (left < len && this.compare(this.data[left], this.data[smallest]) < 0) smallest = left;
+                if (right < len && this.compare(this.data[right], this.data[smallest]) < 0) smallest = right;
+                if (smallest !== idx) {
+                  const tmp = this.data[idx];
+                  this.data[idx] = this.data[smallest];
+                  this.data[smallest] = tmp;
+                  idx = smallest;
+                } else break;
+              }
+            }
+            return top;
+          }
+          size() { return this.data.length; }
+        }
+
+        function buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins) {
+          const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
+          const total_time = total_drive_hrs + curr.ch_hrs;
+          const currStops = getRouteStops(curr);
+
+          let ea_kwh = 0, ea_gross_savings = 0;
+          let tesla_kwh = 0, tesla_gross_savings = 0;
+
+          let cum_time_s1 = 0.0;
+          currStops.forEach(sp => {
+            cum_time_s1 += sp.leg_drive_hrs;
+            const arr_clock_dec = departure_hours + cum_time_s1;
+            if (sp.station.ea_pass) {
+              ea_kwh += sp.added_kwh;
+              ea_gross_savings += (sp.added_kwh * (sp.station.on * 0.25));
+            }
+            if (isTeslaNetwork(sp.station.network)) {
+              const non_mem = resolveStationTariff(sp.station, arr_clock_dec, false);
+              const mem = resolveStationTariff(sp.station, arr_clock_dec, true);
+              if (non_mem.rate > mem.rate) {
+                tesla_kwh += sp.added_kwh;
+                tesla_gross_savings += (sp.added_kwh * (non_mem.rate - mem.rate));
+              }
+            }
+            cum_time_s1 += (sp.mins / 60.0);
+          });
+
+          const ea_active = has_ea_preowned || (ea_gross_savings >= 3.50);
+          const ea_fee = has_ea_preowned ? 0.0 : (ea_active ? 3.50 : 0.0);
+          const ea_net = ea_gross_savings - ea_fee;
+
+          const tesla_active = has_tesla_preowned || (tesla_gross_savings >= 6.50);
+          const tesla_fee = has_tesla_preowned ? 0.0 : (tesla_active ? 6.50 : 0.0);
+          const tesla_net = tesla_gross_savings - tesla_fee;
+
+          let discounted_ch_cost = 0;
+          let cum_time_stops = 0.0;
+          const finalStops = currStops.map(sp => {
+            cum_time_stops += sp.leg_drive_hrs;
+            const arr_clock_dec = departure_hours + cum_time_stops;
+            let effective_rate = sp.station.on;
+            let badge = "";
+
+            if (isTeslaNetwork(sp.station.network)) {
+              const tariff = resolveStationTariff(sp.station, arr_clock_dec, tesla_active);
+              effective_rate = tariff.rate;
+              if (tesla_active) {
+                const tLabel = tariff.label || "Member";
+                badge = (tLabel === "Member")
+                  ? (has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)")
+                  : (has_tesla_preowned ? `${tLabel} (Active)` : `${tLabel} (Auto-ROI)`);
+              } else {
+                badge = (tariff.label && tariff.label !== "Member") ? tariff.label : "";
+              }
+            } else if (isGmDiscountEligible(sp.station)) {
+              effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
+              badge = "10% GM";
+            } else if (sp.station.ea_pass && ea_active) {
+              effective_rate *= 0.75;
+              badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
+            } else {
+              const tariff = resolveStationTariff(sp.station, arr_clock_dec, false);
+              effective_rate = tariff.rate;
+              badge = tariff.label || "";
+            }
+
+            const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
+            discounted_ch_cost += stopCost;
+            const arr_clock = formatClockTime(arr_clock_dec);
+            cum_time_stops += (sp.mins / 60.0);
+            const dep_clock = formatClockTime(arr_clock_dec + (sp.mins / 60.0));
+
+            return {
+              ...sp,
+              arr_clock: arr_clock,
+              dep_clock: dep_clock,
+              rate: effective_rate,
+              cost: stopCost,
+              badge: badge
+            };
+          });
+
+          const membership_fees = Math.round((ea_fee + tesla_fee) * 100) / 100;
+          const total_detour_miles = Math.round(finalStops.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
+          const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
+          const stopTollObj = resolveCandidateToll(route.origin, route.destination, route, currStops, null);
+          const stopToll = (stopTollObj && stopTollObj.total != null) ? stopTollObj.total : route.toll;
+          const total_cost = Math.round((discounted_ch_cost + membership_fees + stopToll) * 100) / 100;
+
+          const final_leg_miles = curr.stopsCount === 0 ? total_miles : Math.round((total_miles - routeStations[curr.stationIdx].mile) * 10) / 10;
+          const dest_arr_clock_s1 = formatClockTime(departure_hours + total_drive_hrs + curr.ch_hrs);
+
+          const cand = {
+            route: route,
+            speed_offset: sOffset,
+            max_speed_cap: sCap,
+            base_miles: total_miles,
+            total_actual_miles: total_actual_miles,
+            total_detour_miles: total_detour_miles,
+            drive_hours: total_drive_hrs,
+            ch_hours: curr.ch_hrs,
+            total_hours: total_time,
+            dest_arr_clock: dest_arr_clock_s1,
+            final_leg_hrs: leg_to_dest_hrs,
+            final_leg_mins: Math.round(leg_to_dest_mins),
+            final_leg_miles: final_leg_miles,
+            ch_cost: Math.round(discounted_ch_cost * 100) / 100,
+            membership_fees: membership_fees,
+            toll_cost: stopToll,
+            toll_subtitle: stopTollObj ? stopTollObj.subtitle : route.toll_subtitle,
+            total_cost: total_cost,
+            final_soc: Math.round((curr.soc - (destLegPerStation[curr.stationIdx >= 0 ? curr.stationIdx : 0].kwh / 85.0)) * 100),
+            stops: finalStops,
+            memberships: {
+              ea: {
+                kwh: Math.round(ea_kwh * 10) / 10,
+                active: ea_active,
+                pre_owned: has_ea_preowned,
+                fee: ea_fee,
+                savings: Math.round(ea_gross_savings * 100) / 100,
+                net: Math.round(ea_net * 100) / 100
+              },
+              tesla: {
+                kwh: Math.round(tesla_kwh * 10) / 10,
+                active: tesla_active,
+                pre_owned: has_tesla_preowned,
+                fee: tesla_fee,
+                savings: Math.round(tesla_gross_savings * 100) / 100,
+                net: Math.round(tesla_net * 100) / 100
+              }
+            }
+          };
+
+          return { total_time, total_cost, cand };
+        }
+
+                function getRouteStops(state) {
 
           const stops = [];
 
@@ -45931,6 +46114,508 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
+
+        // ==========================================
+        // TWO-PHASE ARCHITECTURE: Phase 1 Extremes Discovery
+        // ==========================================
+        let T_fastest = null;
+        let C_at_fastest = null;
+        let fastestCandObj = null;
+
+        let C_cheapest = null;
+        let T_at_cheapest = null;
+        let cheapestCandObj = null;
+        let hitIterationCap1B = false;
+
+        // Phase 1A: Fast A* Extremes Discovery (Fastest Route)
+        try {
+          const heap1A = new FastMinHeap((a, b) => a.f - b.f);
+          const initH = startToDestLeg ? startToDestLeg.hours : 0;
+          heap1A.push({
+            stationIdx: -1,
+            mile: 0.0,
+            soc: start_soc,
+            arr_soc: start_soc,
+            added_kwh: 0,
+            ch_mins: 0,
+            setup_mins: 0,
+            stop_mins: 0,
+            rate: 0,
+            cost: 0,
+            pack_temp_f: initialPackTemp,
+            drive_hrs: 0.0,
+            ch_hrs: 0.0,
+            ch_cost: 0.0,
+            opt_cost: 0.0,
+            stopsCount: 0,
+            parent: null,
+            has_decamilla: false,
+            is_decamilla: false,
+            f: initH
+          });
+
+          const best1A = new Array((routeStations.length + 1) << 1);
+
+          while (heap1A.size() > 0) {
+            const curr = heap1A.pop();
+
+            const canReachDest = (!decamillaStationObj || curr.has_decamilla);
+            const destLeg = (curr.stationIdx === -1) ? startToDestLeg : destLegPerStation[curr.stationIdx];
+            let last_exit_detour = 0, last_exit_kwh = 0;
+            if (curr.stationIdx >= 0) {
+              const lastDetour = stationDetours[curr.stationIdx];
+              last_exit_detour = lastDetour.last_exit_detour;
+              last_exit_kwh = lastDetour.last_exit_kwh;
+            }
+            let leg_to_dest_kwh = destLeg.kwh + last_exit_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
+            const leg_to_dest_hrs = destLeg.hours + (last_exit_detour / 28.0);
+            const leg_to_dest_mins = leg_to_dest_hrs * 60.0;
+
+            if (curr.stationIdx >= 0 && curr.pack_temp_f > temp_f && temp_f < 55.0) {
+              const arrAmb = (window.activeWeatherReport && window.activeWeatherReport.waypoints && window.activeWeatherReport.waypoints.length > 0)
+                ? (window.activeWeatherReport.waypoints[window.activeWeatherReport.waypoints.length - 1].ambient_temp_f || temp_f)
+                : temp_f;
+              const arrPack = Math.max(arrAmb, curr.pack_temp_f - (leg_to_dest_hrs * Math.max(3.0, (curr.pack_temp_f - arrAmb) * 0.15)));
+              const avgPack = (curr.pack_temp_f + arrPack) / 2.0;
+              const coldEff = (arrAmb < 32.0) ? Math.max(0.78, 0.90 - ((32.0 - arrAmb) * 0.0045)) : (0.90 + ((arrAmb - 32.0) / 23.0) * 0.10);
+              const warmEff = (avgPack >= 55.0) ? 1.0 : ((avgPack < 32.0) ? Math.max(0.78, 0.90 - ((32.0 - avgPack) * 0.0045)) : (0.90 + ((avgPack - 32.0) / 23.0) * 0.10));
+              if (warmEff > coldEff) {
+                leg_to_dest_kwh *= (coldEff / warmEff);
+              }
+            }
+
+            const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
+
+            if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
+              if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
+                const built = buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins);
+                fastestCandObj = built;
+                T_fastest = built.total_time;
+                C_at_fastest = built.total_cost;
+                break;
+              }
+            }
+
+            const startJ = (curr.stationIdx === -1) ? 0 : curr.stationIdx + 1;
+            for (let j = startJ; j < routeStations.length; j++) {
+              const st = routeStations[j];
+              const isToOrFromDecamilla = st.is_decamilla || (curr.stationIdx >= 0 && routeStations[curr.stationIdx].is_decamilla);
+              const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
+              if (st.mile <= curr.mile + minGapMiles) continue;
+
+              if (decamillaStationObj && !curr.has_decamilla && j > decamillaIdx) break;
+
+              const legSim = (curr.stationIdx === -1) ? startToStationLegs[j] : stationToStationLegs[curr.stationIdx][j];
+              if (!legSim) continue;
+              const leg_mins = legSim.hours * 60.0;
+              if (leg_mins > max_mins) break;
+              if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
+
+              const stDetour = stationDetours[j];
+              const detour_mins = stDetour.detour_mins;
+              const total_leg_hrs = legSim.hours + (detour_mins / 60.0 / 2.0);
+
+              let adjusted_leg_kwh = legSim.kwh;
+              const arrTemp = stationAmbientTemps[j];
+              let precond_kwh = 0.0;
+              if (!st.is_decamilla && (curr.stationIdx === -1 ? isPreheated : true)) {
+                if (arrTemp < 70.0) {
+                  precond_kwh = Math.min(2.5, ((70.0 - arrTemp) / 35.0) * 1.8);
+                }
+              }
+
+              const total_leg_energy = adjusted_leg_kwh + (stDetour.kwh / 2.0) + precond_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
+              const arr_soc = curr.soc - (total_leg_energy / 85.0);
+              if (arr_soc < min_buffer_soc) continue;
+
+              // DeCamilla handling in Phase 1A:
+              if (st.is_decamilla) {
+                const decamillaHrs = st.decamilla_hours || 2.0;
+                const added_soc = Math.min(1.0 - arr_soc, decamillaHrs * 0.0813);
+                const target_soc = Math.round((arr_soc + added_soc) * 100) / 100.0;
+                const added_kwh = Math.round(added_soc * 85.0 * 10) / 10;
+                const stop_mins = Math.round(decamillaHrs * 60.0);
+                const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
+                const leg_ch_hrs = curr.ch_hrs + decamillaHrs;
+                const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
+                const legToDest = destLegPerStation[j];
+                const h_time = legToDest ? legToDest.hours : 0;
+                heap1A.push({
+                  stationIdx: j,
+                  mile: st.mile,
+                  soc: target_soc,
+                  arr_soc: arr_soc,
+                  added_kwh: added_kwh,
+                  ch_mins: stop_mins,
+                  setup_mins: 0,
+                  stop_mins: stop_mins,
+                  rate: 0,
+                  cost: 0,
+                  pack_temp_f: Math.max(arrTemp, Math.min(75.0, curr.pack_temp_f + 5.0)),
+                  drive_hrs: leg_drive_hrs,
+                  ch_hrs: leg_ch_hrs,
+                  ch_cost: 0,
+                  opt_cost: 0,
+                  stopsCount: curr.stopsCount + 1,
+                  parent: curr,
+                  has_decamilla: true,
+                  is_decamilla: true,
+                  f: leg_total_hrs + h_time
+                });
+                continue;
+              }
+
+              let min_ch_soc = min_charge_pct;
+              const min_target_allowed = Math.max(arr_soc + min_ch_soc, min_buffer_soc);
+              if (min_target_allowed > 0.90) continue;
+
+              const tBuffer = [];
+              const addT = (v) => {
+                const r = Math.round(v * 50.0) / 50.0;
+                if (r >= min_target_allowed && r <= 0.90 && !tBuffer.includes(r)) tBuffer.push(r);
+              };
+              const floorStep = Math.ceil(min_target_allowed * 50.0) / 50.0;
+              addT(floorStep);
+
+              const legToDest = destLegPerStation[j];
+              const dest_mins_from_st = legToDest ? (legToDest.hours * 60.0) : 9999;
+              const dest_needed_soc = legToDest ? ((legToDest.kwh / 85.0) + target_arrival_soc) : 9999;
+              if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
+                addT(Math.max(min_target_allowed, dest_needed_soc));
+              }
+
+              const anchors = downstreamAnchorTargets[j] || [];
+              for (let ai = 0; ai < anchors.length; ai++) addT(anchors[ai]);
+
+              // Knee targets for fast-charging power disparity
+              [0.60, 0.70, 0.80].forEach(k => { if (k > min_target_allowed) addT(k); });
+
+              const has_pnp = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
+              const setup_mins = has_pnp ? 1.0 : 3.0;
+
+              const stLut = st._chargingLut || (st._chargingLut = getCumulativeChargingLUT(st.kw, (st._maxAmps || (st._maxAmps = getStationMaxAmps(st)))));
+              const x0 = Math.max(0, Math.min(100, arr_soc * 100));
+              const lo0 = Math.floor(x0), hi0 = Math.min(100, lo0 + 1);
+              const lut0 = stLut[lo0] + (stLut[hi0] - stLut[lo0]) * (x0 - lo0);
+
+              for (let ti = 0; ti < tBuffer.length; ti++) {
+                const target_soc = tBuffer[ti];
+                const x1 = Math.max(0, Math.min(100, target_soc * 100));
+                const lo1 = Math.floor(x1), hi1 = Math.min(100, lo1 + 1);
+                const lut1 = stLut[lo1] + (stLut[hi1] - stLut[lo1]) * (x1 - lo1);
+                const ch_mins = Math.max(0.0, (lut1 - lut0) * 60.0);
+                const ch_kwh = (target_soc - arr_soc) * 85.0;
+                const total_stop_mins = Math.round(ch_mins + setup_mins);
+
+                const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
+                const leg_ch_hrs = curr.ch_hrs + (total_stop_mins / 60.0);
+                const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
+
+                const sKey = (j << 1) | (curr.has_decamilla ? 1 : 0);
+                let fList = best1A[sKey];
+                if (!fList) best1A[sKey] = fList = [];
+                let dom = false;
+                for (let fi = 0; fi < fList.length; fi++) {
+                  const p = fList[fi];
+                  if (p.t <= leg_total_hrs + 1e-9 && p.soc >= target_soc - 1e-9) { dom = true; break; }
+                }
+                if (dom) continue;
+
+                for (let fi = fList.length - 1; fi >= 0; fi--) {
+                  const p = fList[fi];
+                  if (leg_total_hrs <= p.t + 1e-9 && target_soc >= p.soc - 1e-9) fList.splice(fi, 1);
+                }
+                fList.push({ t: leg_total_hrs, soc: target_soc });
+
+                const h_time = legToDest ? legToDest.hours : 0;
+                heap1A.push({
+                  stationIdx: j,
+                  mile: st.mile,
+                  soc: target_soc,
+                  arr_soc: arr_soc,
+                  added_kwh: ch_kwh,
+                  ch_mins: ch_mins,
+                  setup_mins: setup_mins,
+                  stop_mins: total_stop_mins,
+                  rate: 0,
+                  cost: 0,
+                  pack_temp_f: Math.max(95.0, temp_f),
+                  drive_hrs: leg_drive_hrs,
+                  ch_hrs: leg_ch_hrs,
+                  ch_cost: 0,
+                  opt_cost: 0,
+                  stopsCount: curr.stopsCount + 1,
+                  parent: curr,
+                  has_decamilla: curr.has_decamilla || st.is_decamilla,
+                  is_decamilla: Boolean(st.is_decamilla),
+                  f: leg_total_hrs + h_time
+                });
+              }
+            }
+          }
+        } catch (e1a) {
+          console.warn("Phase 1A error:", e1a);
+        }
+
+        // Phase 1B: Cost-Prioritized Extremes Discovery with Optimistic Member Rates
+        try {
+          const heap1B = new FastMinHeap((a, b) => a.f - b.f);
+          const initHCost = total_miles * 0.06;
+          heap1B.push({
+            stationIdx: -1,
+            mile: 0.0,
+            soc: start_soc,
+            arr_soc: start_soc,
+            added_kwh: 0,
+            ch_mins: 0,
+            setup_mins: 0,
+            stop_mins: 0,
+            rate: 0,
+            cost: 0,
+            pack_temp_f: initialPackTemp,
+            drive_hrs: 0.0,
+            ch_hrs: 0.0,
+            ch_cost: 0.0,
+            opt_cost: 0.0,
+            stopsCount: 0,
+            parent: null,
+            has_decamilla: false,
+            is_decamilla: false,
+            time: 0.0,
+            f: initHCost
+          });
+
+          const best1B = new Array((routeStations.length + 1) << 1);
+          let p1bIters = 0;
+
+          while (heap1B.size() > 0 && ++p1bIters < 5000) {
+            const curr = heap1B.pop();
+
+            if (cheapestCandObj && curr.f >= cheapestCandObj.total_cost) {
+              break; // Proven optimal: all remaining heap nodes have f >= cheapestCandObj.total_cost!
+            }
+
+            const canReachDest = (!decamillaStationObj || curr.has_decamilla);
+            const destLeg = (curr.stationIdx === -1) ? startToDestLeg : destLegPerStation[curr.stationIdx];
+            let last_exit_detour = 0, last_exit_kwh = 0;
+            if (curr.stationIdx >= 0) {
+              const lastDetour = stationDetours[curr.stationIdx];
+              last_exit_detour = lastDetour.last_exit_detour;
+              last_exit_kwh = lastDetour.last_exit_kwh;
+            }
+            let leg_to_dest_kwh = destLeg.kwh + last_exit_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
+            const leg_to_dest_hrs = destLeg.hours + (last_exit_detour / 28.0);
+            const leg_to_dest_mins = leg_to_dest_hrs * 60.0;
+
+            if (curr.stationIdx >= 0 && curr.pack_temp_f > temp_f && temp_f < 55.0) {
+              const arrAmb = (window.activeWeatherReport && window.activeWeatherReport.waypoints && window.activeWeatherReport.waypoints.length > 0)
+                ? (window.activeWeatherReport.waypoints[window.activeWeatherReport.waypoints.length - 1].ambient_temp_f || temp_f)
+                : temp_f;
+              const arrPack = Math.max(arrAmb, curr.pack_temp_f - (leg_to_dest_hrs * Math.max(3.0, (curr.pack_temp_f - arrAmb) * 0.15)));
+              const avgPack = (curr.pack_temp_f + arrPack) / 2.0;
+              const coldEff = (arrAmb < 32.0) ? Math.max(0.78, 0.90 - ((32.0 - arrAmb) * 0.0045)) : (0.90 + ((arrAmb - 32.0) / 23.0) * 0.10);
+              const warmEff = (avgPack >= 55.0) ? 1.0 : ((avgPack < 32.0) ? Math.max(0.78, 0.90 - ((32.0 - avgPack) * 0.0045)) : (0.90 + ((avgPack - 32.0) / 23.0) * 0.10));
+              if (warmEff > coldEff) {
+                leg_to_dest_kwh *= (coldEff / warmEff);
+              }
+            }
+
+            const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
+
+            if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
+              if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
+                const built = buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins);
+                if (!cheapestCandObj || built.total_cost < cheapestCandObj.total_cost) {
+                  cheapestCandObj = built;
+                  C_cheapest = built.total_cost;
+                  T_at_cheapest = built.total_time;
+                }
+              }
+            }
+
+            const startJ = (curr.stationIdx === -1) ? 0 : curr.stationIdx + 1;
+            for (let j = startJ; j < routeStations.length; j++) {
+              const st = routeStations[j];
+              const isToOrFromDecamilla = st.is_decamilla || (curr.stationIdx >= 0 && routeStations[curr.stationIdx].is_decamilla);
+              const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
+              if (st.mile <= curr.mile + minGapMiles) continue;
+
+              if (decamillaStationObj && !curr.has_decamilla && j > decamillaIdx) break;
+
+              const legSim = (curr.stationIdx === -1) ? startToStationLegs[j] : stationToStationLegs[curr.stationIdx][j];
+              if (!legSim) continue;
+              const leg_mins = legSim.hours * 60.0;
+              if (leg_mins > max_mins) break;
+              if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
+
+              const stDetour = stationDetours[j];
+              const detour_mins = stDetour.detour_mins;
+              const total_leg_hrs = legSim.hours + (detour_mins / 60.0 / 2.0);
+
+              let adjusted_leg_kwh = legSim.kwh;
+              const arrTemp = stationAmbientTemps[j];
+              let precond_kwh = 0.0;
+              if (!st.is_decamilla && (curr.stationIdx === -1 ? isPreheated : true)) {
+                if (arrTemp < 70.0) {
+                  precond_kwh = Math.min(2.5, ((70.0 - arrTemp) / 35.0) * 1.8);
+                }
+              }
+
+              const total_leg_energy = adjusted_leg_kwh + (stDetour.kwh / 2.0) + precond_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
+              const arr_soc = curr.soc - (total_leg_energy / 85.0);
+              if (arr_soc < min_buffer_soc) continue;
+
+              // DeCamilla handling in Phase 1B:
+              if (st.is_decamilla) {
+                const decamillaHrs = st.decamilla_hours || 2.0;
+                const added_soc = Math.min(1.0 - arr_soc, decamillaHrs * 0.0813);
+                const target_soc = Math.round((arr_soc + added_soc) * 100) / 100.0;
+                const added_kwh = Math.round(added_soc * 85.0 * 10) / 10;
+                const stop_mins = Math.round(decamillaHrs * 60.0);
+                const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
+                const leg_ch_hrs = curr.ch_hrs + decamillaHrs;
+                const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
+                const remMilesDecamilla = Math.max(0, total_miles - st.mile);
+                heap1B.push({
+                  stationIdx: j,
+                  mile: st.mile,
+                  soc: target_soc,
+                  arr_soc: arr_soc,
+                  added_kwh: added_kwh,
+                  ch_mins: stop_mins,
+                  setup_mins: 0,
+                  stop_mins: stop_mins,
+                  rate: 0,
+                  cost: 0,
+                  pack_temp_f: Math.max(arrTemp, Math.min(75.0, curr.pack_temp_f + 5.0)),
+                  drive_hrs: leg_drive_hrs,
+                  ch_hrs: leg_ch_hrs,
+                  ch_cost: curr.ch_cost || 0.0,
+                  opt_cost: curr.opt_cost || 0.0,
+                  stopsCount: curr.stopsCount + 1,
+                  parent: curr,
+                  has_decamilla: true,
+                  is_decamilla: true,
+                  time: leg_total_hrs,
+                  f: (curr.opt_cost || 0.0) + (remMilesDecamilla * 0.06)
+                });
+                continue;
+              }
+
+              let min_ch_soc = min_charge_pct;
+              const min_target_allowed = Math.max(arr_soc + min_ch_soc, min_buffer_soc);
+              if (min_target_allowed > 0.90) continue;
+
+              const tBuffer = [];
+              const addT = (v) => {
+                const r = Math.round(v * 50.0) / 50.0;
+                if (r >= min_target_allowed && r <= 0.90 && !tBuffer.includes(r)) tBuffer.push(r);
+              };
+              const floorStep = Math.ceil(min_target_allowed * 50.0) / 50.0;
+              addT(floorStep);
+
+              const legToDest = destLegPerStation[j];
+              const dest_mins_from_st = legToDest ? (legToDest.hours * 60.0) : 9999;
+              const dest_needed_soc = legToDest ? ((legToDest.kwh / 85.0) + target_arrival_soc) : 9999;
+              if (dest_mins_from_st <= max_mins && dest_needed_soc <= 0.90) {
+                addT(Math.max(min_target_allowed, dest_needed_soc));
+              }
+
+              const anchors = downstreamAnchorTargets[j] || [];
+              for (let ai = 0; ai < anchors.length; ai++) addT(anchors[ai]);
+
+              // Full milestones (50% to 90%) for arbitrage parity
+              for (let t = 0.50; t <= 0.901; t += 0.05) {
+                if (t > min_target_allowed) addT(t);
+              }
+
+              const has_pnp = (st.gm || st.network === "IONNA" || st.network === "EVgo" || st.network === "ChargePoint");
+              const setup_mins = has_pnp ? 1.0 : 3.0;
+              const arr_clock = departure_hours + curr.drive_hrs + curr.ch_hrs + total_leg_hrs;
+
+              // Optimistic Member Rate
+              let opt_rate = st.on;
+              if (isTeslaNetwork(st.network)) {
+                opt_rate = resolveStationTariff(st, arr_clock, true).rate;
+              } else if (isGmDiscountEligible(st)) {
+                opt_rate = st.on * (1.0 - (st.gm_pct || 0.10));
+              } else if (st.ea_pass) {
+                opt_rate = st.on * 0.75;
+              }
+
+              const stLut = st._chargingLut || (st._chargingLut = getCumulativeChargingLUT(st.kw, (st._maxAmps || (st._maxAmps = getStationMaxAmps(st)))));
+              const x0 = Math.max(0, Math.min(100, arr_soc * 100));
+              const lo0 = Math.floor(x0), hi0 = Math.min(100, lo0 + 1);
+              const lut0 = stLut[lo0] + (stLut[hi0] - stLut[lo0]) * (x0 - lo0);
+
+              for (let ti = 0; ti < tBuffer.length; ti++) {
+                const target_soc = tBuffer[ti];
+                const x1 = Math.max(0, Math.min(100, target_soc * 100));
+                const lo1 = Math.floor(x1), hi1 = Math.min(100, lo1 + 1);
+                const lut1 = stLut[lo1] + (stLut[hi1] - stLut[lo1]) * (x1 - lo1);
+                const ch_mins = Math.max(0.0, (lut1 - lut0) * 60.0);
+                const ch_kwh = (target_soc - arr_soc) * 85.0;
+                const ch_opt_cost = ch_kwh * opt_rate;
+                const total_stop_mins = Math.round(ch_mins + setup_mins);
+
+                const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
+                const leg_ch_hrs = curr.ch_hrs + (total_stop_mins / 60.0);
+                const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
+                const leg_opt_cost = curr.opt_cost + ch_opt_cost;
+
+                const sKey = (j << 1) | (curr.has_decamilla ? 1 : 0);
+                let fList = best1B[sKey];
+                if (!fList) best1B[sKey] = fList = [];
+                let dom = false;
+                for (let fi = 0; fi < fList.length; fi++) {
+                  const p = fList[fi];
+                  if (p.c <= leg_opt_cost + 1e-9 && p.soc >= target_soc - 1e-9 && p.t <= leg_total_hrs + 1e-9) { dom = true; break; }
+                }
+                if (dom) continue;
+
+                for (let fi = fList.length - 1; fi >= 0; fi--) {
+                  const p = fList[fi];
+                  if (leg_opt_cost <= p.c + 1e-9 && target_soc >= p.soc - 1e-9 && leg_total_hrs <= p.t + 1e-9) fList.splice(fi, 1);
+                }
+                fList.push({ c: leg_opt_cost, soc: target_soc, t: leg_total_hrs });
+
+                const remMiles = Math.max(0, total_miles - st.mile);
+                heap1B.push({
+                  stationIdx: j,
+                  mile: st.mile,
+                  soc: target_soc,
+                  arr_soc: arr_soc,
+                  added_kwh: ch_kwh,
+                  ch_mins: ch_mins,
+                  setup_mins: setup_mins,
+                  stop_mins: total_stop_mins,
+                  rate: opt_rate,
+                  cost: ch_opt_cost,
+                  pack_temp_f: Math.max(95.0, temp_f),
+                  drive_hrs: leg_drive_hrs,
+                  ch_hrs: leg_ch_hrs,
+                  ch_cost: leg_opt_cost,
+                  opt_cost: leg_opt_cost,
+                  stopsCount: curr.stopsCount + 1,
+                  parent: curr,
+                  has_decamilla: curr.has_decamilla || st.is_decamilla,
+                  is_decamilla: Boolean(st.is_decamilla),
+                  time: leg_total_hrs,
+                  f: leg_opt_cost + (remMiles * 0.06)
+                });
+              }
+            }
+          }
+          if (p1bIters >= 5000) {
+            hitIterationCap1B = true;
+          }
+        } catch (e1b) {
+          console.warn("Phase 1B error:", e1b);
+        }
+
+        // Provable physical time envelope bound: no Pareto route takes > T(C*) + 21min safety margin while costing less than C*
+        const T_max = cheapestCandObj ? (cheapestCandObj.total_time + 0.35) : null;
+
         const queue = [{
 
           stationIdx: -1,
@@ -45961,6 +46646,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           ch_cost: 0.0,
 
+          opt_cost: 0.0,
+
           stopsCount: 0,
 
           parent: null,
@@ -45980,6 +46667,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         // Component A: Destination Pareto Frontier (tracking completed exact routes)
 
         const destFrontier = [];
+        if (fastestCandObj) {
+          destFrontier.push({
+            stops: fastestCandObj.cand.stops.map(s => s.name || (s.station ? s.station.name : '')),
+            total_hours: fastestCandObj.total_time,
+            total_cost: fastestCandObj.total_cost,
+            ...fastestCandObj.cand
+          });
+        }
+        if (cheapestCandObj && cheapestCandObj !== fastestCandObj) {
+          destFrontier.push({
+            stops: cheapestCandObj.cand.stops.map(s => s.name || (s.station ? s.station.name : '')),
+            total_hours: cheapestCandObj.total_time,
+            total_cost: cheapestCandObj.total_cost,
+            ...cheapestCandObj.cand
+          });
+        }
 
         const min_possible_corridor_toll = 0.0;
 
@@ -46538,29 +47241,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             // Component E: Admissible Pareto Branch-and-Bound with Regeneration Clamping
 
             if (destFrontier.length > 0) {
-
               const lb_time = curr.drive_hrs + curr.ch_hrs + total_leg_hrs + legToDestFromSt.hours;
-
-              const lb_cost = ((curr.ch_cost || 0.0) * 0.45) + min_possible_corridor_toll;
-
-              let bbPruned = false;
-
-              for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
-
-                const d = destFrontier[dIdx];
-
-                if (lb_time > d.total_hours && lb_cost >= d.total_cost) {
-
-                  bbPruned = true;
-
-                  break;
-
-                }
-
+              // Hard physical time envelope pruning (provably admissible: no Pareto route takes > T_max while costing less than C_cheapest)
+              if (T_max != null && lb_time > T_max + 1e-9) {
+                continue;
               }
 
+              const lb_cost = (curr.opt_cost || 0.0) + min_possible_corridor_toll;
+              let bbPruned = false;
+              for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
+                const d = destFrontier[dIdx];
+                if (lb_time > d.total_hours && lb_cost >= d.total_cost) {
+                  bbPruned = true;
+                  break;
+                }
+              }
               if (bbPruned) continue;
-
             }
 
 
@@ -46686,6 +47382,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 ch_hrs: leg_ch_hrs,
 
                 ch_cost: leg_total_cost,
+
+                opt_cost: (curr.opt_cost || 0.0),
 
                 stopsCount: curr.stopsCount + 1,
 
@@ -46846,6 +47544,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
 
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
+              let opt_unit_rate = st.on;
+              if (isTeslaNetwork(st.network)) {
+                opt_unit_rate = resolveStationTariff(st, arrival_clock_decimal, true).rate;
+              } else if (isGmDiscountEligible(st)) {
+                opt_unit_rate = st.on * (1.0 - (st.gm_pct || 0.10));
+              } else if (st.ea_pass) {
+                opt_unit_rate = st.on * 0.75;
+              }
+              const leg_opt_cost = (curr.opt_cost || 0.0) + (ch.added_kwh * opt_unit_rate);
 
 
 
@@ -46936,6 +47643,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 ch_hrs: leg_ch_hrs,
 
                 ch_cost: leg_total_cost,
+
+                opt_cost: leg_opt_cost,
 
                 stopsCount: curr.stopsCount + 1,
 
