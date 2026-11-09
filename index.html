@@ -45882,7 +45882,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           size() { return this.data.length; }
         }
 
-        function buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins) {
+        function buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins, leg_to_dest_kwh) {
           const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
           const total_time = total_drive_hrs + curr.ch_hrs;
           const currStops = getRouteStops(curr);
@@ -45993,7 +45993,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             toll_cost: stopToll,
             toll_subtitle: stopTollObj ? stopTollObj.subtitle : route.toll_subtitle,
             total_cost: total_cost,
-            final_soc: Math.round((curr.soc - (destLegPerStation[curr.stationIdx >= 0 ? curr.stationIdx : 0].kwh / 85.0)) * 100),
+            final_soc: Math.round((curr.soc - (leg_to_dest_kwh / 85.0)) * 100),
             stops: finalStops,
             memberships: {
               ea: {
@@ -46188,7 +46188,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
               if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
-                const built = buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins);
+                const built = buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins, leg_to_dest_kwh);
                 fastestCandObj = built;
                 T_fastest = built.total_time;
                 C_at_fastest = built.total_cost;
@@ -46359,8 +46359,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         // Phase 1B: Cost-Prioritized Extremes Discovery with Optimistic Member Rates
         try {
-          const heap1B = new FastMinHeap((a, b) => a.f - b.f);
-          const initHCost = total_miles * 0.06;
+          const heap1B = new FastMinHeap((a, b) => (a.f !== b.f) ? (a.f - b.f) : (b.mile - a.mile));
+          const initHCost = 0.0;
           heap1B.push({
             stationIdx: -1,
             mile: 0.0,
@@ -46387,11 +46387,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           const best1B = new Array((routeStations.length + 1) << 1);
           let p1bIters = 0;
+          let phase1BProvenOptimal = false;
 
           while (heap1B.size() > 0 && ++p1bIters < 5000) {
             const curr = heap1B.pop();
 
             if (cheapestCandObj && curr.f >= cheapestCandObj.total_cost) {
+              phase1BProvenOptimal = true;
               break; // Proven optimal: all remaining heap nodes have f >= cheapestCandObj.total_cost!
             }
 
@@ -46424,7 +46426,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             if (canReachDest && final_soc >= (target_arrival_soc - 0.015) && leg_to_dest_mins <= max_mins) {
               if (curr.stopsCount === 0 || leg_to_dest_mins >= 30.0) {
-                const built = buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins);
+                const built = buildCompletedRoute(curr, leg_to_dest_hrs, leg_to_dest_mins, leg_to_dest_kwh);
                 if (!cheapestCandObj || built.total_cost < cheapestCandObj.total_cost) {
                   cheapestCandObj = built;
                   C_cheapest = built.total_cost;
@@ -46497,7 +46499,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   has_decamilla: true,
                   is_decamilla: true,
                   time: leg_total_hrs,
-                  f: (curr.opt_cost || 0.0) + (remMilesDecamilla * 0.06)
+                  f: (curr.opt_cost || 0.0)
                 });
                 continue;
               }
@@ -46534,13 +46536,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const arr_clock = departure_hours + curr.drive_hrs + curr.ch_hrs + total_leg_hrs;
 
               // Optimistic Member Rate
-              let opt_rate = st.on;
+              let opt_rate = resolveStationTariff(st, arr_clock, false).rate;
               if (isTeslaNetwork(st.network)) {
                 opt_rate = resolveStationTariff(st, arr_clock, true).rate;
               } else if (isGmDiscountEligible(st)) {
                 opt_rate = st.on * (1.0 - (st.gm_pct || 0.10));
               } else if (st.ea_pass) {
-                opt_rate = st.on * 0.75;
+                opt_rate = Math.min(opt_rate, st.on * 0.75);
               }
 
               const stLut = st._chargingLut || (st._chargingLut = getCumulativeChargingLUT(st.kw, (st._maxAmps || (st._maxAmps = getStationMaxAmps(st)))));
@@ -46601,20 +46603,24 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   has_decamilla: curr.has_decamilla || st.is_decamilla,
                   is_decamilla: Boolean(st.is_decamilla),
                   time: leg_total_hrs,
-                  f: leg_opt_cost + (remMiles * 0.06)
+                  f: leg_opt_cost
                 });
               }
             }
           }
           if (p1bIters >= 5000) {
             hitIterationCap1B = true;
+          } else if (cheapestCandObj) {
+            phase1BProvenOptimal = true;
           }
         } catch (e1b) {
           console.warn("Phase 1B error:", e1b);
         }
 
-        // Provable physical time envelope bound: no Pareto route takes > T(C*) + 21min safety margin while costing less than C*
-        const T_max = cheapestCandObj ? (cheapestCandObj.total_time + 0.35) : null;
+        // Provable physical time envelope bound: only sound when Phase 1B establishes cheapestCandObj is truly optimal
+        const T_max = (cheapestCandObj && !hitIterationCap1B && phase1BProvenOptimal)
+          ? (cheapestCandObj.total_time + 0.35)
+          : null;
 
         const queue = [{
 
@@ -46669,18 +46675,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const destFrontier = [];
         if (fastestCandObj) {
           destFrontier.push({
-            stops: fastestCandObj.cand.stops.map(s => s.name || (s.station ? s.station.name : '')),
             total_hours: fastestCandObj.total_time,
             total_cost: fastestCandObj.total_cost,
-            ...fastestCandObj.cand
+            cand: fastestCandObj.cand
           });
         }
         if (cheapestCandObj && cheapestCandObj !== fastestCandObj) {
           destFrontier.push({
-            stops: cheapestCandObj.cand.stops.map(s => s.name || (s.station ? s.station.name : '')),
             total_hours: cheapestCandObj.total_time,
             total_cost: cheapestCandObj.total_cost,
-            ...cheapestCandObj.cand
+            cand: cheapestCandObj.cand
           });
         }
 
@@ -47544,13 +47548,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
 
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
-              let opt_unit_rate = st.on;
+              let opt_unit_rate = resolveStationTariff(st, arrival_clock_decimal, false).rate;
               if (isTeslaNetwork(st.network)) {
                 opt_unit_rate = resolveStationTariff(st, arrival_clock_decimal, true).rate;
               } else if (isGmDiscountEligible(st)) {
                 opt_unit_rate = st.on * (1.0 - (st.gm_pct || 0.10));
               } else if (st.ea_pass) {
-                opt_unit_rate = st.on * 0.75;
+                opt_unit_rate = Math.min(opt_unit_rate, st.on * 0.75);
               }
               const leg_opt_cost = (curr.opt_cost || 0.0) + (ch.added_kwh * opt_unit_rate);
 
