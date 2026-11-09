@@ -117,8 +117,9 @@ async def benchmark_current_code():
                 st = await eval_js("document.getElementById('auditStatusText')?.innerText")
                 label = await eval_js("document.getElementById('calcProgressStageLabel')?.innerText")
                 pct = await eval_js("document.getElementById('calcProgressPct')?.innerText")
-                if sec % 5 == 0:
-                    print(f"[{sec}s] Status: {st} | Progress: {pct} - {label}")
+                if sec % 5 == 0 or st == "Error":
+                    err_msg = await eval_js("document.getElementById('auditLogSummary')?.innerText")
+                    print(f"[{sec}s] Status: {st} | Progress: {pct} - {label} | Err: {err_msg}")
                 if st in ("Optimization Complete", "No Routes Found"):
                     break
                 await asyncio.sleep(1.0)
