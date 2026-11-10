@@ -52417,7 +52417,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let maxExploredMile = 0.0;
         let iters = 0;
         let maxQueueLen = queue.length;
-        if (!payload._startTs) payload._startTs = performance.now();
+        const taskLocalStartTs = performance.now();
 
         while (queue.length > 0) {
           if (queue.length > maxQueueLen) maxQueueLen = queue.length;
@@ -52778,7 +52778,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           candidates.push(cand);
         }
 
-        const taskDurationMs = Math.round((performance.now() - (payload._startTs || performance.now())) * 10) / 10;
+        const taskDurationMs = Math.round((performance.now() - taskLocalStartTs) * 10) / 10;
         const taskStats = {
           taskIndex: payload.taskIndex,
           routeIndex: routeIndex,
@@ -52999,6 +52999,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const taskTimings = [];
         const poolStartTime = performance.now();
         const hasWorkers = (typeof Worker !== 'undefined');
+        let workersUsed = 1;
 
         if (hasWorkers) {
           const workerScript = generateStage1WorkerScript();
@@ -53006,6 +53007,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const workerUrl = URL.createObjectURL(workerBlob);
 
           const maxWorkers = Math.max(1, Math.min(totalTasks, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4));
+          workersUsed = maxWorkers;
           const activeWorkers = [];
           let aborted = false;
           let nextTaskIdx = 0;
@@ -53039,7 +53041,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                   const currentTask = allPayloads[nextTaskIdx++];
                   const tIdx = currentTask.taskIndex;
-                  currentTask._startTs = performance.now();
 
                   worker.onmessage = (e) => {
                     if (aborted) return;
@@ -53080,11 +53081,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             });
           } catch (err) {
             aborted = true;
+            workersUsed = 1;
             activeWorkers.forEach(w => { try { w.terminate(); } catch (_) {} });
             console.warn('Web Worker matrix execution failed, falling back to sequential main thread:', err);
             candidates.length = 0;
             for (let t = 0; t < totalTasks; t++) {
-              allPayloads[t]._startTs = performance.now();
               const res = executeCorridorTreeSearch(allPayloads[t], (pct, msg) => updateCalcProgress(pct, msg));
               const taskCand = (res && res.candidates) ? res.candidates : (Array.isArray(res) ? res : []);
               candidates.push(...taskCand);
@@ -53096,7 +53097,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
         } else {
           for (let t = 0; t < totalTasks; t++) {
-            allPayloads[t]._startTs = performance.now();
             const res = executeCorridorTreeSearch(allPayloads[t], (pct, msg) => updateCalcProgress(pct, msg));
             const taskCand = (res && res.candidates) ? res.candidates : (Array.isArray(res) ? res : []);
             candidates.push(...taskCand);
@@ -53107,7 +53107,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const validStats = taskStatsList.filter(Boolean);
         window.lastWorkerTelemetry = {
           total_tasks: totalTasks,
-          workers_used: hasWorkers ? Math.max(1, Math.min(totalTasks, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4)) : 1,
+          workers_used: workersUsed,
           total_duration_ms: Math.round((performance.now() - poolStartTime) * 10) / 10,
           tasks: validStats
         };
