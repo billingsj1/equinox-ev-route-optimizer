@@ -3033,7 +3033,9 @@
 
           stages: summary,
 
-          checkpoints: this.checkpoints
+          checkpoints: this.checkpoints,
+
+          worker_telemetry: window.lastWorkerTelemetry || null
 
         };
 
@@ -52414,8 +52416,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         let lastReportedPct = Math.floor(corridorStartPct);
         let maxExploredMile = 0.0;
         let iters = 0;
+        let maxQueueLen = queue.length;
+        const taskLocalStartTs = performance.now();
 
         while (queue.length > 0) {
+          if (queue.length > maxQueueLen) maxQueueLen = queue.length;
           const curr = queue.pop();
 
           iters++;
@@ -52773,7 +52778,22 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           candidates.push(cand);
         }
 
-        return candidates;
+        const taskDurationMs = Math.round((performance.now() - taskLocalStartTs) * 10) / 10;
+        const taskStats = {
+          taskIndex: payload.taskIndex,
+          routeIndex: routeIndex,
+          routeName: route.name || route.id || ('Route ' + (routeIndex + 1)),
+          sOffset: sOffset,
+          sCap: sCap,
+          stationsCount: routeStations.length,
+          totalMiles: Math.round(total_miles),
+          iters: iters,
+          maxQueueLen: maxQueueLen,
+          candidatesCount: candidates.length,
+          duration_ms: taskDurationMs
+        };
+
+        return { candidates, stats: taskStats };
       }
 
       function generateStage1WorkerScript() {
@@ -52797,12 +52817,14 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           self.onmessage = function(e) {
             if (e.data && e.data.type === 'start') {
               try {
-                const candidates = executeCorridorTreeSearch(e.data.payload, function(pct, msg, mileProgress) {
+                const searchRes = executeCorridorTreeSearch(e.data.payload, function(pct, msg, mileProgress) {
                   self.postMessage({ type: 'progress', pct: pct, msg: msg, mileProgress: mileProgress, routeIndex: e.data.payload.routeIndex });
                 });
-                self.postMessage({ type: 'done', candidates: candidates, routeIndex: e.data.payload.routeIndex });
+                const taskCandidates = (searchRes && searchRes.candidates) ? searchRes.candidates : (Array.isArray(searchRes) ? searchRes : []);
+                const taskStats = (searchRes && searchRes.stats) ? searchRes.stats : null;
+                self.postMessage({ type: 'done', candidates: taskCandidates, stats: taskStats, taskIndex: e.data.payload.taskIndex, routeIndex: e.data.payload.routeIndex });
               } catch (err) {
-                self.postMessage({ type: 'error', error: (err && err.message) || String(err), stack: (err && err.stack) || '', routeIndex: e.data.payload.routeIndex });
+                self.postMessage({ type: 'error', error: (err && err.message) || String(err), stack: (err && err.stack) || '', taskIndex: e.data.payload.taskIndex, routeIndex: e.data.payload.routeIndex });
               }
             }
           };
@@ -52973,7 +52995,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const totalTasks = allPayloads.length;
         if (totalTasks === 0) return candidates;
 
+        const taskStatsList = new Array(totalTasks);
+        const taskTimings = [];
+        const poolStartTime = performance.now();
         const hasWorkers = (typeof Worker !== 'undefined');
+        let workersUsed = 1;
 
         if (hasWorkers) {
           const workerScript = generateStage1WorkerScript();
@@ -52981,6 +53007,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const workerUrl = URL.createObjectURL(workerBlob);
 
           const maxWorkers = Math.max(1, Math.min(totalTasks, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4));
+          workersUsed = maxWorkers;
           const activeWorkers = [];
           let aborted = false;
           let nextTaskIdx = 0;
@@ -53028,6 +53055,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                       if (e.data.candidates && e.data.candidates.length > 0) {
                         candidates.push(...e.data.candidates);
                       }
+                      if (e.data.stats) {
+                        taskStatsList[tIdx] = e.data.stats;
+                      }
                       reportGlobalProgress();
                       runNextTask();
                     } else if (e.data && e.data.type === 'error') {
@@ -53051,12 +53081,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             });
           } catch (err) {
             aborted = true;
+            workersUsed = 1;
             activeWorkers.forEach(w => { try { w.terminate(); } catch (_) {} });
             console.warn('Web Worker matrix execution failed, falling back to sequential main thread:', err);
             candidates.length = 0;
             for (let t = 0; t < totalTasks; t++) {
               const res = executeCorridorTreeSearch(allPayloads[t], (pct, msg) => updateCalcProgress(pct, msg));
-              candidates.push(...res);
+              const taskCand = (res && res.candidates) ? res.candidates : (Array.isArray(res) ? res : []);
+              candidates.push(...taskCand);
+              if (res && res.stats) taskStatsList[t] = res.stats;
             }
           } finally {
             activeWorkers.forEach(w => { try { w.terminate(); } catch (_) {} });
@@ -53065,9 +53098,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         } else {
           for (let t = 0; t < totalTasks; t++) {
             const res = executeCorridorTreeSearch(allPayloads[t], (pct, msg) => updateCalcProgress(pct, msg));
-            candidates.push(...res);
+            const taskCand = (res && res.candidates) ? res.candidates : (Array.isArray(res) ? res : []);
+            candidates.push(...taskCand);
+            if (res && res.stats) taskStatsList[t] = res.stats;
           }
         }
+
+        const validStats = taskStatsList.filter(Boolean);
+        window.lastWorkerTelemetry = {
+          total_tasks: totalTasks,
+          workers_used: workersUsed,
+          total_duration_ms: Math.round((performance.now() - poolStartTime) * 10) / 10,
+          tasks: validStats
+        };
 
         return candidates;
       }
@@ -53101,6 +53144,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         });
       });
 
+      profiler.startStage("Payload Generation & Leg Physics");
       const allStage1Payloads = [];
       let globalTaskCount = 0;
       const totalEstimatedTasks = stage1Pairs.length * activeRoutesData.length;
@@ -53112,6 +53156,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       }
 
+      profiler.startStage("Forward State Tree (Multi-Worker Pool)");
       stage1_candidates = await runMatrixStateTreeSearch(allStage1Payloads);
 
       window.lastStage1Candidates = stage1_candidates;
@@ -53172,6 +53217,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
+      profiler.startStage("Pareto Frontier Filtering");
       updateCalcProgress(72, `Filtering ${stage1_candidates.length.toLocaleString()} Combinations into Pareto Frontier...`);
 
       await new Promise(r => setTimeout(r, 20));
@@ -53538,6 +53584,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       }
 
+      profiler.startStage("OSRM Geometry Verification");
       const osrmResponses = new Map();
 
       const seqEntries = Array.from(uniqueSequencesMap.entries());
@@ -54544,6 +54591,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       const totalPolishEvals = depHourOffsets.length * Math.max(1, combinedTop.length);
 
+      profiler.startStage("Schedule & Tariff Polishing");
       let evalsDone = 0;
 
       let lastPolishPct = 93;
@@ -59524,6 +59572,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         const decamillaDur = document.getElementById('decamillaStopDuration')?.value || "0";
 
+        const feeding_interval = parseFloat(document.getElementById('feedingInterval')?.value) || 0.0;
+
+        const feeding_duration = parseFloat(document.getElementById('feedingDuration')?.value) || 0.0;
+
         const trafficProfile = document.getElementById('trafficProfile')?.value || "typical";
 
         const preheated = document.getElementById('scheduledDeparturePreheat')?.checked ?? true;
@@ -59710,7 +59762,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           },
 
-          timing: timing,
+          timing: {
+            ...timing,
+            worker_telemetry: (timing && timing.worker_telemetry) || window.lastWorkerTelemetry || null
+          },
 
           winners: {
 
@@ -60035,7 +60090,17 @@ ${stopsList || '  (None - Non-stop)'}
 
 EXECUTION TIMINGS & BOTTLENECK PROFILING:
 
-  Total Elapsed Calculation Time: ${entry.timing?.total_sec != null ? `${entry.timing.total_sec}s (${entry.timing.total_ms} ms)` : 'N/A'}${entry.timing?.stages ? Object.entries(entry.timing.stages).map(([name, s]) => `\n  • ${name}: ${s.sec}s (${s.pct}%)`).join('') : ''}`;
+  Total Elapsed Calculation Time: ${entry.timing?.total_sec != null ? `${entry.timing.total_sec}s (${entry.timing.total_ms} ms)` : 'N/A'}${entry.timing?.stages ? Object.entries(entry.timing.stages).map(([name, s]) => `\n  • ${name}: ${s.sec}s (${s.pct}%)`).join('') : ''}${(() => {
+    const wt = entry.timing?.worker_telemetry;
+    if (!wt || !wt.tasks || wt.tasks.length === 0) return '';
+    let out = '\n\nWORKER TASK BREAKDOWN & TELEMETRY:';
+    out += `\n  • Parallel Pool: ${wt.workers_used || 1} concurrent workers across ${wt.total_tasks || wt.tasks.length} tasks (${((wt.total_duration_ms || 0)/1000).toFixed(2)}s wall-clock)`;
+    wt.tasks.forEach((t, idx) => {
+      const durSec = (t.duration_ms / 1000).toFixed(2);
+      out += `\n  • Task #${t.taskIndex != null ? (t.taskIndex + 1) : (idx + 1)} (${t.routeName || 'Corridor'} | +${t.sOffset} mph / ${t.sCap} cap | ${t.stationsCount} stns, ${t.totalMiles} mi): ${durSec}s (iters: ${t.iters.toLocaleString()}, combos: ${t.candidatesCount.toLocaleString()}, peak queue: ${t.maxQueueLen.toLocaleString()})`;
+    });
+    return out;
+  })()}`;
 
     }
 
