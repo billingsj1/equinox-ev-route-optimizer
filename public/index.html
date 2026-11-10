@@ -52874,7 +52874,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const isToOrFromDecamillaK = st.is_decamilla || routeStations[k].is_decamilla;
             const satisfiesMinMins = isToOrFromDecamillaK || (nextLegMins >= min_mins);
             if (satisfiesMinMins && nextLegMins <= max_mins) {
-              anchors.push(k);
+              const nextDetour = cData.stationDetours[k];
+              const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
+              const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 50.0) / 50.0;
+              if (exactTgtKRaw <= 0.90) anchors.push(exactTgtKRaw);
             }
           }
           downstreamAnchorTargets[j] = Array.from(new Set(anchors));
