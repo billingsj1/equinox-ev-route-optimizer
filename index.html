@@ -52387,7 +52387,31 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
-                function buildFullCandidateObj(curr, total_time, total_cost, leg_to_dest_hrs, leg_to_dest_mins, final_soc) {
+                        function resolveEffectiveStopRateAndBadge(station, arr_clock_dec, tesla_active, ea_active) {
+          if (isTeslaNetwork(station.network)) {
+            const tariff = resolveStationTariff(station, arr_clock_dec, tesla_active);
+            let badge = "";
+            if (tesla_active) {
+              const tLabel = tariff.label || "Member";
+              badge = (tLabel === "Member")
+                ? (has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)")
+                : (has_tesla_preowned ? `${tLabel} (Active)` : `${tLabel} (Auto-ROI)`);
+            } else {
+              badge = (tariff.label && tariff.label !== "Member") ? tariff.label : "";
+            }
+            return { rate: tariff.rate, badge: badge };
+          }
+          if (isGmDiscountEligible(station)) {
+            return { rate: station.on * (1.0 - (station.gm_pct || 0.10)), badge: "10% GM" };
+          }
+          if (station.ea_pass && ea_active) {
+            return { rate: station.on * 0.75, badge: has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)" };
+          }
+          const tariff = resolveStationTariff(station, arr_clock_dec, false);
+          return { rate: tariff.rate, badge: tariff.label || "" };
+        }
+
+        function buildFullCandidateObj(curr, total_time, total_cost, leg_to_dest_hrs, leg_to_dest_mins, final_soc) {
           const currStops = getRouteStops(curr);
           let ea_kwh = 0, ea_gross_savings = 0;
           let tesla_kwh = 0, tesla_gross_savings = 0;
@@ -52424,31 +52448,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const finalStops = currStops.map(sp => {
             cum_time_stops += sp.leg_drive_hrs;
             const arr_clock_dec = departure_hours + cum_time_stops;
-            let effective_rate = sp.station.on;
-            let badge = "";
-
-            if (isTeslaNetwork(sp.station.network)) {
-              const tariff = resolveStationTariff(sp.station, arr_clock_dec, tesla_active);
-              effective_rate = tariff.rate;
-              if (tesla_active) {
-                const tLabel = tariff.label || "Member";
-                badge = (tLabel === "Member")
-                  ? (has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)")
-                  : (has_tesla_preowned ? `${tLabel} (Active)` : `${tLabel} (Auto-ROI)`);
-              } else {
-                badge = (tariff.label && tariff.label !== "Member") ? tariff.label : "";
-              }
-            } else if (isGmDiscountEligible(sp.station)) {
-              effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
-              badge = "10% GM";
-            } else if (sp.station.ea_pass && ea_active) {
-              effective_rate *= 0.75;
-              badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
-            } else {
-              const tariff = resolveStationTariff(sp.station, arr_clock_dec, false);
-              effective_rate = tariff.rate;
-              badge = tariff.label || "";
-            }
+            const { rate: effective_rate, badge } = resolveEffectiveStopRateAndBadge(sp.station, arr_clock_dec, tesla_active, ea_active);
 
             const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
             discounted_ch_cost += stopCost;
@@ -52786,31 +52786,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                   const arr_clock_dec = departure_hours + cum_time_stops;
 
-                  let effective_rate = sp.station.on;
-
-
-
-                  if (isTeslaNetwork(sp.station.network)) {
-
-                    const tariff = resolveStationTariff(sp.station, arr_clock_dec, tesla_active);
-
-                    effective_rate = tariff.rate;
-
-                  } else if (isGmDiscountEligible(sp.station)) {
-
-                    effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
-
-                  } else if (sp.station.ea_pass && ea_active) {
-
-                    effective_rate *= 0.75;
-
-                  } else {
-
-                    const tariff = resolveStationTariff(sp.station, arr_clock_dec, false);
-
-                    effective_rate = tariff.rate;
-
-                  }
+                  const { rate: effective_rate } = resolveEffectiveStopRateAndBadge(sp.station, arr_clock_dec, tesla_active, ea_active);
 
 
 
