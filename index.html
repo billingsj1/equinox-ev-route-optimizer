@@ -52777,199 +52777,220 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       function generateStage1WorkerScript() {
-        return `
+        return 
           const CHARGING_LUT_CACHE = new Map();
-          ${getUltiumBmsPower.toString()}
-          ${getStationMaxAmps.toString()}
-          ${getCumulativeChargingLUT.toString()}
-          ${isTeslaNetwork.toString()}
-          ${isPilotStation.toString()}
-          ${parseTimeToDecimal.toString()}
-          ${isGmDiscountEligible.toString()}
-          ${resolveStationTariff.toString()}
-          ${resolveEffectiveStopRateAndBadge.toString()}
-          ${getAttainableStationKw.toString()}
-          ${isServicePlaza.toString()}
-          ${formatClockTime.toString()}
-          ${resolveCandidateToll.toString()}
-          ${executeCorridorTreeSearch.toString()}
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
 
           self.onmessage = function(e) {
             if (e.data && e.data.type === 'start') {
               try {
                 const candidates = executeCorridorTreeSearch(e.data.payload, function(pct, msg, mileProgress) {
-                  self.postMessage({ type: 'progress', pct: pct, msg: msg, mileProgress: mileProgress, routeIndex: e.data.payload.routeIndex });
+                  self.postMessage({
+                    type: 'progress',
+                    pct: pct,
+                    msg: msg,
+                    mileProgress: mileProgress,
+                    taskIndex: e.data.payload.taskIndex,
+                    routeIndex: e.data.payload.routeIndex
+                  });
                 });
-                self.postMessage({ type: 'done', candidates: candidates, routeIndex: e.data.payload.routeIndex });
+                self.postMessage({
+                  type: 'done',
+                  candidates: candidates,
+                  taskIndex: e.data.payload.taskIndex,
+                  routeIndex: e.data.payload.routeIndex
+                });
               } catch (err) {
-                self.postMessage({ type: 'error', error: (err && err.message) || String(err), stack: (err && err.stack) || '', routeIndex: e.data.payload.routeIndex });
+                self.postMessage({
+                  type: 'error',
+                  error: (err && err.message) || String(err),
+                  stack: (err && err.stack) || '',
+                  taskIndex: e.data.payload.taskIndex,
+                  routeIndex: e.data.payload.routeIndex
+                });
               }
             }
           };
-        `;
+        ;
       }
 
-      async function runStage1Search(min_mins, max_mins, timeAgnosticBaseline = false, sOffset = speed_offset, sCap = max_cap, pairIndex = 0, totalPairs = 1) {
-        const payloads = [];
+      function buildStage1Payload(rIdx, sOffset, sCap, taskIdx, totalTasks, min_mins, max_mins, timeAgnosticBaseline) {
+        const route = activeRoutesData[rIdx];
+        const cData = corridorStationData[rIdx];
+        const routeStations = cData.routeStations;
+        const total_miles = cData.total_miles;
 
-        for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
-          const route = activeRoutesData[rIdx];
-          const cData = corridorStationData[rIdx];
-          const routeStations = cData.routeStations;
-          const total_miles = cData.total_miles;
+        const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+        const destLegPerStation = new Array(routeStations.length);
+        const startToStationLegs = new Array(routeStations.length);
+        const stationToStationLegs = [];
 
-          const startToDestLeg = simulateLegFromSteps(route.steps, 0.0, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-          const destLegPerStation = new Array(routeStations.length);
-          const startToStationLegs = new Array(routeStations.length);
-          const stationToStationLegs = [];
-
-          for (let j = 0; j < routeStations.length; j++) {
-            const st = routeStations[j];
-            startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-            destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-          }
-
-          for (let i = 0; i < routeStations.length; i++) {
-            stationToStationLegs[i] = new Array(routeStations.length);
-            for (let j = i + 1; j < routeStations.length; j++) {
-              const isToOrFromDecamilla = routeStations[i].is_decamilla || routeStations[j].is_decamilla;
-              const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
-              if (routeStations[j].mile > routeStations[i].mile + minGapMiles) {
-                stationToStationLegs[i][j] = simulateLegFromSteps(route.steps, routeStations[i].mile, routeStations[j].mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
-              }
-            }
-          }
-
-          const downstreamAnchorTargets = new Array(routeStations.length);
-          for (let j = 0; j < routeStations.length; j++) {
-            const st = routeStations[j];
-            const anchors = [];
-            for (let k = j + 1; k < routeStations.length; k++) {
-              const nextLegSim = stationToStationLegs[j][k];
-              if (!nextLegSim) continue;
-              const nextLegMins = nextLegSim.hours * 60.0;
-              const isToOrFromDecamillaK = st.is_decamilla || routeStations[k].is_decamilla;
-              const satisfiesMinMins = isToOrFromDecamillaK || (nextLegMins >= min_mins);
-              if (satisfiesMinMins && nextLegMins <= max_mins) {
-                const nextDetour = cData.stationDetours[k];
-                const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
-                const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 50.0) / 50.0;
-                if (exactTgtKRaw <= 0.90) anchors.push(exactTgtKRaw);
-              }
-            }
-            downstreamAnchorTargets[j] = Array.from(new Set(anchors));
-          }
-
-          const validSuccessors = new Array(routeStations.length + 1);
-          const originSuccs = [];
-          for (let j = 0; j < routeStations.length; j++) {
-            const legSim = startToStationLegs[j];
-            if (!legSim) continue;
-            const legMins = legSim.hours * 60.0;
-            const isToDecamilla = routeStations[j].is_decamilla;
-            const satisfiesMinMins = isToDecamilla || (legMins >= min_mins);
-            if (satisfiesMinMins && legMins <= max_mins) {
-              originSuccs.push(j);
-            }
-          }
-          validSuccessors[0] = originSuccs;
-
-          for (let fromIdx = 0; fromIdx < routeStations.length; fromIdx++) {
-            const succs = [];
-            const fromSt = routeStations[fromIdx];
-            for (let j = fromIdx + 1; j < routeStations.length; j++) {
-              const nextSt = routeStations[j];
-              const isToOrFromDecamilla = fromSt.is_decamilla || nextSt.is_decamilla;
-              const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
-              if (nextSt.mile <= fromSt.mile + minGapMiles) continue;
-              const legSim = stationToStationLegs[fromIdx] ? stationToStationLegs[fromIdx][j] : null;
-              if (!legSim) continue;
-              const legMins = legSim.hours * 60.0;
-              const satisfiesMinMins = isToOrFromDecamilla || (legMins >= min_mins);
-              if (satisfiesMinMins && legMins <= max_mins) {
-                succs.push(j);
-              }
-            }
-            validSuccessors[fromIdx + 1] = succs;
-          }
-
-          const maxEnvelopeRate = new Float64Array(routeStations.length);
-          const maxEnvelopeKw = new Float64Array(routeStations.length);
-          for (let j = 0; j < routeStations.length; j++) {
-            const fromMile = routeStations[j].mile;
-            let maxRate = 0.0;
-            let maxKw = 0.0;
-            for (let k = j + 1; k < routeStations.length; k++) {
-              const stK = routeStations[k];
-              if (stK.mile > fromMile + 290.0) break;
-              const { rate: rK } = resolveEffectiveStopRateAndBadge(stK, departure_hours + 4.0, has_tesla_preowned, has_ea_preowned, has_tesla_preowned, has_ea_preowned);
-              if (rK > maxRate) maxRate = rK;
-              const attainableKw = getAttainableStationKw(stK);
-              if (attainableKw > maxKw) maxKw = attainableKw;
-            }
-            maxEnvelopeRate[j] = maxRate;
-            maxEnvelopeKw[j] = maxKw;
-          }
-
-          const ambTemp0 = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
-            ? window.activeWeatherReport.summary.avg_temp_f
-            : temp_f;
-          const initialPackTemp = isPreheated ? Math.max(48.0, ambTemp0) : ambTemp0;
-          const coldCabinWarmupKwh = (!isPreheated && ambTemp0 < 70.0)
-            ? Math.min(1.6, Math.max(0.0, 0.035 * (70.0 - ambTemp0)))
-            : 0.0;
-
-          payloads.push({
-            routeIndex: rIdx,
-            totalRoutes: activeRoutesData.length,
-            pairIndex: pairIndex,
-            totalPairs: totalPairs,
-            route: route,
-            cData: cData,
-            params: {
-              min_mins,
-              max_mins,
-              sOffset,
-              sCap,
-              start_soc,
-              min_buffer_soc,
-              target_arrival_soc,
-              min_charge_added: min_charge_pct,
-              departure_hours,
-              has_tesla_preowned,
-              has_ea_preowned,
-              has_ezpass: (typeof document !== 'undefined' && document.getElementById('hasEzPass')?.checked) ?? true,
-              tollOptions: {
-                departureTime: (typeof document !== 'undefined' && document.getElementById('departureTime')?.value) || '08:00',
-                departureDate: (typeof document !== 'undefined' && document.getElementById('departureDate')?.value) || '',
-                hasNjGreenPass: (typeof document !== 'undefined' && document.getElementById('hasNjGreenPass')?.checked) ?? true
-              },
-              isPreheated,
-              payload_lbs,
-              temp_f,
-              wind_speed,
-              wind_dir,
-              road_cond,
-              timeAgnosticBaseline,
-              feedingInterval: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingInterval')?.value)) || 0.0,
-              feedingDuration: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingDuration')?.value)) || 0.0
-            },
-            precomputed: {
-              startToDestLeg,
-              destLegPerStation,
-              startToStationLegs,
-              stationToStationLegs,
-              downstreamAnchorTargets,
-              validSuccessors,
-              maxEnvelopeRate,
-              maxEnvelopeKw,
-              coldCabinWarmupKwh,
-              initialPackTemp
-            }
-          });
+        for (let j = 0; j < routeStations.length; j++) {
+          const st = routeStations[j];
+          startToStationLegs[j] = simulateLegFromSteps(route.steps, 0.0, st.mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+          destLegPerStation[j] = simulateLegFromSteps(route.steps, st.mile, total_miles, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
         }
 
+        for (let i = 0; i < routeStations.length; i++) {
+          stationToStationLegs[i] = new Array(routeStations.length);
+          for (let j = i + 1; j < routeStations.length; j++) {
+            const isToOrFromDecamilla = routeStations[i].is_decamilla || routeStations[j].is_decamilla;
+            const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
+            if (routeStations[j].mile > routeStations[i].mile + minGapMiles) {
+              stationToStationLegs[i][j] = simulateLegFromSteps(route.steps, routeStations[i].mile, routeStations[j].mile, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, sOffset, sCap, route.speed_mph);
+            }
+          }
+        }
+
+        const downstreamAnchorTargets = new Array(routeStations.length);
+        for (let j = 0; j < routeStations.length; j++) {
+          const st = routeStations[j];
+          const anchors = [];
+          for (let k = j + 1; k < routeStations.length; k++) {
+            const nextLegSim = stationToStationLegs[j][k];
+            if (!nextLegSim) continue;
+            const nextLegMins = nextLegSim.hours * 60.0;
+            const isToOrFromDecamillaK = st.is_decamilla || routeStations[k].is_decamilla;
+            const satisfiesMinMins = isToOrFromDecamillaK || (nextLegMins >= min_mins);
+            if (satisfiesMinMins && nextLegMins <= max_mins) {
+              const nextDetour = cData.stationDetours[k];
+              const totalEnergyToK = nextLegSim.kwh + (nextDetour.kwh / 2.0);
+              const exactTgtKRaw = Math.ceil(((totalEnergyToK / 85.0) + min_buffer_soc) * 50.0) / 50.0;
+              if (exactTgtKRaw <= 0.90) anchors.push(exactTgtKRaw);
+            }
+          }
+          downstreamAnchorTargets[j] = Array.from(new Set(anchors));
+        }
+
+        const validSuccessors = new Array(routeStations.length + 1);
+        const originSuccs = [];
+        for (let j = 0; j < routeStations.length; j++) {
+          const legSim = startToStationLegs[j];
+          if (!legSim) continue;
+          const legMins = legSim.hours * 60.0;
+          const isToDecamilla = routeStations[j].is_decamilla;
+          const satisfiesMinMins = isToDecamilla || (legMins >= min_mins);
+          if (satisfiesMinMins && legMins <= max_mins) {
+            originSuccs.push(j);
+          }
+        }
+        validSuccessors[0] = originSuccs;
+
+        for (let fromIdx = 0; fromIdx < routeStations.length; fromIdx++) {
+          const succs = [];
+          const fromSt = routeStations[fromIdx];
+          for (let j = fromIdx + 1; j < routeStations.length; j++) {
+            const nextSt = routeStations[j];
+            const isToOrFromDecamilla = fromSt.is_decamilla || nextSt.is_decamilla;
+            const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
+            if (nextSt.mile <= fromSt.mile + minGapMiles) continue;
+            const legSim = stationToStationLegs[fromIdx] ? stationToStationLegs[fromIdx][j] : null;
+            if (!legSim) continue;
+            const legMins = legSim.hours * 60.0;
+            const satisfiesMinMins = isToOrFromDecamilla || (legMins >= min_mins);
+            if (satisfiesMinMins && legMins <= max_mins) {
+              succs.push(j);
+            }
+          }
+          validSuccessors[fromIdx + 1] = succs;
+        }
+
+        const maxEnvelopeRate = new Float64Array(routeStations.length);
+        const maxEnvelopeKw = new Float64Array(routeStations.length);
+        for (let j = 0; j < routeStations.length; j++) {
+          const fromMile = routeStations[j].mile;
+          let maxRate = 0.0;
+          let maxKw = 0.0;
+          for (let k = j + 1; k < routeStations.length; k++) {
+            const stK = routeStations[k];
+            if (stK.mile > fromMile + 290.0) break;
+            const { rate: rK } = resolveEffectiveStopRateAndBadge(stK, departure_hours + 4.0, has_tesla_preowned, has_ea_preowned, has_tesla_preowned, has_ea_preowned);
+            if (rK > maxRate) maxRate = rK;
+            const attainableKw = getAttainableStationKw(stK);
+            if (attainableKw > maxKw) maxKw = attainableKw;
+          }
+          maxEnvelopeRate[j] = maxRate;
+          maxEnvelopeKw[j] = maxKw;
+        }
+
+        const ambTemp0 = (window.activeWeatherReport && window.activeWeatherReport.summary && window.activeWeatherReport.summary.avg_temp_f != null)
+          ? window.activeWeatherReport.summary.avg_temp_f
+          : temp_f;
+        const initialPackTemp = isPreheated ? Math.max(48.0, ambTemp0) : ambTemp0;
+        const coldCabinWarmupKwh = (!isPreheated && ambTemp0 < 70.0)
+          ? Math.min(1.6, Math.max(0.0, 0.035 * (70.0 - ambTemp0)))
+          : 0.0;
+
+        return {
+          taskIndex: taskIdx,
+          totalTasks: totalTasks,
+          routeIndex: rIdx,
+          totalRoutes: activeRoutesData.length,
+          pairIndex: 0,
+          totalPairs: 1,
+          route: route,
+          cData: cData,
+          params: {
+            min_mins,
+            max_mins,
+            sOffset,
+            sCap,
+            start_soc,
+            min_buffer_soc,
+            target_arrival_soc,
+            min_charge_added: min_charge_pct,
+            departure_hours,
+            has_tesla_preowned,
+            has_ea_preowned,
+            has_ezpass: (typeof document !== 'undefined' && document.getElementById('hasEzPass')?.checked) ?? true,
+            tollOptions: {
+              departureTime: (typeof document !== 'undefined' && document.getElementById('departureTime')?.value) || '08:00',
+              departureDate: (typeof document !== 'undefined' && document.getElementById('departureDate')?.value) || '',
+              hasNjGreenPass: (typeof document !== 'undefined' && document.getElementById('hasNjGreenPass')?.checked) ?? true
+            },
+            isPreheated,
+            payload_lbs,
+            temp_f,
+            wind_speed,
+            wind_dir,
+            road_cond,
+            timeAgnosticBaseline,
+            feedingInterval: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingInterval')?.value)) || 0.0,
+            feedingDuration: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingDuration')?.value)) || 0.0
+          },
+          precomputed: {
+            startToDestLeg,
+            destLegPerStation,
+            startToStationLegs,
+            stationToStationLegs,
+            downstreamAnchorTargets,
+            validSuccessors,
+            maxEnvelopeRate,
+            maxEnvelopeKw,
+            coldCabinWarmupKwh,
+            initialPackTemp
+          }
+        };
+      }
+
+      async function runMatrixStateTreeSearch(allPayloads) {
         const candidates = [];
+        const totalTasks = allPayloads.length;
+        if (totalTasks === 0) return candidates;
+
         const hasWorkers = (typeof Worker !== 'undefined');
 
         if (hasWorkers) {
@@ -52977,63 +52998,91 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
           const workerUrl = URL.createObjectURL(workerBlob);
 
-          var activeWorkers = [];
-          var aborted = false;
-          try {
-            const routeProgress = new Float64Array(payloads.length);
+          const maxWorkers = Math.max(1, Math.min(totalTasks, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4));
+          const activeWorkers = [];
+          let aborted = false;
+          let nextTaskIdx = 0;
+          let completedTasks = 0;
 
-            const workerPromises = payloads.map((payload, rIdx) => {
-              return new Promise((resolve, reject) => {
+          const taskProgress = new Float64Array(totalTasks);
+
+          function reportGlobalProgress() {
+            let sumProg = 0.0;
+            for (let t = 0; t < totalTasks; t++) sumProg += taskProgress[t];
+            const avgProg = sumProg / totalTasks;
+            const globalPct = Math.floor(5 + avgProg * 75);
+            const activeCount = Math.min(maxWorkers, totalTasks - completedTasks);
+            updateCalcProgress(globalPct, 'Exploring State Tree: ' + activeCount + ' workers active (' + completedTasks + '/' + totalTasks + ' completed)...');
+          }
+
+          try {
+            await new Promise((resolve, reject) => {
+              for (let wId = 0; wId < maxWorkers; wId++) {
                 const worker = new Worker(workerUrl);
                 activeWorkers.push(worker);
-                worker.onmessage = (e) => {
-                  if (aborted) return;
-                  if (e.data && e.data.type === 'progress') {
-                    if (e.data.mileProgress != null) {
-                      routeProgress[rIdx] = e.data.mileProgress;
-                    }
-                    let sumProgress = 0.0;
-                    for (let p = 0; p < routeProgress.length; p++) sumProgress += routeProgress[p];
-                    const avgProgress = sumProgress / routeProgress.length;
-                    const globalPct = Math.floor(5 + ((pairIndex + avgProgress) / totalPairs) * 75);
-                    updateCalcProgress(globalPct, e.data.msg);
-                  } else if (e.data && e.data.type === 'done') {
-                    worker.terminate();
-                    resolve(e.data.candidates || []);
-                  } else if (e.data && e.data.type === 'error') {
-                    worker.terminate();
-                    console.error(`Worker error on route ${rIdx}:`, e.data.error, e.data.stack);
-                    reject(new Error(e.data.error || 'Worker error'));
-                  }
-                };
-                worker.onerror = (err) => {
-                  worker.terminate();
-                  console.error(`Worker onerror on route ${rIdx}:`, err);
-                  reject(err);
-                };
-                worker.postMessage({ type: 'start', payload: payload });
-              });
-            });
 
-            const routeResults = await Promise.all(workerPromises);
-            for (let i = 0; i < routeResults.length; i++) {
-              candidates.push(...routeResults[i]);
-            }
+                function runNextTask() {
+                  if (aborted) return;
+                  if (nextTaskIdx >= totalTasks) {
+                    if (completedTasks >= totalTasks) {
+                      resolve();
+                    }
+                    return;
+                  }
+
+                  const currentTask = allPayloads[nextTaskIdx++];
+                  const tIdx = currentTask.taskIndex;
+
+                  worker.onmessage = (e) => {
+                    if (aborted) return;
+                    if (e.data && e.data.type === 'progress') {
+                      if (e.data.mileProgress != null) {
+                        taskProgress[tIdx] = e.data.mileProgress;
+                      }
+                      reportGlobalProgress();
+                    } else if (e.data && e.data.type === 'done') {
+                      taskProgress[tIdx] = 1.0;
+                      completedTasks++;
+                      if (e.data.candidates && e.data.candidates.length > 0) {
+                        candidates.push(...e.data.candidates);
+                      }
+                      reportGlobalProgress();
+                      runNextTask();
+                    } else if (e.data && e.data.type === 'error') {
+                      aborted = true;
+                      console.error('Worker error on task ' + tIdx + ':', e.data.error, e.data.stack);
+                      reject(new Error(e.data.error || 'Worker error'));
+                    }
+                  };
+
+                  worker.onerror = (err) => {
+                    aborted = true;
+                    console.error('Worker onerror on task ' + tIdx + ':', err);
+                    reject(err);
+                  };
+
+                  worker.postMessage({ type: 'start', payload: currentTask });
+                }
+
+                runNextTask();
+              }
+            });
           } catch (err) {
             aborted = true;
             activeWorkers.forEach(w => { try { w.terminate(); } catch (_) {} });
-            console.warn("Web Worker execution failed, falling back to sequential main thread:", err);
+            console.warn('Web Worker matrix execution failed, falling back to sequential main thread:', err);
             candidates.length = 0;
-            for (let rIdx = 0; rIdx < payloads.length; rIdx++) {
-              const res = executeCorridorTreeSearch(payloads[rIdx], (pct, msg) => updateCalcProgress(pct, msg));
+            for (let t = 0; t < totalTasks; t++) {
+              const res = executeCorridorTreeSearch(allPayloads[t], (pct, msg) => updateCalcProgress(pct, msg));
               candidates.push(...res);
             }
           } finally {
+            activeWorkers.forEach(w => { try { w.terminate(); } catch (_) {} });
             URL.revokeObjectURL(workerUrl);
           }
         } else {
-          for (let rIdx = 0; rIdx < payloads.length; rIdx++) {
-            const res = executeCorridorTreeSearch(payloads[rIdx], (pct, msg) => updateCalcProgress(pct, msg));
+          for (let t = 0; t < totalTasks; t++) {
+            const res = executeCorridorTreeSearch(allPayloads[t], (pct, msg) => updateCalcProgress(pct, msg));
             candidates.push(...res);
           }
         }
@@ -53045,65 +53094,43 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       let stage1_candidates = [];
 
-
-
       // Determine maximum posted speed limit across all active corridor steps dynamically
 
       const maxRoutePostedSpeed = activeRoutesData.reduce((maxSpd, r) => {
-
         if (r.steps && r.steps.length > 0) {
-
           const rMax = r.steps.reduce((m, s) => Math.max(m, s.posted_speed || 0), 0);
-
           return Math.max(maxSpd, rMax);
-
         }
-
         return Math.max(maxSpd, r.speed_mph || 70.0);
-
       }, 0) || 70.0;
 
-
-
       const stage1Pairs = [];
-
       const seenSpeedConfigs = new Set();
-
       speedOffsetsToTry.forEach(off => {
-
         speedCapsToTry.forEach(cap => {
-
           // If the maximum cruising speed attainable on any step (maxRoutePostedSpeed + off)
-
           // never reaches the cap, cruising speed across all steps is identical.
-
           const effectiveTopSpeed = Math.min(maxRoutePostedSpeed + off, cap);
-
-          const configKey = `${off}_${effectiveTopSpeed}`;
-
+          const configKey = String(off) + '_' + String(effectiveTopSpeed);
           if (!seenSpeedConfigs.has(configKey)) {
-
             seenSpeedConfigs.add(configKey);
-
             stage1Pairs.push({ off, cap });
-
           }
-
         });
-
       });
 
-
-
+      const allStage1Payloads = [];
+      let globalTaskCount = 0;
+      const totalEstimatedTasks = stage1Pairs.length * activeRoutesData.length;
       for (let pIdx = 0; pIdx < stage1Pairs.length; pIdx++) {
-
         const pair = stage1Pairs[pIdx];
-
-        const res = await runStage1Search(min_leg_mins, max_leg_mins, false, pair.off, pair.cap, pIdx, stage1Pairs.length);
-
-        stage1_candidates = stage1_candidates.concat(res);
-
+        for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
+          const payload = buildStage1Payload(rIdx, pair.off, pair.cap, globalTaskCount++, totalEstimatedTasks, min_leg_mins, max_leg_mins, false);
+          allStage1Payloads.push(payload);
+        }
       }
+
+      stage1_candidates = await runMatrixStateTreeSearch(allStage1Payloads);
 
       window.lastStage1Candidates = stage1_candidates;
 
