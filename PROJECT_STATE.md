@@ -153,10 +153,10 @@ This section documents all major features, refactors, and data integrations star
 
 The following is a comprehensive list of all active bugs, edge cases, and regressions across the system:
 
-1. **Automated TomTom Campaign Schedule Restored:**
-   - Day 3 harvest and integration was completed, verified across all test gates, and pushed directly to main (7dad9c4).
-   - Day 4 implementation plan was approved clean (.scratch/plans/2026-11-08_tomtom_campaign_day4.md).
-   - Standing background cron (	ask-613) is active at 7:05 PM EST (5 19 * * *) daily to execute Day 4 and subsequent harvest stages after daily quota resets.
+1. **Automated TomTom Campaign Status (Days 1–4 Completed):**
+   - Days 1, 2, 3, and 4 harvests and integrations are 100% completed and deployed to main (Day 4: 81450af).
+   - 63 total corridors now possess full 48-slot half-hour empirical velocity matrices.
+   - Standing background daemon cron (	ask-613) remains active at 7:05 PM EST (5 19 * * *) daily to automatically run Day 5 tomorrow after the quota reset.
 2. **Google API Credit Budget Limit:**
    - **Fixed \$300.00 total for 90 days** (\$110.30 spent; **\$189.70 remaining**). Strict guardrails must prevent any ad-hoc or unapproved batch scripts from calling Google Routes, Places, or Elevation APIs without explicit accounting.
 3. **Local Profile vs. Test Harness Station Evaporation:**
