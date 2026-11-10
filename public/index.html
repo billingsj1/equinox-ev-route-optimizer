@@ -52438,6 +52438,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             }
           }
 
+          // Physical Lower-Bound Pruning against completed destination routes
+          if (curr.stationIdx >= 0 && destFrontier.length > 0) {
+            const minRemainingDriveHrs = destLegPerStation[curr.stationIdx] ? destLegPerStation[curr.stationIdx].hours : 0.0;
+            const lbTotalTime = curr.drive_hrs + curr.ch_hrs + minRemainingDriveHrs;
+            const lbTotalCost = curr.ch_cost || 0.0;
+
+            let dominatedByDest = false;
+            const EPS = 1e-9;
+            for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
+              const df = destFrontier[dIdx];
+              // If feeding schedule is active, destination route must also have valid feeding
+              const satisfiesFeedingPrune = !isFeedingActive || ((df.total_hours - initialLastFeedTimeHrs) <= (feedingInterval + 1e-4));
+              if (df.total_hours <= (lbTotalTime + EPS) && df.total_cost <= (lbTotalCost + EPS) && satisfiesFeedingPrune) {
+                dominatedByDest = true;
+                break;
+              }
+            }
+            if (dominatedByDest) continue;
+          }
+
           // Branch 1: Try reaching the destination
           if (curr.stationIdx >= 0 && curr.stopsCount > 0) {
             const destLegSim = destLegPerStation[curr.stationIdx];
