@@ -48223,7 +48223,7 @@
 
     window.calculateAccurateRouteToll = calculateAccurateRouteToll;
 
-    function resolveCandidateToll(origGeo, destGeo, routeObj, candidateStops = [], has_ezpass = null) {
+    function resolveCandidateToll(origGeo, destGeo, routeObj, candidateStops = [], has_ezpass = null, tollOptions = null) {
 
       if (has_ezpass === null) {
 
@@ -48561,13 +48561,13 @@
 
         if (usesNJTurnpike) {
 
-          const depVal = (typeof document !== 'undefined' && document.getElementById('departureTime')?.value) || "08:00";
+          const depVal = (tollOptions && tollOptions.departureTime) || ((typeof document !== 'undefined' && document.getElementById('departureTime')?.value) || "08:00");
 
           const depParts = depVal.split(':');
 
           const depHour = parseFloat(depParts[0]) + (parseFloat(depParts[1] || 0) / 60.0);
 
-          const depDateVal = (typeof document !== 'undefined' && document.getElementById('departureDate')?.value) || "";
+          const depDateVal = (tollOptions && tollOptions.departureDate) || ((typeof document !== 'undefined' && document.getElementById('departureDate')?.value) || "");
 
           let dow = 1;
 
@@ -48583,7 +48583,7 @@
 
           const isNjPeak = isWeekend || (depHour >= 7.0 && depHour < 9.0) || (depHour >= 16.5 && depHour < 18.5);
 
-          const has_green_pass = (typeof document !== 'undefined' && document.getElementById('hasNjGreenPass')?.checked) ?? true;
+          const has_green_pass = (tollOptions && tollOptions.hasNjGreenPass != null) ? tollOptions.hasNjGreenPass : ((typeof document !== 'undefined' && document.getElementById('hasNjGreenPass')?.checked) ?? true);
 
 
 
@@ -52111,6 +52111,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           has_tesla_preowned,
           has_ea_preowned,
           has_ezpass,
+          tollOptions,
           isPreheated,
           payload_lbs,
           temp_f,
@@ -52279,7 +52280,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const membership_fees = Math.round((ea_fee + tesla_fee) * 100) / 100;
           const total_detour_miles = Math.round(finalStops.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
           const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
-          const stopTollObj = resolveCandidateToll(route.origin, route.destination, route, currStops, has_ezpass);
+          const stopTollObj = resolveCandidateToll(route.origin, route.destination, route, currStops, has_ezpass, tollOptions);
           const stopToll = (stopTollObj && stopTollObj.total != null) ? stopTollObj.total : route.toll;
           const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
           const final_leg_miles = curr.stopsCount === 0 ? total_miles : Math.round((total_miles - routeStations[curr.stationIdx].mile) * 10) / 10;
@@ -52391,7 +52392,18 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 const total_leg_energy = destLegSim.kwh + halfDetourBackEnergy;
                 const total_leg_hrs = destLegSim.hours + halfDetourBackHours;
                 const total_leg_mins = total_leg_hrs * 60.0;
-                const final_soc = curr.soc - (total_leg_energy / 85.0);
+                let leg_to_dest_kwh = total_leg_energy;
+              if (curr.stationIdx >= 0 && curr.pack_temp_f > temp_f && temp_f < 55.0) {
+                const arrAmb = temp_f;
+                const arrPack = arrAmb + (curr.pack_temp_f - arrAmb) * Math.exp(-total_leg_hrs / 3.5);
+                const avgPack = (curr.pack_temp_f + arrPack) / 2.0;
+                if (avgPack > 55.0) {
+                  const deltaT = Math.min(avgPack, 75.0) - Math.max(temp_f, 32.0);
+                  const efficiencyGain = Math.min(0.06, deltaT * 0.0018);
+                  leg_to_dest_kwh *= (1.0 - efficiencyGain);
+                }
+              }
+              const final_soc = curr.soc - (leg_to_dest_kwh / 85.0);
 
                 const reachesDest = (final_soc >= (target_arrival_soc - 0.015)) && (final_soc >= min_buffer_soc);
                 const passesDecamilla = (decamillaIdx < 0) || curr.has_decamilla;
@@ -52467,7 +52479,27 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const halfDetourDestEnergy = nextDetour.kwh / 2.0;
             const halfDetourDestHours = (nextDetour.detour_mins / 2.0) / 60.0;
 
-            const total_leg_energy = main_leg_energy + halfDetourOriginEnergy + halfDetourDestEnergy + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
+            const legAmbientTemp = stationAmbientTemps[j] || temp_f;
+          let precond_kwh = 0.0;
+          const currentPackTemp = (curr.pack_temp_f != null) ? curr.pack_temp_f : legAmbientTemp;
+          const arrPackTemp = legAmbientTemp + (currentPackTemp - legAmbientTemp) * Math.exp(-main_leg_hrs / 3.5);
+          if (arrPackTemp < 55.0) {
+            precond_kwh = Math.min(2.5, Math.max(0.5, 0.05 * (55.0 - arrPackTemp)));
+          } else if (arrPackTemp < 70.0) {
+            precond_kwh = Math.min(0.6, Math.max(0.0, 0.025 * (70.0 - arrPackTemp)));
+          }
+
+          let adjusted_leg_kwh = main_leg_energy;
+          if (curr.stationIdx >= 0 && curr.pack_temp_f > legAmbientTemp && legAmbientTemp < 55.0) {
+            const avgPack = (curr.pack_temp_f + arrPackTemp) / 2.0;
+            if (avgPack > 55.0) {
+              const deltaT = Math.min(avgPack, 75.0) - Math.max(legAmbientTemp, 32.0);
+              const efficiencyGain = Math.min(0.06, deltaT * 0.0018);
+              adjusted_leg_kwh *= (1.0 - efficiencyGain);
+            }
+          }
+
+          const total_leg_energy = adjusted_leg_kwh + halfDetourOriginEnergy + halfDetourDestEnergy + precond_kwh + (curr.stationIdx === -1 ? coldCabinWarmupKwh : 0.0);
             const total_leg_hrs = main_leg_hrs + halfDetourOriginHours + halfDetourDestHours;
             const total_leg_mins = total_leg_hrs * 60.0;
 
@@ -52529,7 +52561,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 if (minT !== Infinity) rate = minT;
               }
             } else {
-              const { rate: dynRate } = resolveEffectiveStopRateAndBadge(st, arr_clock_hours, false, false, has_tesla_preowned, has_ea_preowned);
+              const { rate: dynRate } = resolveEffectiveStopRateAndBadge(st, arr_clock_hours, has_tesla_preowned, has_ea_preowned, has_tesla_preowned, has_ea_preowned);
               rate = dynRate;
             }
 
@@ -52836,6 +52868,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               has_tesla_preowned,
               has_ea_preowned,
               has_ezpass: (typeof document !== 'undefined' && document.getElementById('hasEzPass')?.checked) ?? true,
+              tollOptions: {
+                departureTime: (typeof document !== 'undefined' && document.getElementById('departureTime')?.value) || '08:00',
+                departureDate: (typeof document !== 'undefined' && document.getElementById('departureDate')?.value) || '',
+                hasNjGreenPass: (typeof document !== 'undefined' && document.getElementById('hasNjGreenPass')?.checked) ?? true
+              },
               isPreheated,
               payload_lbs,
               temp_f,
@@ -52867,13 +52904,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
           const workerUrl = URL.createObjectURL(workerBlob);
 
+          var activeWorkers = [];
+          var aborted = false;
           try {
             const routeProgress = new Float64Array(payloads.length);
 
             const workerPromises = payloads.map((payload, rIdx) => {
               return new Promise((resolve, reject) => {
                 const worker = new Worker(workerUrl);
+                activeWorkers.push(worker);
                 worker.onmessage = (e) => {
+                  if (aborted) return;
                   if (e.data && e.data.type === 'progress') {
                     if (e.data.mileProgress != null) {
                       routeProgress[rIdx] = e.data.mileProgress;
@@ -52906,6 +52947,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               candidates.push(...routeResults[i]);
             }
           } catch (err) {
+            aborted = true;
+            activeWorkers.forEach(w => { try { w.terminate(); } catch (_) {} });
             console.warn("Web Worker execution failed, falling back to sequential main thread:", err);
             candidates.length = 0;
             for (let rIdx = 0; rIdx < payloads.length; rIdx++) {
