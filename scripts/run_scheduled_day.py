@@ -144,7 +144,7 @@ def run_day(day_num, skip_harvest=False):
     state = load_state()
     if day_num not in state.get("completed_days", []):
         state.setdefault("completed_days", []).append(day_num)
-    state["next_day"] = day_num + 1 if day_num < 6 else 7
+    state["next_day"] = day_num + 1 if day_num < 7 else 8
     state["last_run"] = datetime.datetime.now().isoformat()
     save_state(state)
 
@@ -153,15 +153,15 @@ def run_day(day_num, skip_harvest=False):
 
 def main():
     parser = argparse.ArgumentParser(description="Run scheduled TomTom harvest & integration")
-    parser.add_argument("--day", type=int, default=0, help="Day number (3..6). If 0, auto-detects next day.")
+    parser.add_argument("--day", type=int, default=0, help="Day number (3..7). If 0, auto-detects next day.")
     parser.add_argument("--skip-harvest", action="store_true", help="Skip harvester execution if harvest data is already present.")
     args = parser.parse_args()
 
     state = load_state()
     day_to_run = args.day if args.day > 0 else state.get("next_day", 3)
 
-    if day_to_run > 6:
-        log("All days of the TomTom campaign (Days 1..6) have completed!")
+    if day_to_run > 7:
+        log("All days of the TomTom campaign (Days 1..7) have completed!")
         print("All campaign days completed.")
         return
 
