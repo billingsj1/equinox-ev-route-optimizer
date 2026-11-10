@@ -52198,10 +52198,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const candidates = [];
 
         // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active and feeding interval is satisfied)
+        const canTestZeroStop = (payload.includeZeroStop !== false);
         const rem_soc0 = start_soc - (startToDestLeg.kwh / 85.0);
         const dur_mins0 = startToDestLeg.hours * 60.0;
         const passesFeeding0 = !isFeedingActive || ((startToDestLeg.hours - initialLastFeedTimeHrs) <= (feedingInterval + 1e-4));
-        if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins && passesFeeding0) {
+        if (canTestZeroStop && !decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins && passesFeeding0) {
           candidates.push({
             route: route,
             speed_offset: sOffset,
@@ -52509,7 +52510,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           if (curr.stopsCount >= 8) continue;
 
           // Branch 2: Explore reachable next charging stations
-          const candidateIndices = validSuccessors[curr.stationIdx + 1] || [];
+          const candidateIndices = (curr.stationIdx === -1 && Array.isArray(payload.firstStopIndices))
+            ? payload.firstStopIndices
+            : (validSuccessors[curr.stationIdx + 1] || []);
           for (let cIdx = 0; cIdx < candidateIndices.length; cIdx++) {
             const j = candidateIndices[cIdx];
             const st = routeStations[j];
@@ -52783,6 +52786,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           taskIndex: payload.taskIndex,
           routeIndex: routeIndex,
           routeName: route.name || route.id || ('Route ' + (routeIndex + 1)),
+          taskLabel: payload.taskLabel || (route.name || route.id || ('Route ' + (routeIndex + 1))),
           sOffset: sOffset,
           sCap: sCap,
           stationsCount: routeStations.length,
@@ -52831,7 +52835,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         `;
       }
 
-      function buildStage1Payload(rIdx, sOffset, sCap, taskIdx, totalTasks, min_mins, max_mins, timeAgnosticBaseline) {
+      function buildStage1Payloads(rIdx, sOffset, sCap, min_mins, max_mins, timeAgnosticBaseline) {
         const route = activeRoutesData[rIdx];
         const cData = corridorStationData[rIdx];
         const routeStations = cData.routeStations;
@@ -52938,58 +52942,91 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           ? Math.min(1.6, Math.max(0.0, 0.035 * (70.0 - ambTemp0)))
           : 0.0;
 
-        return {
-          taskIndex: taskIdx,
-          totalTasks: totalTasks,
-          routeIndex: rIdx,
-          totalRoutes: activeRoutesData.length,
-          pairIndex: 0,
-          totalPairs: 1,
-          route: route,
-          cData: cData,
-          params: {
-            min_mins,
-            max_mins,
-            sOffset,
-            sCap,
-            start_soc,
-            min_buffer_soc,
-            target_arrival_soc,
-            min_charge_added: min_charge_pct,
-            departure_hours,
-            has_tesla_preowned,
-            has_ea_preowned,
-            has_ezpass: (typeof document !== 'undefined' && document.getElementById('hasEzPass')?.checked) ?? true,
-            tollOptions: {
-              departureTime: (typeof document !== 'undefined' && document.getElementById('departureTime')?.value) || '08:00',
-              departureDate: (typeof document !== 'undefined' && document.getElementById('departureDate')?.value) || '',
-              hasNjGreenPass: (typeof document !== 'undefined' && document.getElementById('hasNjGreenPass')?.checked) ?? true
-            },
-            isPreheated,
-            payload_lbs,
-            temp_f,
-            wind_speed,
-            wind_dir,
-            road_cond,
-            timeAgnosticBaseline,
-            feedingInterval: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingInterval')?.value)) || 0.0,
-            feedingDuration: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingDuration')?.value)) || 0.0
-          },
-          precomputed: {
-            startToDestLeg,
-            destLegPerStation,
-            startToStationLegs,
-            stationToStationLegs,
-            downstreamAnchorTargets,
-            validSuccessors,
-            maxEnvelopeRate,
-            maxEnvelopeKw,
-            coldCabinWarmupKwh,
-            initialPackTemp
-          }
+        const sharedPrecomputed = {
+          startToDestLeg,
+          destLegPerStation,
+          startToStationLegs,
+          stationToStationLegs,
+          downstreamAnchorTargets,
+          validSuccessors,
+          maxEnvelopeRate,
+          maxEnvelopeKw,
+          coldCabinWarmupKwh,
+          initialPackTemp
         };
-      }
 
+        const sharedParams = {
+          min_mins,
+          max_mins,
+          sOffset,
+          sCap,
+          start_soc,
+          min_buffer_soc,
+          target_arrival_soc,
+          min_charge_added: min_charge_pct,
+          departure_hours,
+          has_tesla_preowned,
+          has_ea_preowned,
+          has_ezpass: (typeof document !== 'undefined' && document.getElementById('hasEzPass')?.checked) ?? true,
+          tollOptions: {
+            departureTime: (typeof document !== 'undefined' && document.getElementById('departureTime')?.value) || '08:00',
+            departureDate: (typeof document !== 'undefined' && document.getElementById('departureDate')?.value) || '',
+            hasNjGreenPass: (typeof document !== 'undefined' && document.getElementById('hasNjGreenPass')?.checked) ?? true
+          },
+          isPreheated,
+          payload_lbs,
+          temp_f,
+          wind_speed,
+          wind_dir,
+          road_cond,
+          timeAgnosticBaseline,
+          feedingInterval: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingInterval')?.value)) || 0.0,
+          feedingDuration: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingDuration')?.value)) || 0.0
+        };
+
+        const payloads = [];
+        const baseRouteName = route.name || route.id || ('Route ' + (rIdx + 1));
+
+        if (originSuccs.length === 0) {
+          payloads.push({
+            routeIndex: rIdx,
+            totalRoutes: activeRoutesData.length,
+            route: route,
+            cData: cData,
+            params: sharedParams,
+            precomputed: sharedPrecomputed,
+            firstStopIndices: [],
+            includeZeroStop: true,
+            taskLabel: baseRouteName + ' (Direct 0-Stop Only)'
+          });
+          return payloads;
+        }
+
+        // Chunk initial stops into small slices so each slice is an independent task
+        const CHUNK_SIZE = Math.max(1, Math.min(2, Math.ceil(originSuccs.length / 8)));
+        for (let i = 0; i < originSuccs.length; i += CHUNK_SIZE) {
+          const chunk = originSuccs.slice(i, i + CHUNK_SIZE);
+          const stopNames = chunk.map(stIdx => {
+            const stObj = routeStations[stIdx];
+            return stObj ? (stObj.name ? stObj.name.split('-')[0].trim() : `Stn #${stIdx}`) : `#${stIdx}`;
+          }).join(', ');
+          const isFirstSlice = (i === 0);
+
+          payloads.push({
+            routeIndex: rIdx,
+            totalRoutes: activeRoutesData.length,
+            route: route,
+            cData: cData,
+            params: sharedParams,
+            precomputed: sharedPrecomputed,
+            firstStopIndices: chunk,
+            includeZeroStop: isFirstSlice,
+            taskLabel: `${baseRouteName} [Stop 1: ${stopNames}]`
+          });
+        }
+
+        return payloads;
+      }
       async function runMatrixStateTreeSearch(allPayloads) {
         const candidates = [];
         const totalTasks = allPayloads.length;
@@ -53006,7 +53043,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
           const workerUrl = URL.createObjectURL(workerBlob);
 
-          const maxWorkers = Math.max(1, Math.min(totalTasks, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 4));
+          const availableCores = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 8;
+          const maxWorkers = Math.max(1, Math.min(totalTasks, Math.min(16, availableCores)));
           workersUsed = maxWorkers;
           const activeWorkers = [];
           let aborted = false;
@@ -53146,15 +53184,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       profiler.startStage("Payload Generation & Leg Physics");
       const allStage1Payloads = [];
-      let globalTaskCount = 0;
-      const totalEstimatedTasks = stage1Pairs.length * activeRoutesData.length;
       for (let pIdx = 0; pIdx < stage1Pairs.length; pIdx++) {
         const pair = stage1Pairs[pIdx];
         for (let rIdx = 0; rIdx < activeRoutesData.length; rIdx++) {
-          const payload = buildStage1Payload(rIdx, pair.off, pair.cap, globalTaskCount++, totalEstimatedTasks, min_leg_mins, max_leg_mins, false);
-          allStage1Payloads.push(payload);
+          const slicedPayloads = buildStage1Payloads(rIdx, pair.off, pair.cap, min_leg_mins, max_leg_mins, false);
+          allStage1Payloads.push(...slicedPayloads);
         }
       }
+
+      // Assign global task indices and totals
+      allStage1Payloads.forEach((p, idx) => {
+        p.taskIndex = idx;
+        p.totalTasks = allStage1Payloads.length;
+      });
 
       profiler.startStage("Forward State Tree (Multi-Worker Pool)");
       stage1_candidates = await runMatrixStateTreeSearch(allStage1Payloads);
@@ -60097,7 +60139,8 @@ EXECUTION TIMINGS & BOTTLENECK PROFILING:
     out += `\n  • Parallel Pool: ${wt.workers_used || 1} concurrent workers across ${wt.total_tasks || wt.tasks.length} tasks (${((wt.total_duration_ms || 0)/1000).toFixed(2)}s wall-clock)`;
     wt.tasks.forEach((t, idx) => {
       const durSec = (t.duration_ms / 1000).toFixed(2);
-      out += `\n  • Task #${t.taskIndex != null ? (t.taskIndex + 1) : (idx + 1)} (${t.routeName || 'Corridor'} | +${t.sOffset} mph / ${t.sCap} cap | ${t.stationsCount} stns, ${t.totalMiles} mi): ${durSec}s (iters: ${t.iters.toLocaleString()}, combos: ${t.candidatesCount.toLocaleString()}, peak queue: ${t.maxQueueLen.toLocaleString()})`;
+      const label = t.taskLabel || t.routeName || 'Corridor';
+      out += `\n  • Task #${t.taskIndex != null ? (t.taskIndex + 1) : (idx + 1)} (${label} | +${t.sOffset} mph / ${t.sCap} cap | ${t.stationsCount} stns, ${t.totalMiles} mi): ${durSec}s (iters: ${t.iters.toLocaleString()}, combos: ${t.candidatesCount.toLocaleString()}, peak queue: ${t.maxQueueLen.toLocaleString()})`;
     });
     return out;
   })()}`;
