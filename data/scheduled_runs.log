@@ -169,3 +169,5 @@ AssertionError: Test 3: Optimize Speed Offset + Cap failed to complete in 180s
 [2026-11-09 19:30:41] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
 [2026-11-09 19:30:42] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
 [2026-11-09 19:30:45] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-09 19:40:12] Running Simulation History Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_sim_history.py
+[2026-11-09 19:40:26] Running Git Add: git add data/tomtom_corridors_168h.json public/data/tomtom_corridors_168h.json index.html public/index.html ui/templates/index.html tests/test_full_suite.py scripts/run_scheduled_day.py data/scheduled_runs_state.json data/scheduled_runs.log
