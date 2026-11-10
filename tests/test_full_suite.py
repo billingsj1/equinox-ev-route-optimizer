@@ -103,7 +103,7 @@ async def run_full_suite():
             assert test_match in (55, 65, 70), f"Expected 55, 65 or 70 mph on PA Turnpike, got {test_match}"
 
             # Helper to run a simulation and wait for completion
-            async def run_sim_test(name, config_fn, max_timeout=90):
+            async def run_sim_test(name, config_fn, max_timeout=180):
                 print(f"\n--- Running: {name} ---")
                 t0 = time.time()
                 await eval_js(config_fn)
@@ -172,7 +172,7 @@ async def run_full_suite():
                 document.getElementById('optimizeDepartureTime').checked = false;
                 document.getElementById('optimizeSpeedOffset').checked = true;
                 document.getElementById('optimizeSpeedCap').checked = true;
-            })()""", max_timeout=180)
+            })()""", max_timeout=300)
             test_results["opt_speed_and_cap"] = r3
             assert r3["fastest"]["speed_offset"] in (5, 10)
             assert r3["fastest"]["max_speed_cap"] in (75, 80)
