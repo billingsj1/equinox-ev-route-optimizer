@@ -758,58 +758,73 @@
 
 
 
-        <!-- Max Duration Tolerance Cap (Relocated into Settings) -->
+        <!-- Route Settings: Max Duration Cap & Asher Feeding Schedule -->
 
-        <div class="pt-2 border-t border-slate-800/80">
+        <div class="pt-2 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
 
-          <div class="flex justify-between items-center text-xs text-slate-300 mb-1">
-
-            <span class="flex items-center gap-1">
-
-              <span>Max Duration Penalty Cap</span>
-
-              <span class="relative group cursor-pointer inline-flex items-center">
-
-                <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
-
-                <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-60 p-2.5 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
-
-                  Excludes charging routes taking &gt; this % longer than the fastest route (e.g. +8% allows up to ~45 min detour for lower charging cost).
-
+          <!-- Left Column: Max Duration Penalty Cap -->
+          <div>
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-1">
+              <span class="flex items-center gap-1">
+                <span>Max Duration Penalty Cap</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
+                  <span class="pointer-events-none absolute left-0 bottom-full mb-1.5 hidden group-hover:block w-60 p-2.5 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
+                    Excludes charging routes taking &gt; this % longer than the fastest route (e.g. +8% allows up to ~45 min detour for lower charging cost).
+                  </span>
                 </span>
-
               </span>
-
-            </span>
-
-            <span id="maxTimePenaltyBadge" class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950/70 border border-cyan-800/60 px-1.5 py-0.5 rounded">+8% max</span>
-
+              <span id="maxTimePenaltyBadge" class="text-cyan-400 font-mono font-bold text-xs bg-cyan-950/70 border border-cyan-800/60 px-1.5 py-0.5 rounded">+8% max</span>
+            </div>
+            <input type="range" id="maxDurationToleranceSlider" min="0" max="30" step="1" value="8" 
+              class="w-full accent-blue-500 h-1 bg-slate-800 rounded cursor-pointer"
+              oninput="onDurationToleranceChange(this.value)">
+            <span id="maxTolerancePctText" class="hidden">+8%</span>
+            <div class="mt-1.5 flex items-center justify-between text-[11px]">
+              <label for="excludeCheapestFromCap" class="flex items-center gap-1.5 cursor-pointer select-none text-slate-300 hover:text-white">
+                <input type="checkbox" id="excludeCheapestFromCap" 
+                  class="w-3.5 h-3.5 rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer accent-amber-500"
+                  onchange="onExcludeCheapestToggle(this.checked)">
+                <span>Exclude cheapest route from cap</span>
+              </label>
+              <span class="text-[10px] text-amber-400/90 font-mono" id="cheapestCapStatus">Cap applies</span>
+            </div>
           </div>
 
-          <input type="range" id="maxDurationToleranceSlider" min="0" max="30" step="1" value="8" 
-
-            class="w-full accent-blue-500 h-1 bg-slate-800 rounded cursor-pointer"
-
-            oninput="onDurationToleranceChange(this.value)">
-
-          <span id="maxTolerancePctText" class="hidden">+8%</span>
-
-          <div class="mt-1.5 flex items-center justify-between text-[11px]">
-
-            <label for="excludeCheapestFromCap" class="flex items-center gap-1.5 cursor-pointer select-none text-slate-300 hover:text-white">
-
-              <input type="checkbox" id="excludeCheapestFromCap" 
-
-                class="w-3.5 h-3.5 rounded bg-slate-800 border-slate-700 text-amber-500 focus:ring-0 cursor-pointer accent-amber-500"
-
-                onchange="onExcludeCheapestToggle(this.checked)">
-
-              <span>Exclude cheapest route from cap</span>
-
-            </label>
-
-            <span class="text-[10px] text-amber-400/90 font-mono" id="cheapestCapStatus">Cap applies</span>
-
+          <!-- Right Column: Feeding Schedule (Asher) -->
+          <div class="bg-slate-950/40 p-2 rounded-lg border border-slate-800/60">
+            <div class="flex justify-between items-center text-xs text-slate-300 mb-1.5">
+              <span class="flex items-center gap-1">
+                <span class="font-medium text-slate-200">Feeding Schedule (Asher)</span>
+                <span class="relative group cursor-pointer inline-flex items-center">
+                  <i data-lucide="info" class="w-3 h-3 text-slate-400 hover:text-cyan-400 transition"></i>
+                  <span class="pointer-events-none absolute right-0 md:left-0 bottom-full mb-1.5 hidden group-hover:block w-64 p-2.5 bg-slate-900 border border-slate-700 rounded text-[11px] text-slate-300 shadow-xl z-50 leading-snug">
+                    Requires at least one charging stop lasting &ge; Feeding Duration every Feeding Interval hours. First feeding is assumed Duration minutes before departure.
+                  </span>
+                </span>
+              </span>
+              <span id="feedingScheduleBadge" class="text-slate-400 font-mono text-[11px] bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded">Disabled</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Interval</label>
+                <div class="flex items-center gap-1">
+                  <input type="number" id="feedingInterval" min="0" max="24" step="0.25" value="0" placeholder="0" 
+                    class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 text-right focus:outline-none focus:border-cyan-500 font-mono"
+                    oninput="updateFeedingBadge()">
+                  <span class="text-xs text-slate-400">hrs</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 mb-0.5">Duration</label>
+                <div class="flex items-center gap-1">
+                  <input type="number" id="feedingDuration" min="0" max="180" step="5" value="0" placeholder="0" 
+                    class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 text-right focus:outline-none focus:border-cyan-500 font-mono"
+                    oninput="updateFeedingBadge()">
+                  <span class="text-xs text-slate-400">min</span>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -51079,6 +51094,24 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
     }
 
+    function updateFeedingBadge() {
+      const interval = parseFloat(document.getElementById('feedingInterval')?.value) || 0;
+      const duration = parseFloat(document.getElementById('feedingDuration')?.value) || 0;
+      const badge = document.getElementById('feedingScheduleBadge');
+      if (!badge) return;
+      if (interval > 0 && duration > 0) {
+        badge.textContent = `Every ${interval}h (≥${duration}m)`;
+        badge.className = "text-emerald-400 font-mono font-bold text-[11px] bg-emerald-950/70 border border-emerald-800/60 px-1.5 py-0.5 rounded";
+      } else {
+        badge.textContent = "Disabled";
+        badge.className = "text-slate-400 font-mono text-[11px] bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded";
+      }
+      try {
+        localStorage.setItem('equinox_feeding_interval', interval);
+        localStorage.setItem('equinox_feeding_duration', duration);
+      } catch (e) {}
+    }
+
 
 
     function initDurationTolerance() {
@@ -51116,6 +51149,16 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           }
 
         }
+
+        const savedInterval = localStorage.getItem('equinox_feeding_interval');
+        const intervalInput = document.getElementById('feedingInterval');
+        if (savedInterval !== null && intervalInput) intervalInput.value = savedInterval;
+
+        const savedDuration = localStorage.getItem('equinox_feeding_duration');
+        const durationInput = document.getElementById('feedingDuration');
+        if (savedDuration !== null && durationInput) durationInput.value = savedDuration;
+
+        updateFeedingBadge();
 
       } catch (e) {}
 
@@ -51670,6 +51713,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       const max_leg_mins = parseFloat(document.getElementById('maxTimeSlider') ? document.getElementById('maxTimeSlider').value : 130);
 
       const min_charge_pct = parseFloat(document.getElementById('minChargePctSlider') ? document.getElementById('minChargePctSlider').value : 10) / 100.0;
+      const feeding_interval = parseFloat(document.getElementById('feedingInterval')?.value) || 0.0;
+      const feeding_duration = parseFloat(document.getElementById('feedingDuration')?.value) || 0.0;
 
       const has_ea_preowned = (typeof document !== 'undefined' && document.getElementById('hasEaPass')) ? document.getElementById('hasEaPass').checked : false;
 
@@ -52118,8 +52163,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           wind_speed,
           wind_dir,
           road_cond,
-                    timeAgnosticBaseline
+          timeAgnosticBaseline,
+          feedingInterval = 0.0,
+          feedingDuration = 0.0
         } = params;
+
+        const isFeedingActive = (feedingInterval > 0 && feedingDuration > 0);
+        const initialLastFeedTimeHrs = isFeedingActive ? -(feedingDuration / 60.0) : 0.0;
 
         const {
           routeStations,
@@ -52145,10 +52195,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         const candidates = [];
 
-        // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active)
+        // 1. Direct 0-Stop Candidate Check (Permitted only if NO mandatory DeCamilla stop is active and feeding interval is satisfied)
         const rem_soc0 = start_soc - (startToDestLeg.kwh / 85.0);
         const dur_mins0 = startToDestLeg.hours * 60.0;
-        if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins) {
+        const passesFeeding0 = !isFeedingActive || ((startToDestLeg.hours - initialLastFeedTimeHrs) <= (feedingInterval + 1e-4));
+        if (!decamillaStationObj && rem_soc0 >= min_buffer_soc && rem_soc0 >= (target_arrival_soc - 0.015) && dur_mins0 <= max_mins && passesFeeding0) {
           candidates.push({
             route: route,
             speed_offset: sOffset,
@@ -52217,7 +52268,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               cost: Math.round(node.cost * 100) / 100,
               rate: node.rate,
               badge: node.is_decamilla ? "Free (Private L2)" : "",
-              is_decamilla: node.is_decamilla
+              is_decamilla: node.is_decamilla,
+              is_feeding: (isFeedingActive && node.stop_mins >= feedingDuration)
             };
           });
         }
@@ -52273,7 +52325,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               dep_clock: dep_clock,
               rate: effective_rate,
               cost: stopCost,
-              badge: badge
+              badge: badge,
+              is_feeding: sp.is_feeding
             };
           });
 
@@ -52346,7 +52399,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           stopsCount: 0,
           parent: null,
           has_decamilla: false,
-          is_decamilla: false
+          is_decamilla: false,
+          last_feed_time_hrs: initialLastFeedTimeHrs
         }];
 
         const paretoFrontier = {};
@@ -52407,8 +52461,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                 const reachesDest = (final_soc >= (target_arrival_soc - 0.015)) && (final_soc >= min_buffer_soc);
                 const passesDecamilla = (decamillaIdx < 0) || curr.has_decamilla;
+                const destArrElapsedHrs = curr.drive_hrs + total_leg_hrs + curr.ch_hrs;
+                const passesFeedingDest = !isFeedingActive || ((destArrElapsedHrs - curr.last_feed_time_hrs) <= (feedingInterval + 1e-4));
 
-                if (reachesDest && passesDecamilla) {
+                if (reachesDest && passesDecamilla && passesFeedingDest) {
                   const total_time = curr.drive_hrs + total_leg_hrs + curr.ch_hrs;
                   const total_cost = (curr.ch_cost || 0.0);
 
@@ -52511,6 +52567,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             const arr_soc = rem_soc;
             const arr_clock_hours = departure_hours + curr.drive_hrs + total_leg_hrs + curr.ch_hrs;
+            const arr_elapsed_hrs = curr.drive_hrs + curr.ch_hrs + total_leg_hrs;
+
+            if (isFeedingActive && ((arr_elapsed_hrs - curr.last_feed_time_hrs) > (feedingInterval + 1e-4))) {
+              continue;
+            }
 
             const stAmbientTemp = stationAmbientTemps[j] || temp_f;
             const arrTemp = arr_soc < 0.10 ? Math.max(50.0, stAmbientTemp) : Math.max(curr.pack_temp_f, stAmbientTemp);
@@ -52523,6 +52584,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_ch_hrs = curr.ch_hrs + ch_hrs;
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0);
+              const isFeedStop = isFeedingActive && (stop_mins >= feedingDuration);
+              const next_feed_time_hrs = isFeedStop ? arr_elapsed_hrs : curr.last_feed_time_hrs;
 
               queue.push({
                 stationIdx: j,
@@ -52542,7 +52605,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 stopsCount: curr.stopsCount + 1,
                 parent: curr,
                 has_decamilla: true,
-                is_decamilla: true
+                is_decamilla: true,
+                last_feed_time_hrs: next_feed_time_hrs
               });
               continue;
             }
@@ -52606,12 +52670,12 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               if (aTgt >= min_target_allowed) addTarget(aTgt);
             }
 
-            // 4. Strict Transitive Dominance Policy:
+            // 4. Strict Transitive Dominance Policy & Feeding Constraints:
             const stAttainableKw = getAttainableStationKw(st);
             const isFasterThanEnvelope = (stAttainableKw > maxEnvelopeKw[j] + 2);
             const canSkipExpensiveAhead = (rate < maxEnvelopeRate[j] - 0.02) || st.is_decamilla;
 
-            if (isFasterThanEnvelope || canSkipExpensiveAhead) {
+            if (isFasterThanEnvelope || canSkipExpensiveAhead || isFeedingActive) {
               const startMilestone = Math.ceil(min_target_allowed * 20.0) / 20.0;
               for (let t = startMilestone; t <= 0.901; t += 0.05) {
                 if (t > min_target_allowed) addTarget(t);
@@ -52642,6 +52706,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0) + ch.cost;
 
+              const isFeedStop = isFeedingActive && (total_stop_mins >= feedingDuration);
+              const next_feed_time_hrs = isFeedStop ? arr_elapsed_hrs : curr.last_feed_time_hrs;
+
               const stateKey = (j << 1) | (curr.has_decamilla ? 1 : 0);
               let frontier = paretoFrontier[stateKey];
               if (!frontier) {
@@ -52650,11 +52717,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               const EPS_T = 1e-9;
               const EPS_C = 1e-9;
               const EPS_SOC = 1e-9;
+              const EPS_F = 1e-4;
 
               let dominated = false;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const prev = frontier[fIdx];
-                if (prev.t <= (leg_total_hrs + EPS_T) && prev.c <= (leg_total_cost + EPS_C) && prev.soc >= (target_soc - EPS_SOC)) {
+                const feedDominates = !isFeedingActive || (prev.f >= (next_feed_time_hrs - EPS_F));
+                if (prev.t <= (leg_total_hrs + EPS_T) && prev.c <= (leg_total_cost + EPS_C) && prev.soc >= (target_soc - EPS_SOC) && feedDominates) {
                   dominated = true;
                   break;
                 }
@@ -52664,12 +52733,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               let writeIdx = 0;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const p = frontier[fIdx];
-                if (!(leg_total_hrs <= (p.t + EPS_T) && leg_total_cost <= (p.c + EPS_C) && target_soc >= (p.soc - EPS_SOC))) {
+                const feedDominated = !isFeedingActive || (next_feed_time_hrs >= (p.f - EPS_F));
+                if (!(leg_total_hrs <= (p.t + EPS_T) && leg_total_cost <= (p.c + EPS_C) && target_soc >= (p.soc - EPS_SOC) && feedDominated)) {
                   frontier[writeIdx++] = p;
                 }
               }
               frontier.length = writeIdx;
-              frontier.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc });
+              frontier.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc, f: next_feed_time_hrs });
 
               const postChargePackTemp = Math.max(95.0, arrTemp);
               queue.push({
@@ -52690,7 +52760,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 stopsCount: curr.stopsCount + 1,
                 parent: curr,
                 has_decamilla: curr.has_decamilla,
-                is_decamilla: false
+                is_decamilla: false,
+                last_feed_time_hrs: next_feed_time_hrs
               });
             }
           }
@@ -52879,7 +52950,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               wind_speed,
               wind_dir,
               road_cond,
-                            timeAgnosticBaseline
+              timeAgnosticBaseline,
+              feedingInterval: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingInterval')?.value)) || 0.0,
+              feedingDuration: (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingDuration')?.value)) || 0.0
             },
             precomputed: {
               startToDestLeg,
@@ -54164,7 +54237,25 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         }
 
-
+        // Feeding schedule validation (Asher)
+        if (feeding_interval > 0 && feeding_duration > 0) {
+          let lastFeedStart = -(feeding_duration / 60.0);
+          for (let idx = 0; idx < rawStops.length; idx++) {
+            const sp = rawStops[idx];
+            const arrElapsed = sp.arr_clock_dec - depHours;
+            if (arrElapsed - lastFeedStart > (feeding_interval + 1e-4)) {
+              return null;
+            }
+            if (sp.mins >= feeding_duration) {
+              lastFeedStart = arrElapsed;
+              sp.is_feeding = true;
+            }
+          }
+          const destElapsed = total_drive_hrs + total_ch_hrs;
+          if (destElapsed - lastFeedStart > (feeding_interval + 1e-4)) {
+            return null;
+          }
+        }
 
         // Pass 1.5: Evaluate Membership ROI strictly on refined/trimmed energy
 
@@ -55544,7 +55635,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         const detourLabel = s.is_decamilla ? '+12.8 mi detour (Exit 236 &bull; US-15 S / Dillsburg)' : (s.is_plaza ? 'Turnpike Service Plaza (~2.8m loop)' : `+${s.detour_miles} mi exit detour (~${s.detour_mins}m)`);
 
-        const dwellBreakdown = s.is_decamilla ? 'Free L2 Charging' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}`;
+        const dwellBreakdown = s.is_decamilla ? 'Free L2 Charging' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}${s.is_feeding ? ' &bull; 🍼 Asher Feeding' : ''}`;
 
         const stopMarker = L.marker([s.station.lat, s.station.lon], { icon: stopIcon })
 
@@ -56039,6 +56130,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 <span>${s.mins} min</span>
 
                 <i data-lucide="clock" class="w-3 h-3 text-slate-400 group-hover:text-emerald-400 transition"></i>
+
+                ${s.is_feeding ? `<span class="inline-flex items-center gap-0.5 text-[9px] text-pink-300 bg-pink-950/70 px-1 py-0.5 rounded border border-pink-700/60 font-sans font-semibold" title="Qualifies as breastfeeding stop for Asher (≥${s.mins} min)">🍼 Asher Feeding</span>` : ''}
 
               </div>
 
@@ -59566,6 +59659,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             decamilla_duration: decamillaDur,
 
+            feeding_interval: feeding_interval,
+
+            feeding_duration: feeding_duration,
+
             traffic_profile: trafficProfile,
 
             preheated: preheated,
@@ -59903,6 +60000,7 @@ INPUTS:
   Leg Durations: Min ${inp.min_time_mins}m, Max ${inp.max_time_mins}m
 
   DeCamilla Stop: ${inp.decamilla_duration} hrs
+  Feeding Schedule: ${inp.feeding_interval > 0 ? `Every ${inp.feeding_interval}h (≥${inp.feeding_duration}m)` : 'Disabled'}
 
   Environment: Payload ${inp.payload_lbs} lbs, Temp ${inp.temp_f}°F, Road ${inp.road_cond}, Wind ${inp.wind_mph} mph @ ${inp.wind_deg}°
 
