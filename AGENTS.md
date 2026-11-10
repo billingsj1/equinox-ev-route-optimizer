@@ -283,6 +283,9 @@ Whenever a plan is requested, execute this automated review sequence within your
      - Address each flagged blocker or fidelity concern.
      - Update both `.scratch/plan.md` and `.scratch/plans/YYYY-MM-DD_<feature_name>.md`.
      - Re-run `python scripts/review_plan.py` until it exits 0 (`Status: APPROVED`).
+   - **Rate Limit & API Exhaustion Circuit Breaker:**
+     - If `scripts/review_plan.py` fails due to API limits (e.g. `429 RESOURCE_EXHAUSTED`), **NEVER** bypass the review gate, assume approval, or proceed to implementation.
+     - Schedule a timer via `schedule` to re-run the review once the limit resets, or halt and notify the user with the pending blockers. Implementation is strictly blocked until an explicit `Status: APPROVED` (exit code 0) is achieved.
    - **If exit code is 0 and contains `Status: APPROVED`:**
      - **Mandatory Review Impact Summary:** Include an explicit summary in your response:
        ```markdown
