@@ -52777,54 +52777,36 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       }
 
       function generateStage1WorkerScript() {
-        return 
+        return `
           const CHARGING_LUT_CACHE = new Map();
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
-          
+          ${getUltiumBmsPower.toString()}
+          ${getStationMaxAmps.toString()}
+          ${getCumulativeChargingLUT.toString()}
+          ${isTeslaNetwork.toString()}
+          ${isPilotStation.toString()}
+          ${parseTimeToDecimal.toString()}
+          ${isGmDiscountEligible.toString()}
+          ${resolveStationTariff.toString()}
+          ${resolveEffectiveStopRateAndBadge.toString()}
+          ${getAttainableStationKw.toString()}
+          ${isServicePlaza.toString()}
+          ${formatClockTime.toString()}
+          ${resolveCandidateToll.toString()}
+          ${executeCorridorTreeSearch.toString()}
 
           self.onmessage = function(e) {
             if (e.data && e.data.type === 'start') {
               try {
                 const candidates = executeCorridorTreeSearch(e.data.payload, function(pct, msg, mileProgress) {
-                  self.postMessage({
-                    type: 'progress',
-                    pct: pct,
-                    msg: msg,
-                    mileProgress: mileProgress,
-                    taskIndex: e.data.payload.taskIndex,
-                    routeIndex: e.data.payload.routeIndex
-                  });
+                  self.postMessage({ type: 'progress', pct: pct, msg: msg, mileProgress: mileProgress, routeIndex: e.data.payload.routeIndex });
                 });
-                self.postMessage({
-                  type: 'done',
-                  candidates: candidates,
-                  taskIndex: e.data.payload.taskIndex,
-                  routeIndex: e.data.payload.routeIndex
-                });
+                self.postMessage({ type: 'done', candidates: candidates, routeIndex: e.data.payload.routeIndex });
               } catch (err) {
-                self.postMessage({
-                  type: 'error',
-                  error: (err && err.message) || String(err),
-                  stack: (err && err.stack) || '',
-                  taskIndex: e.data.payload.taskIndex,
-                  routeIndex: e.data.payload.routeIndex
-                });
+                self.postMessage({ type: 'error', error: (err && err.message) || String(err), stack: (err && err.stack) || '', routeIndex: e.data.payload.routeIndex });
               }
             }
           };
-        ;
+        `;
       }
 
       function buildStage1Payload(rIdx, sOffset, sCap, taskIdx, totalTasks, min_mins, max_mins, timeAgnosticBaseline) {
