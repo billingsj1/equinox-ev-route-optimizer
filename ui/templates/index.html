@@ -52387,6 +52387,165 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
+                        function resolveEffectiveStopRateAndBadge(station, arr_clock_dec, tesla_active, ea_active) {
+          if (isTeslaNetwork(station.network)) {
+            const tariff = resolveStationTariff(station, arr_clock_dec, tesla_active);
+            let badge = "";
+            if (tesla_active) {
+              const tLabel = tariff.label || "Member";
+              badge = (tLabel === "Member")
+                ? (has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)")
+                : (has_tesla_preowned ? `${tLabel} (Active)` : `${tLabel} (Auto-ROI)`);
+            } else {
+              badge = (tariff.label && tariff.label !== "Member") ? tariff.label : "";
+            }
+            return { rate: tariff.rate, badge: badge };
+          }
+          if (isGmDiscountEligible(station)) {
+            return { rate: station.on * (1.0 - (station.gm_pct || 0.10)), badge: "10% GM" };
+          }
+          if (station.ea_pass && ea_active) {
+            return { rate: station.on * 0.75, badge: has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)" };
+          }
+          const tariff = resolveStationTariff(station, arr_clock_dec, false);
+          return { rate: tariff.rate, badge: tariff.label || "" };
+        }
+
+        function buildFullCandidateObj(curr, total_time, total_cost, leg_to_dest_hrs, leg_to_dest_mins, final_soc) {
+          const currStops = getRouteStops(curr);
+          let ea_kwh = 0, ea_gross_savings = 0;
+          let tesla_kwh = 0, tesla_gross_savings = 0;
+
+          let cum_time_s1 = 0.0;
+          currStops.forEach(sp => {
+            cum_time_s1 += sp.leg_drive_hrs;
+            const arr_clock_dec = departure_hours + cum_time_s1;
+            if (sp.station.ea_pass) {
+              ea_kwh += sp.added_kwh;
+              ea_gross_savings += (sp.added_kwh * (sp.station.on * 0.25));
+            }
+            if (isTeslaNetwork(sp.station.network)) {
+              const non_mem = resolveStationTariff(sp.station, arr_clock_dec, false);
+              const mem = resolveStationTariff(sp.station, arr_clock_dec, true);
+              if (non_mem.rate > mem.rate) {
+                tesla_kwh += sp.added_kwh;
+                tesla_gross_savings += (sp.added_kwh * (non_mem.rate - mem.rate));
+              }
+            }
+            cum_time_s1 += (sp.mins / 60.0);
+          });
+
+          const ea_active = has_ea_preowned || (ea_gross_savings >= 3.50);
+          const ea_fee = has_ea_preowned ? 0.0 : (ea_active ? 3.50 : 0.0);
+          const ea_net = ea_gross_savings - ea_fee;
+
+          const tesla_active = has_tesla_preowned || (tesla_gross_savings >= 6.50);
+          const tesla_fee = has_tesla_preowned ? 0.0 : (tesla_active ? 6.50 : 0.0);
+          const tesla_net = tesla_gross_savings - tesla_fee;
+
+          let discounted_ch_cost = 0;
+          let cum_time_stops = 0.0;
+          const finalStops = currStops.map(sp => {
+            cum_time_stops += sp.leg_drive_hrs;
+            const arr_clock_dec = departure_hours + cum_time_stops;
+            const { rate: effective_rate, badge } = resolveEffectiveStopRateAndBadge(sp.station, arr_clock_dec, tesla_active, ea_active);
+
+            const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
+            discounted_ch_cost += stopCost;
+            const arr_clock = formatClockTime(arr_clock_dec);
+            cum_time_stops += (sp.mins / 60.0);
+            const dep_clock = formatClockTime(arr_clock_dec + (sp.mins / 60.0));
+
+            return {
+              ...sp,
+              arr_clock: arr_clock,
+              dep_clock: dep_clock,
+              rate: effective_rate,
+              cost: stopCost,
+              badge: badge
+            };
+          });
+
+          const membership_fees = Math.round((ea_fee + tesla_fee) * 100) / 100;
+          const total_detour_miles = Math.round(finalStops.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
+          const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
+          const stopTollObj = resolveCandidateToll(route.origin, route.destination, route, currStops, null);
+          const stopToll = (stopTollObj && stopTollObj.total != null) ? stopTollObj.total : route.toll;
+          const total_drive_hrs = curr.drive_hrs + leg_to_dest_hrs;
+          const final_leg_miles = curr.stopsCount === 0 ? total_miles : Math.round((total_miles - routeStations[curr.stationIdx].mile) * 10) / 10;
+          const dest_arr_clock_s1 = formatClockTime(departure_hours + total_drive_hrs + curr.ch_hrs);
+
+          return {
+            route: route,
+            speed_offset: sOffset,
+            max_speed_cap: sCap,
+            base_miles: total_miles,
+            total_actual_miles: total_actual_miles,
+            total_detour_miles: total_detour_miles,
+            drive_hours: total_drive_hrs,
+            ch_hours: curr.ch_hrs,
+            total_hours: total_time,
+            dest_arr_clock: dest_arr_clock_s1,
+            final_leg_hrs: leg_to_dest_hrs,
+            final_leg_mins: Math.round(leg_to_dest_mins),
+            final_leg_miles: final_leg_miles,
+            ch_cost: Math.round(discounted_ch_cost * 100) / 100,
+            membership_fees: membership_fees,
+            toll_cost: stopToll,
+            toll_subtitle: stopTollObj ? stopTollObj.subtitle : route.toll_subtitle,
+            total_cost: total_cost,
+            final_soc: Math.round(final_soc * 100),
+            stops: finalStops,
+            memberships: {
+              ea: {
+                kwh: Math.round(ea_kwh * 10) / 10,
+                active: ea_active,
+                pre_owned: has_ea_preowned,
+                fee: ea_fee,
+                savings: Math.round(ea_gross_savings * 100) / 100,
+                net: Math.round(ea_net * 100) / 100
+              },
+              tesla: {
+                kwh: Math.round(tesla_kwh * 10) / 10,
+                active: tesla_active,
+                pre_owned: has_tesla_preowned,
+                fee: tesla_fee,
+                savings: Math.round(tesla_gross_savings * 100) / 100,
+                net: Math.round(tesla_net * 100) / 100
+              }
+            }
+          };
+        }
+
+        // Component 1: Precomputed Reachability Adjacency List (validSuccessors)
+        // Eliminates scanning all 103 stations for 40,000+ states in the queue
+        const validSuccessors = new Array(routeStations.length + 1);
+        for (let fromIdx = -1; fromIdx < routeStations.length; fromIdx++) {
+          const succs = [];
+          const startJ = (fromIdx === -1) ? 0 : fromIdx + 1;
+          const fromMile = (fromIdx === -1) ? 0.0 : routeStations[fromIdx].mile;
+          for (let j = startJ; j < routeStations.length; j++) {
+            const st = routeStations[j];
+            const isToOrFromDecamilla = st.is_decamilla || (fromIdx >= 0 && routeStations[fromIdx].is_decamilla);
+            const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
+            if (st.mile <= fromMile + minGapMiles) continue;
+
+            const legToDestFromSt = destLegPerStation[j];
+            if ((legToDestFromSt.hours * 60.0) < 30.0 && !st.is_decamilla) continue;
+
+            const legSim = (fromIdx === -1) ? startToStationLegs[j] : stationToStationLegs[fromIdx][j];
+            if (!legSim) continue;
+            const leg_mins = legSim.hours * 60.0;
+            if (leg_mins > max_mins) break;
+            if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
+
+            succs.push(j);
+          }
+          validSuccessors[fromIdx + 1] = succs;
+        }
+
+
+
         const queue = [{
 
           stationIdx: -1,
@@ -52557,21 +52716,19 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
               if (!destDominated) {
 
+                // Lightweight scalar cost computation for destFrontier exact dominance
+
                 const currStops = getRouteStops(curr);
-
-                // has_ea_preowned and has_tesla_preowned hoisted at handleSearchRoute start
-
-
 
                 let ea_kwh = 0, ea_gross_savings = 0;
 
                 let tesla_kwh = 0, tesla_gross_savings = 0;
 
-
-
                 let cum_time_s1 = 0.0;
 
-                currStops.forEach(sp => {
+                for (let sIdx = 0; sIdx < currStops.length; sIdx++) {
+
+                  const sp = currStops[sIdx];
 
                   cum_time_s1 += sp.leg_drive_hrs;
 
@@ -52603,7 +52760,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                   cum_time_s1 += (sp.mins / 60.0);
 
-                });
+                }
 
 
 
@@ -52611,15 +52768,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                 const ea_fee = has_ea_preowned ? 0.0 : (ea_active ? 3.50 : 0.0);
 
-                const ea_net = ea_gross_savings - ea_fee;
-
-
-
                 const tesla_active = has_tesla_preowned || (tesla_gross_savings >= 6.50);
 
                 const tesla_fee = has_tesla_preowned ? 0.0 : (tesla_active ? 6.50 : 0.0);
-
-                const tesla_net = tesla_gross_savings - tesla_fee;
 
 
 
@@ -52627,101 +52778,27 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                 let cum_time_stops = 0.0;
 
-                const finalStops = currStops.map(sp => {
+                for (let sIdx = 0; sIdx < currStops.length; sIdx++) {
+
+                  const sp = currStops[sIdx];
 
                   cum_time_stops += sp.leg_drive_hrs;
 
                   const arr_clock_dec = departure_hours + cum_time_stops;
 
-                  let effective_rate = sp.station.on;
-
-                  let badge = "";
+                  const { rate: effective_rate } = resolveEffectiveStopRateAndBadge(sp.station, arr_clock_dec, tesla_active, ea_active);
 
 
 
-                  if (isTeslaNetwork(sp.station.network)) {
-
-                    const tariff = resolveStationTariff(sp.station, arr_clock_dec, tesla_active);
-
-                    effective_rate = tariff.rate;
-
-                    if (tesla_active) {
-
-                      const tLabel = tariff.label || "Member";
-
-                      badge = (tLabel === "Member")
-
-                        ? (has_tesla_preowned ? "Member (Active)" : "Member (Auto-ROI)")
-
-                        : (has_tesla_preowned ? `${tLabel} (Active)` : `${tLabel} (Auto-ROI)`);
-
-                    } else {
-
-                      badge = (tariff.label && tariff.label !== "Member") ? tariff.label : "";
-
-                    }
-
-                  } else if (isGmDiscountEligible(sp.station)) {
-
-                    effective_rate *= (1.0 - (sp.station.gm_pct || 0.10));
-
-                    badge = "10% GM";
-
-                  } else if (sp.station.ea_pass && ea_active) {
-
-                    effective_rate *= 0.75;
-
-                    badge = has_ea_preowned ? "Pass+ (Active)" : "Pass+ (Auto-ROI)";
-
-                  } else {
-
-                    const tariff = resolveStationTariff(sp.station, arr_clock_dec, false);
-
-                    effective_rate = tariff.rate;
-
-                    badge = tariff.label || "";
-
-                  }
-
-
-
-                  const stopCost = Math.round((sp.added_kwh * effective_rate) * 100) / 100;
-
-                  discounted_ch_cost += stopCost;
-
-                  const arr_clock = formatClockTime(arr_clock_dec);
+                  discounted_ch_cost += Math.round((sp.added_kwh * effective_rate) * 100) / 100;
 
                   cum_time_stops += (sp.mins / 60.0);
 
-                  const dep_clock = formatClockTime(arr_clock_dec + (sp.mins / 60.0));
-
-
-
-                  return {
-
-                    ...sp,
-
-                    arr_clock: arr_clock,
-
-                    dep_clock: dep_clock,
-
-                    rate: effective_rate,
-
-                    cost: stopCost,
-
-                    badge: badge
-
-                  };
-
-                });
+                }
 
 
 
                 const membership_fees = Math.round((ea_fee + tesla_fee) * 100) / 100;
-
-                const total_detour_miles = Math.round(finalStops.reduce((sum, sp) => sum + sp.detour_miles, 0) * 10) / 10;
-
-                const total_actual_miles = Math.round((total_miles + total_detour_miles) * 10) / 10;
 
                 const stopTollObj = resolveCandidateToll(route.origin, route.destination, route, currStops, null);
 
@@ -52753,103 +52830,23 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                 if (!exactDominated) {
 
-                  for (let dIdx = destFrontier.length - 1; dIdx >= 0; dIdx--) {
+                  let wIdx = 0;
+
+                  for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
 
                     const d = destFrontier[dIdx];
 
-                    if (total_time <= d.total_hours && total_cost <= d.total_cost) {
+                    if (!(total_time <= d.total_hours && total_cost <= d.total_cost)) {
 
-                      destFrontier.splice(dIdx, 1);
+                      destFrontier[wIdx++] = d;
 
                     }
 
                   }
 
+                  destFrontier.length = wIdx;
 
 
-                  const final_leg_miles = curr.stopsCount === 0 ? total_miles : Math.round((total_miles - routeStations[curr.stationIdx].mile) * 10) / 10;
-
-                  const dest_arr_clock_s1 = formatClockTime(departure_hours + total_drive_hrs + curr.ch_hrs);
-
-                  const candidateObj = {
-
-                    route: route,
-
-                    speed_offset: sOffset,
-
-                    max_speed_cap: sCap,
-
-                    base_miles: total_miles,
-
-                    total_actual_miles: total_actual_miles,
-
-                    total_detour_miles: total_detour_miles,
-
-                    drive_hours: total_drive_hrs,
-
-                    ch_hours: curr.ch_hrs,
-
-                    total_hours: total_time,
-
-                    dest_arr_clock: dest_arr_clock_s1,
-
-                    final_leg_hrs: leg_to_dest_hrs,
-
-                    final_leg_mins: Math.round(leg_to_dest_mins),
-
-                    final_leg_miles: final_leg_miles,
-
-                    ch_cost: Math.round(discounted_ch_cost * 100) / 100,
-
-                    membership_fees: membership_fees,
-
-                    toll_cost: stopToll,
-
-                    toll_subtitle: stopTollObj ? stopTollObj.subtitle : route.toll_subtitle,
-
-                    total_cost: total_cost,
-
-                    final_soc: Math.round(final_soc * 100),
-
-                    stops: finalStops,
-
-                    memberships: {
-
-                      ea: {
-
-                        kwh: Math.round(ea_kwh * 10) / 10,
-
-                        active: ea_active,
-
-                        pre_owned: has_ea_preowned,
-
-                        fee: ea_fee,
-
-                        savings: Math.round(ea_gross_savings * 100) / 100,
-
-                        net: Math.round(ea_net * 100) / 100
-
-                      },
-
-                      tesla: {
-
-                        kwh: Math.round(tesla_kwh * 10) / 10,
-
-                        active: tesla_active,
-
-                        pre_owned: has_tesla_preowned,
-
-                        fee: tesla_fee,
-
-                        savings: Math.round(tesla_gross_savings * 100) / 100,
-
-                        net: Math.round(tesla_net * 100) / 100
-
-                      }
-
-                    }
-
-                  };
 
                   destFrontier.push({
 
@@ -52857,7 +52854,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
                     total_cost: total_cost,
 
-                    cand: candidateObj
+                    curr: curr,
+
+                    leg_to_dest_hrs: leg_to_dest_hrs,
+
+                    leg_to_dest_mins: leg_to_dest_mins,
+
+                    final_soc: final_soc
 
                   });
 
@@ -52923,17 +52926,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
-          const startJ = (curr.stationIdx === -1) ? 0 : curr.stationIdx + 1;
+          const succs = validSuccessors[curr.stationIdx + 1];
 
-          for (let j = startJ; j < routeStations.length; j++) {
+          for (let sIdx = 0; sIdx < succs.length; sIdx++) {
 
-            const st = routeStations[j];
-
-            const isToOrFromDecamilla = st.is_decamilla || (curr.stationIdx >= 0 && routeStations[curr.stationIdx].is_decamilla);
-
-            const minGapMiles = isToOrFromDecamilla ? 0.1 : 5.0;
-
-            if (st.mile <= curr.mile + minGapMiles) continue;
+            const j = succs[sIdx];
 
 
 
@@ -52947,25 +52944,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
+            const st = routeStations[j];
+
+            const isToOrFromDecamilla = st.is_decamilla || (curr.stationIdx >= 0 && routeStations[curr.stationIdx].is_decamilla);
+
             const legToDestFromSt = destLegPerStation[j];
-
-            if ((legToDestFromSt.hours * 60.0) < 30.0 && !st.is_decamilla) continue;
-
-
 
             const legSim = (curr.stationIdx === -1) ? startToStationLegs[j] : stationToStationLegs[curr.stationIdx][j];
 
-            if (!legSim) continue;
-
             const leg_mins = legSim.hours * 60.0;
-
-
-
-            if (leg_mins > max_mins) break;
-
-            // No minimum drive time constraint for legs to/from DeCamilla L2 stop (charger before/after DeCamilla can be as little as 1 min)
-
-            if (!isToOrFromDecamilla && leg_mins < min_mins) continue;
 
 
 
@@ -53345,17 +53332,21 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
-              for (let fIdx = frontier.length - 1; fIdx >= 0; fIdx--) {
+              let writeIdx = 0;
+
+              for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
 
                 const p = frontier[fIdx];
 
-                if (leg_total_hrs <= (p.t + EPS_T) && leg_total_cost <= (p.c + EPS_C) && target_soc >= (p.soc - EPS_SOC)) {
+                if (!(leg_total_hrs <= (p.t + EPS_T) && leg_total_cost <= (p.c + EPS_C) && target_soc >= (p.soc - EPS_SOC))) {
 
-                  frontier.splice(fIdx, 1);
+                  frontier[writeIdx++] = p;
 
                 }
 
               }
+
+              frontier.length = writeIdx;
 
               frontier.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc });
 
@@ -53427,13 +53418,17 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
-        // Push surviving exact Pareto candidates from destFrontier to corridor candidates pool
+        // Materialize full exact candidateObj structures only for surviving destFrontier entries
 
-        destFrontier.forEach(d => {
+        for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
 
-          candidates.push(d.cand);
+          const d = destFrontier[dIdx];
 
-        });
+          const cand = buildFullCandidateObj(d.curr, d.total_hours, d.total_cost, d.leg_to_dest_hrs, d.leg_to_dest_mins, d.final_soc);
+
+          candidates.push(cand);
+
+        }
 
       }
 
