@@ -184,3 +184,235 @@ error: Please commit or stash them.
 [2026-11-09 19:40:29] Successfully pushed Day 4 deployment to origin/main.
 [2026-11-09 19:40:29] === COMPLETED AUTOMATED TOMTOM CAMPAIGN: DAY 4 ===
 
+[2026-11-10 21:44:32] === STARTING AUTOMATED TOMTOM CAMPAIGN: DAY 5 ===
+[2026-11-10 21:44:32] Running Day 5 Harvester: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe scripts/harvest_tomtom_day5.py
+[2026-11-10 21:50:47] Day 5 Harvester succeeded.
+[2026-11-10 21:50:47] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-10 21:50:48] HTML sync successful! Byte-parity verified: 1ba796fa4ca353960f50e29a99fef25b2bc6f3e6ec12f8051ecba044f3680da0
+[2026-11-10 21:50:48] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-10 21:50:51] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-10 21:50:54] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-10 21:53:12] ERROR running Full Engine Test Suite:
+STDOUT:
+[INIT] Loaded 478 active stations into browser memory from cache.
+[CHECK 1] HERE Legal Speed Limits Database: 710 segments loaded.
+[CHECK 1b] Spatial match test on PA Turnpike I-76: 70 mph.
+
+--- Running: Test 1: Standard Search (Baseline) ---
+    Status: Optimization Complete in 30.70s
+    Fastest: 12.90h | $113.99 | 5 stops | 7:30 AM | +10mph cap 75
+
+--- Running: Test 2: Optimize Departure Time ---
+    Status: Optimization Complete in 30.26s
+    Fastest: 12.82h | $115.57 | 5 stops | 8:15 AM | +10mph cap 75
+    Comparison: Fixed=12.899h vs OptTime=12.820h
+
+--- Running: Test 3: Optimize Speed Offset + Cap ---
+    Status: Optimization Complete in 56.20s
+    Fastest: 12.82h | $120.28 | 5 stops | 7:30 AM | +10mph cap 80
+
+--- Running: Test 4: Direct Trip (0.0h DeCamilla dwell) ---
+
+STDERR:
+Traceback (most recent call last):
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 210, in <module>
+    asyncio.run(run_full_suite())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 183, in run_full_suite
+    r4 = await run_sim_test("Test 4: Direct Trip (0.0h DeCamilla dwell)", """(() => {
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    })()""")
+    ^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 114, in run_sim_test
+    st = await eval_js("document.getElementById('auditStatusText')?.innerText")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 77, in eval_js
+    res = await call("Runtime.evaluate", {"expression": expr, "returnByValue": True, "awaitPromise": True})
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 64, in call
+    req_id = await send(method, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 60, in send
+    await ws.send(json.dumps({"id": mid, "method": method, "params": params or {}}))
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Lib\site-packages\websockets\asyncio\connection.py", line 473, in send
+    async with self.send_context():
+               ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 214, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Lib\site-packages\websockets\asyncio\connection.py", line 960, in send_context
+    raise self.protocol.close_exc from original_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+
+[2026-11-10 21:53:12] Full test suite failed!
+[2026-11-10 21:56:59] === STARTING AUTOMATED TOMTOM CAMPAIGN: DAY 5 ===
+[2026-11-10 21:56:59] Skipping harvester execution for Day 5 (already completed).
+[2026-11-10 21:56:59] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-10 21:56:59] HTML sync successful! Byte-parity verified: 1ba796fa4ca353960f50e29a99fef25b2bc6f3e6ec12f8051ecba044f3680da0
+[2026-11-10 21:56:59] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-10 21:57:01] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-10 21:57:04] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-10 22:00:22] ERROR running Full Engine Test Suite:
+STDOUT:
+[INIT] Loaded 478 active stations into browser memory from cache.
+[CHECK 1] HERE Legal Speed Limits Database: 710 segments loaded.
+[CHECK 1b] Spatial match test on PA Turnpike I-76: 70 mph.
+
+--- Running: Test 1: Standard Search (Baseline) ---
+    Status: Optimization Complete in 36.63s
+    Fastest: 12.90h | $113.99 | 5 stops | 7:30 AM | +10mph cap 75
+
+--- Running: Test 2: Optimize Departure Time ---
+    Status: Optimization Complete in 32.73s
+    Fastest: 12.82h | $115.57 | 5 stops | 8:15 AM | +10mph cap 75
+    Comparison: Fixed=12.899h vs OptTime=12.820h
+
+--- Running: Test 3: Optimize Speed Offset + Cap ---
+    Status: Optimization Complete in 68.21s
+    Fastest: 12.82h | $120.28 | 5 stops | 7:30 AM | +10mph cap 80
+
+--- Running: Test 4: Direct Trip (0.0h DeCamilla dwell) ---
+
+STDERR:
+Traceback (most recent call last):
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 210, in <module>
+    asyncio.run(run_full_suite())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 183, in run_full_suite
+    r4 = await run_sim_test("Test 4: Direct Trip (0.0h DeCamilla dwell)", """(() => {
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    })()""")
+    ^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 114, in run_sim_test
+    st = await eval_js("document.getElementById('auditStatusText')?.innerText")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 77, in eval_js
+    res = await call("Runtime.evaluate", {"expression": expr, "returnByValue": True, "awaitPromise": True})
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 64, in call
+    req_id = await send(method, params)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 60, in send
+    await ws.send(json.dumps({"id": mid, "method": method, "params": params or {}}))
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Lib\site-packages\websockets\asyncio\connection.py", line 473, in send
+    async with self.send_context():
+               ~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\contextlib.py", line 214, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Lib\site-packages\websockets\asyncio\connection.py", line 960, in send_context
+    raise self.protocol.close_exc from original_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+
+[2026-11-10 22:00:22] Full test suite failed!
+[2026-11-10 22:00:57] === STARTING AUTOMATED TOMTOM CAMPAIGN: DAY 5 ===
+[2026-11-10 22:00:57] Skipping harvester execution for Day 5 (already completed).
+[2026-11-10 22:00:57] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-10 22:00:58] HTML sync successful! Byte-parity verified: 1ba796fa4ca353960f50e29a99fef25b2bc6f3e6ec12f8051ecba044f3680da0
+[2026-11-10 22:00:58] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-10 22:00:59] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-10 22:01:04] ERROR running Chrome V8 Syntax Test:
+STDOUT:
+Compiling script block #1 (1068567 chars, 64208 lines) with Chrome V8...
+
+STDERR:
+Traceback (most recent call last):
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\urllib\request.py", line 1321, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              encode_chunked=req.has_header('Transfer-encoding'))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\http\client.py", line 1367, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\http\client.py", line 1413, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\http\client.py", line 1362, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\http\client.py", line 1122, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\http\client.py", line 1066, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\http\client.py", line 1032, in connect
+    self.sock = self._create_connection(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        (self.host,self.port), self.timeout, self.source_address)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\socket.py", line 874, in create_connection
+    raise exceptions[0]
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\socket.py", line 859, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_js_syntax.py", line 112, in <module>
+    test_index_html_javascript_syntax()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_js_syntax.py", line 100, in test_index_html_javascript_syntax
+    exc = asyncio.run(compile_script_v8(s, f"inline_script_{i+1}.js"))
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_js_syntax.py", line 54, in compile_script_v8
+    with urllib.request.urlopen(f"http://127.0.0.1:{CDP_PORT}/json") as resp:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\urllib\request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\urllib\request.py", line 487, in open
+    response = self._open(req, data)
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\urllib\request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\urllib\request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\urllib\request.py", line 1324, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>
+
+[2026-11-10 22:01:04] JS Syntax test failed!
+[2026-11-10 22:01:25] === STARTING AUTOMATED TOMTOM CAMPAIGN: DAY 5 ===
+[2026-11-10 22:01:25] Skipping harvester execution for Day 5 (already completed).
+[2026-11-10 22:01:25] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-10 22:01:26] HTML sync successful! Byte-parity verified: 1ba796fa4ca353960f50e29a99fef25b2bc6f3e6ec12f8051ecba044f3680da0
+[2026-11-10 22:01:26] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-10 22:01:27] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-10 22:01:29] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-10 22:05:10] Running Simulation History Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_sim_history.py
+[2026-11-10 22:05:23] Running Git Add: git add data/tomtom_corridors_168h.json public/data/tomtom_corridors_168h.json index.html public/index.html ui/templates/index.html tests/test_full_suite.py scripts/run_scheduled_day.py data/scheduled_runs_state.json data/scheduled_runs.log

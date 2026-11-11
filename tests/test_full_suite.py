@@ -53,7 +53,7 @@ async def run_full_suite():
         if not ws_url:
             raise RuntimeError("Could not connect to Chrome CDP.")
 
-        async with websockets.connect(ws_url, max_size=None) as ws:
+        async with websockets.connect(ws_url, max_size=None, ping_interval=None, ping_timeout=None) as ws:
             mid = 0
             async def send(method, params=None):
                 nonlocal mid; mid += 1
