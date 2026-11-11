@@ -48,12 +48,21 @@ async def compile_script_v8(script_content: str, name: str = "inline.js"):
         "about:blank"
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    time.sleep(1.5)
+    ws_url = None
+    for _ in range(60):
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{CDP_PORT}/json") as resp:
+                targets = json.loads(resp.read().decode())
+                if targets and len(targets) > 0:
+                    ws_url = targets[0]["webSocketDebuggerUrl"]
+                    break
+        except Exception:
+            time.sleep(0.1)
+
+    if not ws_url:
+        raise RuntimeError(f"Could not connect to Chrome CDP on port {CDP_PORT}")
 
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{CDP_PORT}/json") as resp:
-            targets = json.loads(resp.read().decode())
-            ws_url = targets[0]["webSocketDebuggerUrl"]
 
         async with websockets.connect(ws_url, max_size=50 * 1024 * 1024) as ws:
             await ws.send(json.dumps({"id": 1, "method": "Runtime.enable"}))
