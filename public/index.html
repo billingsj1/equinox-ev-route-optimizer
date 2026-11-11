@@ -58960,7 +58960,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               rate: node.rate,
               badge: node.is_decamilla ? "Free (Private L2)" : "",
               is_decamilla: node.is_decamilla,
-              is_feeding: (isFeedingActive && node.stop_mins >= feedingDuration)
+              is_feeding: (isFeedingActive && (node.is_decamilla || node.stop_mins >= feedingDuration))
             };
           });
         }
@@ -59293,23 +59293,25 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const arrTemp = arr_soc < 0.10 ? Math.max(50.0, stAmbientTemp) : Math.max(curr.pack_temp_f, stAmbientTemp);
 
             if (isDecamillaStop) {
-              const added_kwh = (1.00 - arr_soc) * 85.0;
-              const ch_hrs = 2.0;
-              const stop_mins = 120.0;
+              const decamillaHrs = st.decamilla_hours || 2.0;
+              const added_soc = Math.min(1.00 - arr_soc, decamillaHrs * 0.0813);
+              const target_soc = Math.round((arr_soc + added_soc) * 100) / 100.0;
+              const added_kwh = added_soc * 85.0;
+              const stop_mins = Math.round(decamillaHrs * 60.0);
+              const ch_hrs = stop_mins / 60.0;
               const leg_drive_hrs = curr.drive_hrs + total_leg_hrs;
               const leg_ch_hrs = curr.ch_hrs + ch_hrs;
               const leg_total_hrs = leg_drive_hrs + leg_ch_hrs;
               const leg_total_cost = (curr.ch_cost || 0.0);
-              const isFeedStop = isFeedingActive && (stop_mins >= feedingDuration);
-              const next_feed_time_hrs = isFeedStop ? arr_elapsed_hrs : curr.last_feed_time_hrs;
+              const next_feed_time_hrs = isFeedingActive ? ((arr_elapsed_hrs + ch_hrs) - (feedingDuration / 60.0)) : curr.last_feed_time_hrs;
 
               queue.push({
                 stationIdx: j,
                 mile: st.mile,
-                soc: 1.00,
+                soc: target_soc,
                 arr_soc: arr_soc,
                 added_kwh: added_kwh,
-                ch_mins: 120.0,
+                ch_mins: stop_mins,
                 setup_mins: 0.0,
                 stop_mins: stop_mins,
                 rate: 0.0,
@@ -61052,9 +61054,15 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             if (arrElapsed - lastFeedStart > (feeding_interval + 1e-4)) {
               return null;
             }
-            if (sp.mins >= feeding_duration) {
+            if (sp.is_decamilla) {
+              const depElapsed = arrElapsed + (sp.mins / 60.0);
+              lastFeedStart = depElapsed - (feeding_duration / 60.0);
+              sp.is_feeding = true;
+            } else if (sp.mins >= feeding_duration) {
               lastFeedStart = arrElapsed;
               sp.is_feeding = true;
+            } else {
+              sp.is_feeding = false;
             }
           }
           const destElapsed = total_drive_hrs + total_ch_hrs;
@@ -62442,7 +62450,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         const detourLabel = s.is_decamilla ? '+12.8 mi detour (Exit 236 &bull; US-15 S / Dillsburg)' : (s.is_plaza ? 'Turnpike Service Plaza (~2.8m loop)' : `+${s.detour_miles} mi exit detour (~${s.detour_mins}m)`);
 
-        const dwellBreakdown = s.is_decamilla ? 'Free L2 Charging' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}${s.is_feeding ? ' &bull; 🍼 Asher Feeding' : ''}`;
+        const dwellBreakdown = `${s.is_decamilla ? 'Free L2 Charging' : `${s.charge_mins}m charge + ${s.setup_mins}m ${s.has_plug_and_charge ? 'Plug &amp; Go' : 'setup'}`}${s.is_feeding ? ' &bull; 🍼 Asher Feeding' : ''}`;
 
         const stopMarker = L.marker([s.station.lat, s.station.lon], { icon: stopIcon })
 
