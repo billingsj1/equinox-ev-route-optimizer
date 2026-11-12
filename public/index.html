@@ -58877,6 +58877,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           stationToStationLegs,
           downstreamAnchorTargets,
           validSuccessors,
+          minNextReachHrs,
           maxEnvelopeRate,
           maxEnvelopeKw,
           coldCabinWarmupKwh,
@@ -59136,9 +59137,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const EPS = 1e-9;
             for (let dIdx = 0; dIdx < destFrontier.length; dIdx++) {
               const df = destFrontier[dIdx];
-              // If feeding schedule is active, destination route must also have valid feeding
-              const satisfiesFeedingPrune = !isFeedingActive || ((df.total_hours - initialLastFeedTimeHrs) <= (feedingInterval + 1e-4));
-              if (df.total_hours <= (lbTotalTime + EPS) && df.total_cost <= (lbTotalCost + EPS) && satisfiesFeedingPrune) {
+              // Every route in destFrontier already passed destination feasibility (arrival SoC, DeCamilla, feeding)
+              if (df.total_hours <= (lbTotalTime + EPS) && df.total_cost <= (lbTotalCost + EPS)) {
                 dominatedByDest = true;
                 break;
               }
@@ -59393,10 +59393,30 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             const isFasterThanEnvelope = (stAttainableKw > maxEnvelopeKw[j] + 2);
             const canSkipExpensiveAhead = (rate < maxEnvelopeRate[j] - 0.02) || st.is_decamilla;
 
-            if (isFasterThanEnvelope || canSkipExpensiveAhead || isFeedingActive) {
+            if (isFasterThanEnvelope || canSkipExpensiveAhead) {
               const startMilestone = Math.ceil(min_target_allowed * 20.0) / 20.0;
               for (let t = startMilestone; t <= 0.901; t += 0.05) {
                 if (t > min_target_allowed) addTarget(t);
+              }
+            }
+            if (isFeedingActive) {
+              // Add the single exact minimum target SoC (1% resolution) that meets feedingDuration
+              const reqChMins = Math.max(0.0, feedingDuration - setup_mins);
+              if (reqChMins <= 0.0) {
+                // setup_mins alone satisfies feedingDuration; floor target already covers it
+              } else {
+                const x0Feed = arr_soc * 100.0;
+                const lo0Feed = Math.floor(x0Feed);
+                const hi0Feed = Math.min(100, lo0Feed + 1);
+                const lut0Feed = stLut[lo0Feed] + (stLut[hi0Feed] - stLut[lo0Feed]) * (x0Feed - lo0Feed);
+                const minPctInt = Math.max(Math.ceil(arr_soc * 100.0 + 2.0 - 1e-9), Math.ceil(min_target_allowed * 100.0 - 1e-9));
+                for (let p = minPctInt; p <= 90; p++) {
+                  const stopMinsAtP = Math.round(Math.max(0.0, (stLut[p] - lut0Feed) * 60.0) + setup_mins);
+                  if (stopMinsAtP >= feedingDuration) {
+                    addTarget(p / 100.0);
+                    break;
+                  }
+                }
               }
             }
 
@@ -59426,6 +59446,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
               const isFeedStop = isFeedingActive && (total_stop_mins >= feedingDuration);
               const next_feed_time_hrs = isFeedStop ? arr_elapsed_hrs : curr.last_feed_time_hrs;
+              if (isFeedingActive && !isFeedStop && minNextReachHrs) {
+                const maxNextArrHrs = next_feed_time_hrs + feedingInterval + 1e-4;
+                if (leg_total_hrs + minNextReachHrs[j] > maxNextArrHrs) {
+                  continue;
+                }
+              }
+              const next_feed_slack = isFeedingActive ? (next_feed_time_hrs - leg_total_hrs) : 0.0;
 
               const stateKey = (j << 1) | (curr.has_decamilla ? 1 : 0);
               let frontier = paretoFrontier[stateKey];
@@ -59440,7 +59467,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               let dominated = false;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const prev = frontier[fIdx];
-                const feedDominates = !isFeedingActive || (prev.f >= (next_feed_time_hrs - EPS_F));
+                const feedDominates = !isFeedingActive || (prev.slack >= (next_feed_slack - EPS_F));
                 if (prev.t <= (leg_total_hrs + EPS_T) && prev.c <= (leg_total_cost + EPS_C) && prev.soc >= (target_soc - EPS_SOC) && feedDominates) {
                   dominated = true;
                   break;
@@ -59451,13 +59478,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               let writeIdx = 0;
               for (let fIdx = 0; fIdx < frontier.length; fIdx++) {
                 const p = frontier[fIdx];
-                const feedDominated = !isFeedingActive || (next_feed_time_hrs >= (p.f - EPS_F));
+                const feedDominated = !isFeedingActive || (next_feed_slack >= (p.slack - EPS_F));
                 if (!(leg_total_hrs <= (p.t + EPS_T) && leg_total_cost <= (p.c + EPS_C) && target_soc >= (p.soc - EPS_SOC) && feedDominated)) {
                   frontier[writeIdx++] = p;
                 }
               }
               frontier.length = writeIdx;
-              frontier.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc, f: next_feed_time_hrs });
+              frontier.push({ t: leg_total_hrs, c: leg_total_cost, soc: target_soc, slack: next_feed_slack });
 
               const postChargePackTemp = Math.max(95.0, arrTemp);
               queue.push({
@@ -59593,6 +59620,11 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           downstreamAnchorTargets[j] = Array.from(new Set(anchors));
         }
 
+        const feedingIntervalPre = (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingInterval')?.value)) || 0.0;
+        const feedingDurationPre = (typeof document !== 'undefined' && parseFloat(document.getElementById('feedingDuration')?.value)) || 0.0;
+        const isFeedingActivePre = (feedingIntervalPre > 0 && feedingDurationPre > 0);
+        const maxFirstStopElapsedHrs = isFeedingActivePre ? (feedingIntervalPre - (feedingDurationPre / 60.0) + 1e-4) : Infinity;
+
         const validSuccessors = new Array(routeStations.length + 1);
         const originSuccs = [];
         for (let j = 0; j < routeStations.length; j++) {
@@ -59602,6 +59634,10 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           const isToDecamilla = routeStations[j].is_decamilla;
           const satisfiesMinMins = isToDecamilla || (legMins >= min_mins);
           if (satisfiesMinMins && legMins <= max_mins) {
+            if (isFeedingActivePre) {
+              const firstArrHrs = legSim.hours + ((cData.stationDetours[j].detour_mins / 2.0) / 60.0);
+              if (firstArrHrs > maxFirstStopElapsedHrs) continue;
+            }
             originSuccs.push(j);
           }
         }
@@ -59624,6 +59660,35 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             }
           }
           validSuccessors[fromIdx + 1] = succs;
+        }
+
+        const minNextReachHrs = new Float64Array(routeStations.length);
+        for (let j = 0; j < routeStations.length; j++) {
+          let minReach = Infinity;
+          const halfDetourJ = (cData.stationDetours[j].detour_mins / 2.0) / 60.0;
+          const destLegSim = destLegPerStation[j];
+          if (destLegSim) {
+            const destLegMins = destLegSim.hours * 60.0;
+            const satisfiesDestMinMins = routeStations[j].is_decamilla || (destLegMins >= min_mins);
+            if (satisfiesDestMinMins && destLegMins <= max_mins) {
+              const destReachHrs = destLegSim.hours + halfDetourJ;
+              if (destReachHrs < minReach) minReach = destReachHrs;
+            }
+          }
+          const succsJ = validSuccessors[j + 1] || [];
+          for (let sIdx = 0; sIdx < succsJ.length; sIdx++) {
+            const k = succsJ[sIdx];
+            const legJK = stationToStationLegs[j][k];
+            if (!legJK) continue;
+            const halfDetourK = (cData.stationDetours[k].detour_mins / 2.0) / 60.0;
+            const reachHrs = legJK.hours + halfDetourJ + halfDetourK;
+            const isToOrFromDecJK = routeStations[j].is_decamilla || routeStations[k].is_decamilla;
+            const reachMins = reachHrs * 60.0;
+            if ((isToOrFromDecJK || reachMins >= min_mins) && reachMins <= max_mins && reachHrs < minReach) {
+              minReach = reachHrs;
+            }
+          }
+          minNextReachHrs[j] = minReach;
         }
 
         const maxEnvelopeRate = new Float64Array(routeStations.length);
@@ -59659,6 +59724,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
           stationToStationLegs,
           downstreamAnchorTargets,
           validSuccessors,
+          minNextReachHrs,
           maxEnvelopeRate,
           maxEnvelopeKw,
           coldCabinWarmupKwh,
