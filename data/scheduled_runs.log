@@ -452,3 +452,67 @@ error: Please commit or stash them.
 [2026-11-11 23:46:08] Successfully pushed Day 6 deployment to origin/main.
 [2026-11-11 23:46:08] === COMPLETED AUTOMATED TOMTOM CAMPAIGN: DAY 6 ===
 
+[2026-11-12 20:08:27] === STARTING AUTOMATED TOMTOM CAMPAIGN: DAY 7 ===
+[2026-11-12 20:08:27] Running Day 7 Harvester: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe scripts/harvest_tomtom_day7.py
+[2026-11-12 20:17:51] Day 7 Harvester succeeded.
+[2026-11-12 20:17:51] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-12 20:17:52] HTML sync successful! Byte-parity verified: 2aad6be3c8498ca66d4565b38f156a3ddffc325fa76fc5438dbc27c9a01fdfde
+[2026-11-12 20:17:52] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-12 20:17:55] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-12 20:17:57] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-12 20:23:21] ERROR running Full Engine Test Suite:
+STDOUT:
+[INIT] Loaded 478 active stations into browser memory from cache.
+[CHECK 1] HERE Legal Speed Limits Database: 710 segments loaded.
+[CHECK 1b] Spatial match test on PA Turnpike I-76: 70 mph.
+
+--- Running: Test 1: Standard Search (Baseline) ---
+    Status: Optimization Complete in 75.72s
+    Fastest: 13.37h | $130.83 | 5 stops | 7:30 AM | +10mph cap 75
+
+--- Running: Test 2: Optimize Departure Time ---
+    Status: Optimization Complete in 39.76s
+    Fastest: 12.00h | $70.05 | 5 stops | 8:30 AM | +10mph cap 75
+    Comparison: Fixed=13.373h vs OptTime=11.998h
+
+--- Running: Test 3: Optimize Speed Offset + Cap ---
+    Status: Optimization Complete in 132.78s
+    Fastest: 12.91h | $115.76 | 5 stops | 7:30 AM | +10mph cap 75
+
+--- Running: Test 4: Direct Trip (0.0h DeCamilla dwell) ---
+    Status: Optimization Complete in 67.94s
+    Fastest: 10.32h | $117.35 | 4 stops | 7:30 AM | +10mph cap 75
+    Direct Trip Duration: 10.32h
+
+[CONSOLE ERRORS CHECK]: 1 critical errors detected.
+  ! Client-side Open-Meteo simulation failed: 
+
+STDERR:
+Traceback (most recent call last):
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 210, in <module>
+    asyncio.run(run_full_suite())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\joshb\AppData\Roaming\uv\python\cpython-3.14-windows-x86_64-none\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\joshb\Documents\antigravity\jolly-hopper\tests\test_full_suite.py", line 200, in run_full_suite
+    assert len(fatal_errors) == 0, f"Encountered unexpected console errors: {fatal_errors}"
+           ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Encountered unexpected console errors: ['Client-side Open-Meteo simulation failed: ']
+
+[2026-11-12 20:23:21] Full test suite failed!
+[2026-11-12 20:23:49] === STARTING AUTOMATED TOMTOM CAMPAIGN: DAY 7 ===
+[2026-11-12 20:23:49] Skipping harvester execution for Day 7 (already completed).
+[2026-11-12 20:23:49] Synchronizing tomtom_corridors_168h.json into index.html, public/index.html, and ui/templates/index.html...
+[2026-11-12 20:23:49] HTML sync successful! Byte-parity verified: 2aad6be3c8498ca66d4565b38f156a3ddffc325fa76fc5438dbc27c9a01fdfde
+[2026-11-12 20:23:49] Running Python Engine Unit Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe -m unittest tests/test_engine.py
+[2026-11-12 20:23:51] Running Chrome V8 Syntax Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_js_syntax.py
+[2026-11-12 20:23:53] Running Full Engine Test Suite: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_full_suite.py
+[2026-11-12 20:30:22] Running Simulation History Test: C:\Users\joshb\Documents\antigravity\jolly-hopper\.venv\Scripts\python.exe tests/test_sim_history.py
+[2026-11-12 20:30:33] Running Git Add: git add data/tomtom_corridors_168h.json public/data/tomtom_corridors_168h.json index.html public/index.html ui/templates/index.html tests/test_full_suite.py scripts/run_scheduled_day.py data/scheduled_runs_state.json data/scheduled_runs.log
