@@ -4397,9 +4397,17 @@
       const enabledNetsKey = (typeof document !== 'undefined')
         ? Array.from(document.querySelectorAll('input[name="networkFilter"]:checked')).map(cb => cb.value).sort().join(',')
         : 'all';
-      const coordsKey = coords && coords.length > 0
-        ? `${coords.length}_${coords[0][0].toFixed(4)},${coords[0][1].toFixed(4)}_${coords[coords.length - 1][0].toFixed(4)},${coords[coords.length - 1][1].toFixed(4)}_${enabledNetsKey}`
-        : 'empty';
+      let coordsKey = `empty_${enabledNetsKey}`;
+      if (coords && coords.length > 0) {
+        let h1 = 0x811c9dc5;
+        for (let i = 0; i < coords.length; i++) {
+          const lonQ = Math.round(coords[i][0] * 1e5) | 0;
+          const latQ = Math.round(coords[i][1] * 1e5) | 0;
+          h1 = Math.imul(h1 ^ lonQ, 0x01000193);
+          h1 = Math.imul(h1 ^ latQ, 0x01000193);
+        }
+        coordsKey = `${coords.length}_${(h1 >>> 0).toString(36)}_${enabledNetsKey}`;
+      }
 
       if (typeof window !== 'undefined') {
         window._stationProjectionCache = window._stationProjectionCache || new Map();
@@ -68789,9 +68797,36 @@
       steps._luts = steps._luts || {};
 
       if (!steps._luts[lutKey]) {
-        const firstStep = steps[0];
-        const lastStep = steps[steps.length - 1];
-        const stepsSig = `${steps.length}_${(firstStep && firstStep.distance_miles) || 0}_${(lastStep && lastStep.distance_miles) || 0}_${(firstStep && firstStep.name) || ''}_${(lastStep && lastStep.name) || ''}`;
+        if (!steps._stepsSig) {
+          let h1 = 0x811c9dc5;
+          let h2 = 0x811c9dc5;
+          for (let si = 0; si < steps.length; si++) {
+            const s = steps[si];
+            const m = s.maneuver;
+            const dQ = Math.round((s.distance_miles || 0) * 1000) | 0;
+            const spdQ = Math.round((s.posted_speed || 0) * 10) | 0;
+            const latQ = Math.round((s.mid_lat || 0) * 1e4) | 0;
+            const lonQ = Math.round((s.mid_lon || 0) * 1e4) | 0;
+            const iLen = s.intersections ? s.intersections.length : 0;
+            h1 = Math.imul(h1 ^ dQ, 0x01000193);
+            h1 = Math.imul(h1 ^ spdQ, 0x01000193);
+            h1 = Math.imul(h1 ^ iLen, 0x01000193);
+            h2 = Math.imul(h2 ^ latQ, 0x01000193);
+            h2 = Math.imul(h2 ^ lonQ, 0x01000193);
+            const nm = s.name || '';
+            for (let ci = 0; ci < nm.length; ci++) h1 = Math.imul(h1 ^ nm.charCodeAt(ci), 0x01000193);
+            const rf = s.ref || '';
+            for (let ci = 0; ci < rf.length; ci++) h2 = Math.imul(h2 ^ rf.charCodeAt(ci), 0x01000193);
+            if (m) {
+              const mt = m.type || '';
+              for (let ci = 0; ci < mt.length; ci++) h2 = Math.imul(h2 ^ mt.charCodeAt(ci), 0x01000193);
+              if (m.bearing_after != null) h1 = Math.imul(h1 ^ (Math.round(m.bearing_after) | 0), 0x01000193);
+              if (m.bearing_before != null) h2 = Math.imul(h2 ^ (Math.round(m.bearing_before) | 0), 0x01000193);
+            }
+          }
+          steps._stepsSig = `${steps.length}_${(h1 >>> 0).toString(36)}_${(h2 >>> 0).toString(36)}`;
+        }
+        const stepsSig = steps._stepsSig;
         const globalLutKey = `${stepsSig}__${lutKey}`;
         const gScope = (typeof self !== 'undefined') ? self : window;
         gScope._globalStepLutsCache = gScope._globalStepLutsCache || new Map();
@@ -69891,6 +69926,8 @@
 
             hour_idx: arrDt.getHours(),
 
+            utc_hour_idx: arrDt.getUTCHours(),
+
             iso_date: arrDt.toISOString().slice(0, 10),
 
             clock_str: formatClockTime(arrDt.getHours() + (arrDt.getMinutes() / 60))
@@ -70010,13 +70047,15 @@
 
           let slot = 0;
 
-          const targetPrefix = `${t.iso_date}T${String(t.hour_idx).padStart(2, '0')}`;
+          const targetHour = (t.utc_hour_idx != null) ? t.utc_hour_idx : t.hour_idx;
+
+          const targetPrefix = `${t.iso_date}T${String(targetHour).padStart(2, '0')}`;
 
           if (series.time) {
 
             const found = series.time.findIndex(str => str.startsWith(targetPrefix));
 
-            slot = found >= 0 ? found : Math.min(t.hour_idx, series.time.length - 1);
+            slot = found >= 0 ? found : Math.min(targetHour, series.time.length - 1);
 
           }
 
@@ -78738,26 +78777,54 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
       profiler.startStage("Schedule & Tariff Polishing");
       updateCalcProgress(93, "Polishing Schedules, Tariffs & Turn-by-Turn Telemetry...");
 
-      // Prepare lightweight OSRM legs dictionary (omitting large coordinate arrays from worker IPC)
+      // Prepare compact OSRM legs dictionary (stripping heavy geometry/intersection payloads)
+      const compactStepForWorker = (s) => {
+        let bearingAfter = (s.maneuver && s.maneuver.bearing_after != null) ? s.maneuver.bearing_after : null;
+        if (bearingAfter == null && s.geometry && s.geometry.coordinates && s.geometry.coordinates.length >= 2) {
+          const c = s.geometry.coordinates;
+          bearingAfter = calcBearingDeg(c[0][0], c[0][1], c[c.length - 1][0], c[c.length - 1][1]);
+        }
+        return {
+          distance_miles: s.distance_miles || 0,
+          posted_speed: s.posted_speed || 0,
+          name: s.name || '',
+          ref: s.ref || '',
+          mid_lat: s.mid_lat,
+          mid_lon: s.mid_lon,
+          maneuver: s.maneuver ? { type: s.maneuver.type || '', bearing_after: bearingAfter, bearing_before: s.maneuver.bearing_before } : (bearingAfter != null ? { type: '', bearing_after: bearingAfter } : null),
+          intersections: (s.intersections && s.intersections.length) ? { length: s.intersections.length } : null
+        };
+      };
+
       const osrmLegsByKey = {};
       osrmResponses.forEach((val, key) => {
         osrmLegsByKey[key] = {
           distance_miles: val.distance_miles,
           duration_hours: val.duration_hours,
-          legs: val.legs
+          legs: (val.legs || []).map(leg => {
+            const elevProf = (leg.steps && !leg.steps._elevationProfile)
+              ? (leg.steps._elevationProfile = precomputeStepsElevationProfile(leg.steps))
+              : (leg.steps ? leg.steps._elevationProfile : null);
+            return {
+              distance_miles: leg.distance_miles,
+              duration_hours: leg.duration_hours,
+              steps: (leg.steps || []).map(compactStepForWorker),
+              elevationProfile: elevProf
+            };
+          })
         };
       });
 
-      // Build flat list of candidate-level tasks (each task processes one candidate across all regimes & departure offsets)
-      // Grouping by candidate keeps steps._luts hot inside the assigned worker across departure & speed permutations
+      // Build flat list of candidate-level tasks grouped by seqKey so each worker caches its own seqKey OSRM legs once
       const polishTasks = combinedTop.map((cand, idx) => {
         const candSpeedOffset = cand.speed_offset != null ? cand.speed_offset : speed_offset;
         const candMaxCap = cand.max_speed_cap != null ? cand.max_speed_cap : max_speed_cap;
         const regimes = (speedRegimesToPolish.length > 0)
           ? speedRegimesToPolish
           : [{ offset: candSpeedOffset, cap: candMaxCap }];
-        return { candIdx: idx, cand, regimes };
-      });
+        const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
+        return { candIdx: idx, cand, regimes, seqKey };
+      }).sort((a, b) => a.seqKey.localeCompare(b.seqKey));
 
       const canUsePolishWorkers = (typeof Worker !== 'undefined' && polishTasks.length > 1 && depHourOffsets.length * (speedRegimesToPolish.length || 1) >= 2);
       let workerPolishSucceeded = false;
@@ -78771,7 +78838,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             let CORRIDOR_KEY_ALIASES = {};
             let BOTTLENECK_SPEEDS_DB = null;
             let HOLIDAY_OFFSETS_DB = null;
-            let OSRM_LEGS_BY_KEY = {};
+            const OSRM_LEGS_BY_KEY = {};
             let POLISH_CTX = {};
 
             ${calcBearingDeg.toString()}
@@ -78807,6 +78874,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
             ${precomputeStepsPhysicsLUT.toString()}
             ${queryStepsPhysicsLUT.toString()}
             ${getElevationCumulativeMetrics.toString()}
+            function precomputeStepsElevationProfile() { return null; }
             ${simulateLegPhysics.toString()}
             ${simulateLegFromSteps.toString()}
             const executePolishOne = ${executePolishOne.toString()};
@@ -78819,15 +78887,24 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                 CORRIDOR_KEY_ALIASES = msg.CORRIDOR_KEY_ALIASES || {};
                 BOTTLENECK_SPEEDS_DB = msg.BOTTLENECK_SPEEDS_DB || null;
                 HOLIDAY_OFFSETS_DB = msg.HOLIDAY_OFFSETS_DB || null;
-                OSRM_LEGS_BY_KEY = msg.osrmLegsByKey || {};
                 POLISH_CTX = msg.polishCtx || {};
                 self.activeWeatherReport = msg.activeWeatherReport || null;
                 self._cachedDOMParams = msg._cachedDOMParams || null;
                 self.postMessage({ type: 'ready' });
               } else if (msg.type === 'polish') {
                 try {
-                  const { cand, regimes, depHourOffsets, departure_hours } = msg.task;
-                  const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
+                  const { cand, regimes, depHourOffsets, departure_hours, seqKey, osrmDataPayload } = msg.task;
+                  if (osrmDataPayload && !OSRM_LEGS_BY_KEY[seqKey]) {
+                    if (osrmDataPayload.legs) {
+                      for (let li = 0; li < osrmDataPayload.legs.length; li++) {
+                        const lg = osrmDataPayload.legs[li];
+                        if (lg && lg.steps && lg.elevationProfile) {
+                          lg.steps._elevationProfile = lg.elevationProfile;
+                        }
+                      }
+                    }
+                    OSRM_LEGS_BY_KEY[seqKey] = osrmDataPayload;
+                  }
                   const osrmData = OSRM_LEGS_BY_KEY[seqKey] || null;
                   const out = [];
                   for (let dIdx = 0; dIdx < depHourOffsets.length; dIdx++) {
@@ -78870,7 +78947,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         const pBlob = new Blob([pScript], { type: 'application/javascript' });
         const pUrl = URL.createObjectURL(pBlob);
         const availCores = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 8;
-        const pWorkersCount = Math.max(1, Math.min(polishTasks.length, Math.min(16, availCores)));
+        const pWorkersCount = Math.max(1, Math.min(polishTasks.length, Math.min(8, availCores)));
         const pWorkers = [];
 
         try {
@@ -78885,7 +78962,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
               CORRIDOR_KEY_ALIASES: (typeof CORRIDOR_KEY_ALIASES !== 'undefined') ? CORRIDOR_KEY_ALIASES : {},
               BOTTLENECK_SPEEDS_DB: (typeof BOTTLENECK_SPEEDS_DB !== 'undefined') ? BOTTLENECK_SPEEDS_DB : null,
               HOLIDAY_OFFSETS_DB: (typeof HOLIDAY_OFFSETS_DB !== 'undefined') ? HOLIDAY_OFFSETS_DB : null,
-              osrmLegsByKey,
               polishCtx,
               activeWeatherReport: window.activeWeatherReport || null,
               _cachedDOMParams: window._cachedDOMParams || null
@@ -78893,6 +78969,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
             for (let w = 0; w < pWorkersCount; w++) {
               const worker = new Worker(pUrl);
+              const workerSentSeqKeys = new Set();
               pWorkers.push(worker);
 
               const dispatchNext = () => {
@@ -78902,13 +78979,20 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
                   return;
                 }
                 const task = polishTasks[nextIdx++];
+                let osrmDataPayload = null;
+                if (!workerSentSeqKeys.has(task.seqKey)) {
+                  workerSentSeqKeys.add(task.seqKey);
+                  osrmDataPayload = osrmLegsByKey[task.seqKey] || null;
+                }
                 worker.postMessage({
                   type: 'polish',
                   task: {
                     cand: task.cand,
                     regimes: task.regimes,
                     depHourOffsets,
-                    departure_hours
+                    departure_hours,
+                    seqKey: task.seqKey,
+                    osrmDataPayload
                   }
                 });
               };

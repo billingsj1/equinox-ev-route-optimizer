@@ -848,7 +848,7 @@ class WeatherEngine:
 
                 entry = {"t": t_arr, "h": h_arr, "p": p_arr, "w": w_arr, "wd": wd_arr, "pr": pr_arr, "c": c_arr}
                 cache.setdefault(ck, {})[mm_dd] = entry
-                if year_data:
+                if len(year_data) == len(target_years):
                     self._save_historical_cache_entry(ck, mm_dd, entry)
 
         result_waypoints = []
