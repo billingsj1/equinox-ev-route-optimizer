@@ -4397,9 +4397,17 @@
       const enabledNetsKey = (typeof document !== 'undefined')
         ? Array.from(document.querySelectorAll('input[name="networkFilter"]:checked')).map(cb => cb.value).sort().join(',')
         : 'all';
-      const coordsKey = coords && coords.length > 0
-        ? `${coords.length}_${coords[0][0].toFixed(4)},${coords[0][1].toFixed(4)}_${coords[coords.length - 1][0].toFixed(4)},${coords[coords.length - 1][1].toFixed(4)}_${enabledNetsKey}`
-        : 'empty';
+      let coordsKey = `empty_${enabledNetsKey}`;
+      if (coords && coords.length > 0) {
+        let h1 = 0x811c9dc5;
+        for (let i = 0; i < coords.length; i++) {
+          const lonQ = Math.round(coords[i][0] * 1e5) | 0;
+          const latQ = Math.round(coords[i][1] * 1e5) | 0;
+          h1 = Math.imul(h1 ^ lonQ, 0x01000193);
+          h1 = Math.imul(h1 ^ latQ, 0x01000193);
+        }
+        coordsKey = `${coords.length}_${(h1 >>> 0).toString(36)}_${enabledNetsKey}`;
+      }
 
       if (typeof window !== 'undefined') {
         window._stationProjectionCache = window._stationProjectionCache || new Map();
@@ -68789,9 +68797,14 @@
       steps._luts = steps._luts || {};
 
       if (!steps._luts[lutKey]) {
-        const firstStep = steps[0];
-        const lastStep = steps[steps.length - 1];
-        const stepsSig = `${steps.length}_${(firstStep && firstStep.distance_miles) || 0}_${(lastStep && lastStep.distance_miles) || 0}_${(firstStep && firstStep.name) || ''}_${(lastStep && lastStep.name) || ''}`;
+        if (!steps._stepsSig) {
+          steps._stepsSig = steps.map(s => {
+            const m = s.maneuver;
+            const iLen = s.intersections ? s.intersections.length : 0;
+            return `${s.distance_miles || 0}|${s.posted_speed || 0}|${s.name || ''}|${s.ref || ''}|${s.mid_lat || 0}|${s.mid_lon || 0}|${m ? (m.type || '') : ''}|${m && m.bearing_after != null ? m.bearing_after : ''}|${m && m.bearing_before != null ? m.bearing_before : ''}|${iLen}`;
+          }).join(';');
+        }
+        const stepsSig = steps._stepsSig;
         const globalLutKey = `${stepsSig}__${lutKey}`;
         const gScope = (typeof self !== 'undefined') ? self : window;
         gScope._globalStepLutsCache = gScope._globalStepLutsCache || new Map();
@@ -69891,6 +69904,8 @@
 
             hour_idx: arrDt.getHours(),
 
+            utc_hour_idx: arrDt.getUTCHours(),
+
             iso_date: arrDt.toISOString().slice(0, 10),
 
             clock_str: formatClockTime(arrDt.getHours() + (arrDt.getMinutes() / 60))
@@ -70010,13 +70025,15 @@
 
           let slot = 0;
 
-          const targetPrefix = `${t.iso_date}T${String(t.hour_idx).padStart(2, '0')}`;
+          const targetHour = (t.utc_hour_idx != null) ? t.utc_hour_idx : t.hour_idx;
+
+          const targetPrefix = `${t.iso_date}T${String(targetHour).padStart(2, '0')}`;
 
           if (series.time) {
 
             const found = series.time.findIndex(str => str.startsWith(targetPrefix));
 
-            slot = found >= 0 ? found : Math.min(t.hour_idx, series.time.length - 1);
+            slot = found >= 0 ? found : Math.min(targetHour, series.time.length - 1);
 
           }
 
