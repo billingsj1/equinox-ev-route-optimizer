@@ -17,6 +17,9 @@ Provides high-resolution along-route weather modeling:
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
+from pathlib import Path
+import json
+import os
 import math
 import httpx
 import asyncio
@@ -727,70 +730,139 @@ class WeatherEngine:
 
         return result_waypoints
 
+    @staticmethod
+    def _load_historical_cache() -> Dict[str, Any]:
+        """Loads static ERA5 historical reanalysis cache from /tmp or package data/."""
+        candidates = [
+            Path("/tmp/historical_weather_cache.json"),
+            Path(__file__).resolve().parent.parent / "data" / "historical_weather_cache.json",
+            Path(__file__).resolve().parent.parent / "public" / "data" / "historical_weather_cache.json",
+        ]
+        merged: Dict[str, Any] = {}
+        # Load static data first, then overlay /tmp dynamic additions
+        for p in reversed(candidates):
+            if p.exists():
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        if isinstance(data, dict):
+                            for ck, dates_map in data.items():
+                                merged.setdefault(ck, {}).update(dates_map)
+                except Exception:
+                    pass
+        return merged
+
+    @staticmethod
+    def _save_historical_cache_entry(coord_key: str, mm_dd: str, hourly_entry: Dict[str, Any]) -> None:
+        """Persists a newly fetched historical reanalysis entry to /tmp (serverless-safe)."""
+        is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+        target_path = (
+            Path("/tmp/historical_weather_cache.json")
+            if is_serverless
+            else Path(__file__).resolve().parent.parent / "data" / "historical_weather_cache.json"
+        )
+        try:
+            existing: Dict[str, Any] = {}
+            if target_path.exists():
+                with open(target_path, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+            existing.setdefault(coord_key, {})[mm_dd] = hourly_entry
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(target_path, "w", encoding="utf-8") as f:
+                json.dump(existing, f, separators=(",", ":"))
+        except Exception:
+            pass
+
     async def _fetch_historical_reanalysis(
         self,
         timeline: List[Dict[str, Any]],
         departure_dt: datetime
     ) -> List[WaypointWeather]:
-        target_years = [departure_dt.year - 1, departure_dt.year - 2, departure_dt.year - 3]
-        lats = ",".join(f"{wp['lat']:.4f}" for wp in timeline)
-        lons = ",".join(f"{wp['lon']:.4f}" for wp in timeline)
+        mm_dd = f"{departure_dt.month:02d}-{departure_dt.day:02d}"
+        cache = self._load_historical_cache()
 
-        year_data: List[List[Dict[str, Any]]] = []
+        missing_indices = []
+        for i, wp in enumerate(timeline):
+            ck = f"{wp['lat']:.3f},{wp['lon']:.3f}"
+            if ck not in cache or mm_dd not in cache[ck]:
+                missing_indices.append(i)
 
-        for yr in target_years:
-            month = departure_dt.month
-            day = departure_dt.day
-            if month == 2 and day == 29 and yr % 4 != 0:
-                day = 28
+        if missing_indices:
+            target_years = [departure_dt.year - 1, departure_dt.year - 2, departure_dt.year - 3]
+            miss_wps = [timeline[i] for i in missing_indices]
+            lats = ",".join(f"{wp['lat']:.4f}" for wp in miss_wps)
+            lons = ",".join(f"{wp['lon']:.4f}" for wp in miss_wps)
 
-            date_str = f"{yr}-{month:02d}-{day:02d}"
-            url = (
-                f"https://archive-api.open-meteo.com/v1/archive?"
-                f"latitude={lats}&longitude={lons}&"
-                f"start_date={date_str}&end_date={date_str}&"
-                f"hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,"
-                f"wind_speed_10m,wind_direction_10m,surface_pressure&"
-                f"temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch"
-            )
-            try:
-                resp = await self._fetch_http_json(url)
-                series_list = resp if isinstance(resp, list) else [resp]
-                year_data.append(series_list)
-            except Exception:
-                pass
+            year_data: List[List[Dict[str, Any]]] = []
+            for yr in target_years:
+                month = departure_dt.month
+                day = departure_dt.day
+                if month == 2 and day == 29 and yr % 4 != 0:
+                    day = 28
+
+                date_str = f"{yr}-{month:02d}-{day:02d}"
+                url = (
+                    f"https://archive-api.open-meteo.com/v1/archive?"
+                    f"latitude={lats}&longitude={lons}&"
+                    f"start_date={date_str}&end_date={date_str}&"
+                    f"hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,"
+                    f"wind_speed_10m,wind_direction_10m,surface_pressure&"
+                    f"temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch"
+                )
+                try:
+                    resp = await self._fetch_http_json(url)
+                    series_list = resp if isinstance(resp, list) else [resp]
+                    year_data.append(series_list)
+                except Exception:
+                    pass
+
+            for m_pos, orig_idx in enumerate(missing_indices):
+                wp = timeline[orig_idx]
+                ck = f"{wp['lat']:.3f},{wp['lon']:.3f}"
+                t_arr, h_arr, p_arr, w_arr, wd_arr, pr_arr, c_arr = [], [], [], [], [], [], []
+                for hr in range(24):
+                    temps, hums, pressures, winds, wind_dirs, precips, codes = [], [], [], [], [], [], []
+                    for yr_series in year_data:
+                        if m_pos < len(yr_series):
+                            hourly = yr_series[m_pos].get("hourly", {})
+                            if "temperature_2m" in hourly and hr < len(hourly["temperature_2m"]):
+                                temps.append(float(hourly["temperature_2m"][hr]))
+                                hums.append(float(hourly.get("relative_humidity_2m", [50.0])[hr]))
+                                pressures.append(float(hourly.get("surface_pressure", [1013.25])[hr]))
+                                winds.append(float(hourly.get("wind_speed_10m", [5.0])[hr]))
+                                wind_dirs.append(float(hourly.get("wind_direction_10m", [270.0])[hr]))
+                                precips.append(float(hourly.get("precipitation", [0.0])[hr]))
+                                codes.append(int(hourly.get("weather_code", [0])[hr]))
+                    t_arr.append(round(sum(temps) / len(temps), 1) if temps else 55.0)
+                    h_arr.append(round(sum(hums) / len(hums), 1) if hums else 50.0)
+                    p_arr.append(round(sum(pressures) / len(pressures), 1) if pressures else 1013.25)
+                    w_arr.append(round(sum(winds) / len(winds), 1) if winds else 7.0)
+                    if wind_dirs:
+                        u_sum = sum(-math.sin(math.radians(d)) for d in wind_dirs)
+                        v_sum = sum(-math.cos(math.radians(d)) for d in wind_dirs)
+                        wd_arr.append(round((math.degrees(math.atan2(-u_sum, -v_sum)) + 360) % 360, 1))
+                    else:
+                        wd_arr.append(270.0)
+                    pr_arr.append(round(sum(precips) / len(precips), 3) if precips else 0.0)
+                    c_arr.append(codes[0] if codes else 0)
+
+                entry = {"t": t_arr, "h": h_arr, "p": p_arr, "w": w_arr, "wd": wd_arr, "pr": pr_arr, "c": c_arr}
+                cache.setdefault(ck, {})[mm_dd] = entry
+                if len(year_data) == len(target_years):
+                    self._save_historical_cache_entry(ck, mm_dd, entry)
 
         result_waypoints = []
         for i, wp in enumerate(timeline):
             target_hour = wp["arrival_dt"].hour
-            temps, hums, pressures, winds, wind_dirs, precips, codes = [], [], [], [], [], [], []
-
-            for yr_series in year_data:
-                if i < len(yr_series):
-                    hourly = yr_series[i].get("hourly", {})
-                    if "temperature_2m" in hourly and target_hour < len(hourly["temperature_2m"]):
-                        temps.append(float(hourly["temperature_2m"][target_hour]))
-                        hums.append(float(hourly.get("relative_humidity_2m", [50.0])[target_hour]))
-                        pressures.append(float(hourly.get("surface_pressure", [1013.25])[target_hour]))
-                        winds.append(float(hourly.get("wind_speed_10m", [5.0])[target_hour]))
-                        wind_dirs.append(float(hourly.get("wind_direction_10m", [270.0])[target_hour]))
-                        precips.append(float(hourly.get("precipitation", [0.0])[target_hour]))
-                        codes.append(int(hourly.get("weather_code", [0])[target_hour]))
-
-            temp_f = sum(temps) / len(temps) if temps else 55.0
-            humidity = sum(hums) / len(hums) if hums else 50.0
-            pressure = sum(pressures) / len(pressures) if pressures else 1013.25
-            wind_speed = sum(winds) / len(winds) if winds else 7.0
-            precip = sum(precips) / len(precips) if precips else 0.0
-
-            if wind_dirs:
-                u_sum = sum(-math.sin(math.radians(d)) for d in wind_dirs)
-                v_sum = sum(-math.cos(math.radians(d)) for d in wind_dirs)
-                wind_dir = (math.degrees(math.atan2(-u_sum, -v_sum)) + 360) % 360
-            else:
-                wind_dir = 270.0
-
-            weather_code = codes[0] if codes else 0
+            ck = f"{wp['lat']:.3f},{wp['lon']:.3f}"
+            entry = cache.get(ck, {}).get(mm_dd, {})
+            temp_f = entry.get("t", [55.0] * 24)[target_hour]
+            humidity = entry.get("h", [50.0] * 24)[target_hour]
+            pressure = entry.get("p", [1013.25] * 24)[target_hour]
+            wind_speed = entry.get("w", [7.0] * 24)[target_hour]
+            wind_dir = entry.get("wd", [270.0] * 24)[target_hour]
+            precip = entry.get("pr", [0.0] * 24)[target_hour]
+            weather_code = int(entry.get("c", [0] * 24)[target_hour])
             is_day = 6 <= target_hour <= 19
 
             road_cond, wetness_factor, crr = self.evaluate_road_moisture_and_drying(
