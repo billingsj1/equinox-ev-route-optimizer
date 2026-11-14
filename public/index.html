@@ -4393,11 +4393,34 @@
 
     function matchStationsToPolyline(coords) {
 
-      const cum_dist = [0.0];
+      // Session cache keyed on polyline signature + enabled networks + min_kw
+      const enabledNetsKey = (typeof document !== 'undefined')
+        ? Array.from(document.querySelectorAll('input[name="networkFilter"]:checked')).map(cb => cb.value).sort().join(',')
+        : 'all';
+      const coordsKey = coords && coords.length > 0
+        ? `${coords.length}_${coords[0][0].toFixed(4)},${coords[0][1].toFixed(4)}_${coords[coords.length - 1][0].toFixed(4)},${coords[coords.length - 1][1].toFixed(4)}_${enabledNetsKey}`
+        : 'empty';
+
+      if (typeof window !== 'undefined') {
+        window._stationProjectionCache = window._stationProjectionCache || new Map();
+        const cached = window._stationProjectionCache.get(coordsKey);
+        if (cached) {
+          return { matched: cached.matched.map(s => Object.assign({}, s)), total_dist: cached.total_dist };
+        }
+      }
+
+      const nPts = coords.length;
+      const cum_dist = new Float64Array(nPts);
+      const nSegs = Math.max(0, nPts - 1);
+      const segLen = new Float64Array(nSegs);
+      const segMinLat = new Float64Array(nSegs);
+      const segMaxLat = new Float64Array(nSegs);
+      const segMinLon = new Float64Array(nSegs);
+      const segMaxLon = new Float64Array(nSegs);
 
       let min_c_lat = 999, max_c_lat = -999, min_c_lon = 999, max_c_lon = -999;
 
-      for (let i = 0; i < coords.length; i++) {
+      for (let i = 0; i < nPts; i++) {
 
         const c_lon = coords[i][0], c_lat = coords[i][1];
 
@@ -4411,21 +4434,26 @@
 
         if (i > 0) {
 
-          const d = haversineMiles(coords[i-1][1], coords[i-1][0], coords[i][1], coords[i][0]);
-
-          cum_dist.push(cum_dist[cum_dist.length - 1] + d);
+          const a_lon = coords[i - 1][0], a_lat = coords[i - 1][1];
+          const d = haversineMiles(a_lat, a_lon, c_lat, c_lon);
+          cum_dist[i] = cum_dist[i - 1] + d;
+          segLen[i - 1] = d;
+          segMinLat[i - 1] = (a_lat < c_lat ? a_lat : c_lat) - 0.22;
+          segMaxLat[i - 1] = (a_lat > c_lat ? a_lat : c_lat) + 0.22;
+          segMinLon[i - 1] = (a_lon < c_lon ? a_lon : c_lon) - 0.28;
+          segMaxLon[i - 1] = (a_lon > c_lon ? a_lon : c_lon) + 0.28;
 
         }
 
       }
 
-      const total_dist = cum_dist[cum_dist.length - 1];
+      const total_dist = nPts > 0 ? cum_dist[nPts - 1] : 0.0;
 
       // Fast corridor bounding-box filter (~15 miles buffer)
 
       const b_lat_min = min_c_lat - 0.22, b_lat_max = max_c_lat + 0.22;
 
-      const b_lon_min = min_c_lon - 0.25, b_lon_max = max_c_lon + 0.25;
+      const b_lon_min = min_c_lon - 0.28, b_lon_max = max_c_lon + 0.28;
 
 
 
@@ -4469,13 +4497,18 @@
 
 
 
-        for (let i = 0; i < coords.length - 1; i++) {
+        for (let i = 0; i < nSegs; i++) {
+
+          // 2-tier spatial bounding filter per segment: skip segments >15 miles away
+          if (s.lat < segMinLat[i] || s.lat > segMaxLat[i] || s.lon < segMinLon[i] || s.lon > segMaxLon[i]) {
+            continue;
+          }
 
           const a_lon = coords[i][0], a_lat = coords[i][1];
 
           const b_lon = coords[i+1][0], b_lat = coords[i+1][1];
 
-          const d_ab = haversineMiles(a_lat, a_lon, b_lat, b_lon);
+          const d_ab = segLen[i];
 
 
 
@@ -4501,9 +4534,9 @@
 
           const d_bp = haversineMiles(b_lat, b_lon, s.lat, s.lon);
 
-          const frac = Math.max(0.0, Math.min(1.0, (Math.pow(d_ap, 2) - Math.pow(d_bp, 2) + Math.pow(d_ab, 2)) / (2 * Math.pow(d_ab, 2))));
+          const frac = Math.max(0.0, Math.min(1.0, (d_ap * d_ap - d_bp * d_bp + d_ab * d_ab) / (2.0 * d_ab * d_ab)));
 
-          const perp = Math.sqrt(Math.max(0.0, Math.pow(d_ap, 2) - Math.pow(frac * d_ab, 2)));
+          const perp = Math.sqrt(Math.max(0.0, d_ap * d_ap - (frac * d_ab) * (frac * d_ab)));
 
 
 
@@ -4538,6 +4571,13 @@
 
 
       matched.sort((a, b) => a.mile - b.mile);
+
+      if (typeof window !== 'undefined' && window._stationProjectionCache) {
+        if (window._stationProjectionCache.size > 32) {
+          window._stationProjectionCache.clear();
+        }
+        window._stationProjectionCache.set(coordsKey, { matched: matched.map(s => Object.assign({}, s)), total_dist: total_dist });
+      }
 
       return { matched: matched, total_dist: total_dist };
 
@@ -67486,9 +67526,9 @@
 
       const key = isEastOrNorth ? eastOrNorthKey : westOrSouthKey;
 
-      const depDateEl = document.getElementById('departureDate');
+      const dom = (typeof window !== 'undefined' && window._cachedDOMParams) ? window._cachedDOMParams : null;
 
-      const dateStr = depDateEl ? depDateEl.value : null;
+      const dateStr = dom ? dom.depDateVal : ((typeof document !== 'undefined' && document.getElementById('departureDate')) ? document.getElementById('departureDate').value : null);
 
       return getCalibratedSpeed(key, dow, hour, fallback, dateStr);
 
@@ -68749,9 +68789,24 @@
       steps._luts = steps._luts || {};
 
       if (!steps._luts[lutKey]) {
-
-        steps._luts[lutKey] = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, quantizedClockHours, depDateVal, decamillaStopVal, depVal);
-
+        const firstStep = steps[0];
+        const lastStep = steps[steps.length - 1];
+        const stepsSig = `${steps.length}_${(firstStep && firstStep.distance_miles) || 0}_${(lastStep && lastStep.distance_miles) || 0}_${(firstStep && firstStep.name) || ''}_${(lastStep && lastStep.name) || ''}`;
+        const globalLutKey = `${stepsSig}__${lutKey}`;
+        const gScope = (typeof self !== 'undefined') ? self : window;
+        gScope._globalStepLutsCache = gScope._globalStepLutsCache || new Map();
+        const cachedGlobalLut = gScope._globalStepLutsCache.get(globalLutKey);
+        if (cachedGlobalLut) {
+          steps._luts[lutKey] = cachedGlobalLut;
+        } else {
+          const computedLut = precomputeStepsPhysicsLUT(steps, payload_lbs, temp_f, wind_speed, wind_dir, road_cond, speed_offset, max_cap, fallback_speed, traffic_profile, quantizedClockHours, depDateVal, decamillaStopVal, depVal);
+          steps._luts[lutKey] = computedLut;
+          if (gScope._globalStepLutsCache.size >= 256) {
+            const oldestKey = gScope._globalStepLutsCache.keys().next().value;
+            gScope._globalStepLutsCache.delete(oldestKey);
+          }
+          gScope._globalStepLutsCache.set(globalLutKey, computedLut);
+        }
       }
 
       steps._lut = steps._luts[lutKey];
@@ -69860,35 +69915,80 @@
 
         const isForecast = diffDays <= 16;
 
+        let seriesList = null;
 
-
-        let apiUrl = "";
-
-        if (isForecast) {
-
-          apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&past_days=1&forecast_days=16`;
-
-        } else {
-
-          const pastYr = depDate.getFullYear() - 1;
-
+        if (!isForecast) {
           const mm = String(depDate.getMonth() + 1).padStart(2, '0');
-
           const dd = String(depDate.getDate()).padStart(2, '0');
-
-          apiUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lats}&longitude=${lons}&start_date=${pastYr}-${mm}-${dd}&end_date=${pastYr}-${mm}-${dd}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
-
+          const mmDd = `${mm}-${dd}`;
+          try {
+            if (!window._historicalWeatherCache) {
+              for (const cacheUrl of ['data/historical_weather_cache.json', 'public/data/historical_weather_cache.json']) {
+                try {
+                  const cResp = await fetch(cacheUrl, { signal: AbortSignal.timeout(800) });
+                  if (cResp.ok) {
+                    window._historicalWeatherCache = await cResp.json();
+                    break;
+                  }
+                } catch (_) {}
+              }
+            }
+            const hCache = window._historicalWeatherCache;
+            if (hCache) {
+              const allHit = timeline.every(t => {
+                const ck = `${Number(t.lat).toFixed(3)},${Number(t.lon).toFixed(3)}`;
+                return hCache[ck] && hCache[ck][mmDd];
+              });
+              if (allHit) {
+                seriesList = timeline.map(t => {
+                  const ck = `${Number(t.lat).toFixed(3)},${Number(t.lon).toFixed(3)}`;
+                  const e = hCache[ck][mmDd];
+                  const times = Array.from({ length: 24 }, (_, hr) => `${t.iso_date}T${String(hr).padStart(2, '0')}:00`);
+                  return {
+                    hourly: {
+                      time: times,
+                      temperature_2m: e.t,
+                      relative_humidity_2m: e.h,
+                      surface_pressure: e.p,
+                      wind_speed_10m: e.w,
+                      wind_direction_10m: e.wd,
+                      precipitation: e.pr,
+                      weather_code: e.c
+                    }
+                  };
+                });
+              }
+            }
+          } catch (_) {}
         }
 
+        if (!seriesList) {
+          let apiUrl = "";
 
+          if (isForecast) {
 
-        const res = await fetch(apiUrl, { signal: AbortSignal.timeout(2000) });
+            apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&past_days=1&forecast_days=16`;
 
-        if (!res.ok) throw new Error("Open-Meteo HTTP " + res.status);
+          } else {
 
-        const data = await res.json();
+            const pastYr = depDate.getFullYear() - 1;
 
-        const seriesList = Array.isArray(data) ? data : [data];
+            const mm = String(depDate.getMonth() + 1).padStart(2, '0');
+
+            const dd = String(depDate.getDate()).padStart(2, '0');
+
+            apiUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lats}&longitude=${lons}&start_date=${pastYr}-${mm}-${dd}&end_date=${pastYr}-${mm}-${dd}&hourly=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
+
+          }
+
+          const res = await fetch(apiUrl, { signal: AbortSignal.timeout(2000) });
+
+          if (!res.ok) throw new Error("Open-Meteo HTTP " + res.status);
+
+          const data = await res.json();
+
+          seriesList = Array.isArray(data) ? data : [data];
+        }
 
 
 
@@ -77136,6 +77236,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
         }
       }
 
+      // LPT (Longest-Processing-Time) Task Scheduling:
+      // Sort heavy combinatorial tasks (early-mile anchors, IONNA/EA, high speed regimes, longer corridors)
+      // to the front of the dispatch queue so all 16 workers start heavy tasks at t=0.
+      // Zero tasks are pruned or dropped; all tasks execute to 100% completion.
+      allStage1Payloads.sort((a, b) => {
+        const getLptWeight = (p) => {
+          const miles = (p.cData && p.cData.total_miles) ? p.cData.total_miles : 300;
+          const stns = (p.cData && p.cData.routeStations) ? p.cData.routeStations.length : 50;
+          const sOff = (p.params && p.params.sOffset) ? p.params.sOffset : 0;
+          const sCap = (p.params && p.params.sCap) ? p.params.sCap : 70;
+          const lbl = p.taskLabel || '';
+          let netMult = 1.0;
+          if (lbl.includes('IONNA')) netMult = 2.5;
+          else if (lbl.includes('Electrify America')) netMult = 1.8;
+          else if (lbl.includes('Francis')) netMult = 1.3;
+          return miles * stns * netMult * (1.0 + (sOff * 0.05) + ((sCap - 70) * 0.03));
+        };
+        return getLptWeight(b) - getLptWeight(a);
+      });
+
       // Assign global task indices and totals
       allStage1Payloads.forEach((p, idx) => {
         p.taskIndex = idx;
@@ -77552,10 +77672,6 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       updateCalcProgress(72, `Analyzing ${combinedTop.length} Top Candidates across ${uniqueSequencesMap.size} Unique Routes...`);
 
-      await new Promise(r => setTimeout(r, 60));
-
-
-
       // Query OSRM with 3-tier resolution: Option A (Pre-seeded Cache) -> Live OSRM + Local Persistence -> Option B (Corridor Slicing Fallback)
 
       if (!window.OSRM_WAYPOINT_SEQUENCE_CACHE) {
@@ -77575,9 +77691,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       const seqEntries = Array.from(uniqueSequencesMap.entries());
 
-      const BATCH_SIZE = 2;
-
-      let lastOsrmPct = 83;
+      const BATCH_SIZE = 6;
 
       updateCalcProgress(83, `Verifying Route Geometry via OSRM (0/${seqEntries.length} routes)...`);
 
@@ -77589,17 +77703,9 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         const completedSoFar = Math.min(seqEntries.length, i + BATCH_SIZE);
 
-        const targetOsrmPct = 83 + Math.round((completedSoFar / Math.max(1, seqEntries.length)) * 10);
+        const targetOsrmPct = Math.min(93, 83 + Math.round((completedSoFar / Math.max(1, seqEntries.length)) * 10));
 
-        while (lastOsrmPct < targetOsrmPct && lastOsrmPct < 93) {
-
-          lastOsrmPct++;
-
-          updateCalcProgress(lastOsrmPct, `Verifying Route Geometry via OSRM (${completedSoFar}/${seqEntries.length} routes)...`);
-
-          await new Promise(r => setTimeout(r, 4));
-
-        }
+        updateCalcProgress(targetOsrmPct, `Verifying Route Geometry via OSRM (${completedSoFar}/${seqEntries.length} routes)...`);
 
 
 
@@ -77931,11 +78037,26 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       // Re-polish candidates using true OSRM multi-waypoint geometry
 
-      const polishOne = (cand, trimSlack, depHours = departure_hours, testSpeedOffset = speed_offset, testMaxCap = max_cap) => {
-
-        const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
-
-        const osrmData = osrmResponses.get(seqKey);
+      const executePolishOne = (cand, trimSlack, depHours, testSpeedOffset, testMaxCap, osrmData, ctx) => {
+        const {
+          start_soc,
+          isPreheated,
+          temp_f,
+          payload_lbs,
+          wind_speed,
+          wind_dir,
+          road_cond,
+          departure_hours,
+          min_buffer_soc,
+          target_arrival_soc,
+          min_charge_pct,
+          has_ea_preowned,
+          has_tesla_preowned,
+          has_ezpass_checked,
+          feeding_interval,
+          feeding_duration,
+          isManualWeather
+        } = ctx;
 
 
 
@@ -78001,7 +78122,7 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
           let arrAmb = temp_f;
 
-          if (window.activeWeatherReport && !document.getElementById('manualWeatherOverride')?.checked) {
+          if (window.activeWeatherReport && !isManualWeather) {
 
             const wp = getRouteWeatherAtMile(sp.mile);
 
@@ -78571,6 +78692,32 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
       };
 
+      const polishOne = (cand, trimSlack, depHours = departure_hours, testSpeedOffset = speed_offset, testMaxCap = max_cap) => {
+        const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
+        const osrmData = osrmResponses.get(seqKey);
+        return executePolishOne(cand, trimSlack, depHours, testSpeedOffset, testMaxCap, osrmData, polishCtx);
+      };
+
+      const polishCtx = {
+        start_soc,
+        isPreheated,
+        temp_f,
+        payload_lbs,
+        wind_speed,
+        wind_dir,
+        road_cond,
+        departure_hours,
+        min_buffer_soc,
+        target_arrival_soc,
+        min_charge_pct,
+        has_ea_preowned,
+        has_tesla_preowned,
+        has_ezpass_checked,
+        feeding_interval,
+        feeding_duration,
+        isManualWeather: (typeof document !== 'undefined' ? (document.getElementById('manualWeatherOverride')?.checked || false) : false)
+      };
+
       const polishedCandidates = [];
 
       const depHourOffsets = shouldOptimizeDep
@@ -78579,113 +78726,288 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
         : [0.0];
 
-
-
-      const totalPolishEvals = depHourOffsets.length * Math.max(1, combinedTop.length);
+      const speedRegimesToPolish = [];
+      if (shouldOptimizeSpeed || shouldOptimizeCap) {
+        speedOffsetsToTry.forEach(off => {
+          speedCapsToTry.forEach(cap => {
+            speedRegimesToPolish.push({ offset: off, cap: cap });
+          });
+        });
+      }
 
       profiler.startStage("Schedule & Tariff Polishing");
-      let evalsDone = 0;
-
-      let lastPolishPct = 93;
-
       updateCalcProgress(93, "Polishing Schedules, Tariffs & Turn-by-Turn Telemetry...");
 
-      await new Promise(r => setTimeout(r, 5));
+      // Prepare lightweight OSRM legs dictionary (omitting large coordinate arrays from worker IPC)
+      const osrmLegsByKey = {};
+      osrmResponses.forEach((val, key) => {
+        osrmLegsByKey[key] = {
+          distance_miles: val.distance_miles,
+          duration_hours: val.duration_hours,
+          legs: val.legs
+        };
+      });
 
+      // Build flat list of candidate-level tasks (each task processes one candidate across all regimes & departure offsets)
+      // Grouping by candidate keeps steps._luts hot inside the assigned worker across departure & speed permutations
+      const polishTasks = combinedTop.map((cand, idx) => {
+        const candSpeedOffset = cand.speed_offset != null ? cand.speed_offset : speed_offset;
+        const candMaxCap = cand.max_speed_cap != null ? cand.max_speed_cap : max_speed_cap;
+        const regimes = (speedRegimesToPolish.length > 0)
+          ? speedRegimesToPolish
+          : [{ offset: candSpeedOffset, cap: candMaxCap }];
+        return { candIdx: idx, cand, regimes };
+      });
 
+      const canUsePolishWorkers = (typeof Worker !== 'undefined' && polishTasks.length > 1 && depHourOffsets.length * (speedRegimesToPolish.length || 1) >= 2);
+      let workerPolishSucceeded = false;
 
-      for (let dIdx = 0; dIdx < depHourOffsets.length; dIdx++) {
+      if (canUsePolishWorkers) {
+        const generatePolishWorkerScript = () => {
+          return `
+            const window = self;
+            const CHARGING_LUT_CACHE = new Map();
+            let TOMTOM_CORRIDOR_SPEEDS = {};
+            let CORRIDOR_KEY_ALIASES = {};
+            let BOTTLENECK_SPEEDS_DB = null;
+            let HOLIDAY_OFFSETS_DB = null;
+            let OSRM_LEGS_BY_KEY = {};
+            let POLISH_CTX = {};
 
-        const offsetHours = depHourOffsets[dIdx];
+            ${calcBearingDeg.toString()}
+            ${getUltiumBmsPower.toString()}
+            ${getStationMaxAmps.toString()}
+            ${getCumulativeChargingLUT.toString()}
+            ${calculateCharging.toString()}
+            ${isTeslaNetwork.toString()}
+            ${isPilotStation.toString()}
+            ${parseTimeToDecimal.toString()}
+            ${isGmDiscountEligible.toString()}
+            ${resolveStationTariff.toString()}
+            ${resolveEffectiveStopRateAndBadge.toString()}
+            ${getAttainableStationKw.toString()}
+            ${isServicePlaza.toString()}
+            ${formatClockTime.toString()}
+            ${resolveCandidateToll.toString()}
+            ${getDepartureDayOfWeek.toString()}
+            ${getDepartureHoursDecimal.toString()}
+            ${getTomTomSpeed.toString()}
+            ${getBestHourEntry.toString()}
+            ${getHolidayProfileKey.toString()}
+            ${getCalibratedSpeed.toString()}
+            ${getDirectionalTomTomSpeed.toString()}
+            ${getSchuylkillHourlySpeed.toString()}
+            ${getVineStHourlySpeed.toString()}
+            ${getI276HourlySpeed.toString()}
+            ${getNJTurnpikeHourlySpeed.toString()}
+            ${getNJ70HourlySpeed.toString()}
+            ${getNJ73HourlySpeed.toString()}
+            ${getUS30PA283HourlySpeed.toString()}
+            ${getRouteWeatherAtMile.toString()}
+            ${precomputeStepsPhysicsLUT.toString()}
+            ${queryStepsPhysicsLUT.toString()}
+            ${getElevationCumulativeMetrics.toString()}
+            ${simulateLegPhysics.toString()}
+            ${simulateLegFromSteps.toString()}
+            const executePolishOne = ${executePolishOne.toString()};
 
-        const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
+            self.onmessage = function(e) {
+              const msg = e.data;
+              if (!msg) return;
+              if (msg.type === 'init') {
+                TOMTOM_CORRIDOR_SPEEDS = msg.TOMTOM_CORRIDOR_SPEEDS || {};
+                CORRIDOR_KEY_ALIASES = msg.CORRIDOR_KEY_ALIASES || {};
+                BOTTLENECK_SPEEDS_DB = msg.BOTTLENECK_SPEEDS_DB || null;
+                HOLIDAY_OFFSETS_DB = msg.HOLIDAY_OFFSETS_DB || null;
+                OSRM_LEGS_BY_KEY = msg.osrmLegsByKey || {};
+                POLISH_CTX = msg.polishCtx || {};
+                self.activeWeatherReport = msg.activeWeatherReport || null;
+                self._cachedDOMParams = msg._cachedDOMParams || null;
+                self.postMessage({ type: 'ready' });
+              } else if (msg.type === 'polish') {
+                try {
+                  const { cand, regimes, depHourOffsets, departure_hours } = msg.task;
+                  const seqKey = cand.route.id + '|' + cand.stops.map(s => s.station.id).join('-');
+                  const osrmData = OSRM_LEGS_BY_KEY[seqKey] || null;
+                  const out = [];
+                  for (let dIdx = 0; dIdx < depHourOffsets.length; dIdx++) {
+                    const offsetHours = depHourOffsets[dIdx];
+                    const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
+                    for (let rIdx = 0; rIdx < regimes.length; rIdx++) {
+                      const { offset: testSpeedOffset, cap: testMaxCap } = regimes[rIdx];
+                      const asChosen = executePolishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap, osrmData, POLISH_CTX);
+                      const trimmed = executePolishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap, osrmData, POLISH_CTX);
+                      if (asChosen) {
+                        asChosen.departure_offset_hrs = offsetHours;
+                        asChosen.departure_clock = formatClockTime(testDepHour);
+                        asChosen.speed_offset = testSpeedOffset;
+                        asChosen.max_speed_cap = testMaxCap;
+                        asChosen._seqKey = seqKey;
+                        delete asChosen.osrmDetailedCoords;
+                        out.push(asChosen);
+                      }
+                      if (trimmed && (!asChosen || trimmed.stops.some((s, idx) => s.tgt_soc !== asChosen.stops[idx].tgt_soc))) {
+                        trimmed.departure_offset_hrs = offsetHours;
+                        trimmed.departure_clock = formatClockTime(testDepHour);
+                        trimmed.speed_offset = testSpeedOffset;
+                        trimmed.max_speed_cap = testMaxCap;
+                        trimmed._seqKey = seqKey;
+                        delete trimmed.osrmDetailedCoords;
+                        out.push(trimmed);
+                      }
+                    }
+                  }
+                  self.postMessage({ type: 'done', results: out });
+                } catch (err) {
+                  self.postMessage({ type: 'error', error: (err && err.message) || String(err) });
+                }
+              }
+            };
+          `;
+        };
 
-        const speedRegimesToPolish = [];
+        const pScript = generatePolishWorkerScript();
+        const pBlob = new Blob([pScript], { type: 'application/javascript' });
+        const pUrl = URL.createObjectURL(pBlob);
+        const availCores = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) ? navigator.hardwareConcurrency : 8;
+        const pWorkersCount = Math.max(1, Math.min(polishTasks.length, Math.min(16, availCores)));
+        const pWorkers = [];
 
-        if (shouldOptimizeSpeed || shouldOptimizeCap) {
+        try {
+          await new Promise((resolve, reject) => {
+            let nextIdx = 0;
+            let finished = 0;
+            let aborted = false;
 
-          speedOffsetsToTry.forEach(off => {
+            const initMsg = {
+              type: 'init',
+              TOMTOM_CORRIDOR_SPEEDS: (typeof TOMTOM_CORRIDOR_SPEEDS !== 'undefined') ? TOMTOM_CORRIDOR_SPEEDS : {},
+              CORRIDOR_KEY_ALIASES: (typeof CORRIDOR_KEY_ALIASES !== 'undefined') ? CORRIDOR_KEY_ALIASES : {},
+              BOTTLENECK_SPEEDS_DB: (typeof BOTTLENECK_SPEEDS_DB !== 'undefined') ? BOTTLENECK_SPEEDS_DB : null,
+              HOLIDAY_OFFSETS_DB: (typeof HOLIDAY_OFFSETS_DB !== 'undefined') ? HOLIDAY_OFFSETS_DB : null,
+              osrmLegsByKey,
+              polishCtx,
+              activeWeatherReport: window.activeWeatherReport || null,
+              _cachedDOMParams: window._cachedDOMParams || null
+            };
 
-            speedCapsToTry.forEach(cap => {
+            for (let w = 0; w < pWorkersCount; w++) {
+              const worker = new Worker(pUrl);
+              pWorkers.push(worker);
 
-              speedRegimesToPolish.push({ offset: off, cap: cap });
+              const dispatchNext = () => {
+                if (aborted) return;
+                if (nextIdx >= polishTasks.length) {
+                  if (finished >= polishTasks.length) resolve();
+                  return;
+                }
+                const task = polishTasks[nextIdx++];
+                worker.postMessage({
+                  type: 'polish',
+                  task: {
+                    cand: task.cand,
+                    regimes: task.regimes,
+                    depHourOffsets,
+                    departure_hours
+                  }
+                });
+              };
 
-            });
+              worker.onmessage = (ev) => {
+                if (aborted) return;
+                const d = ev.data;
+                if (d && d.type === 'ready') {
+                  dispatchNext();
+                } else if (d && d.type === 'done') {
+                  finished++;
+                  if (d.results && d.results.length > 0) {
+                    for (let k = 0; k < d.results.length; k++) {
+                      const item = d.results[k];
+                      const origOsrm = osrmResponses.get(item._seqKey);
+                      item.osrmDetailedCoords = origOsrm ? origOsrm.coordinates : null;
+                      delete item._seqKey;
+                      polishedCandidates.push(item);
+                    }
+                  }
+                  const pct = Math.min(99, 93 + Math.floor((finished / polishTasks.length) * 6));
+                  updateCalcProgress(pct, `Polishing Schedules (${finished}/${polishTasks.length})...`);
+                  dispatchNext();
+                } else if (d && d.type === 'error') {
+                  aborted = true;
+                  reject(new Error(d.error || 'Polish worker error'));
+                }
+              };
 
+              worker.onerror = (err) => {
+                aborted = true;
+                reject(err);
+              };
+
+              worker.postMessage(initMsg);
+            }
           });
-
+          workerPolishSucceeded = true;
+        } catch (polishErr) {
+          console.warn('Parallel polishing failed, falling back to main thread:', polishErr);
+          polishedCandidates.length = 0;
+        } finally {
+          pWorkers.forEach(w => { try { w.terminate(); } catch (_) {} });
+          URL.revokeObjectURL(pUrl);
         }
+      }
 
-        for (let i = 0; i < combinedTop.length; i++) {
+      if (!workerPolishSucceeded) {
+        for (let dIdx = 0; dIdx < depHourOffsets.length; dIdx++) {
 
-          evalsDone++;
+          const offsetHours = depHourOffsets[dIdx];
 
-          const targetPolishPct = 93 + Math.floor((evalsDone / Math.max(1, totalPolishEvals)) * 6);
+          const testDepHour = (departure_hours + offsetHours + 24.0) % 24.0;
 
-          while (lastPolishPct < targetPolishPct && lastPolishPct < 99) {
+          for (let i = 0; i < polishTasks.length; i++) {
 
-            lastPolishPct++;
+            const { cand, regimes } = polishTasks[i];
 
-            updateCalcProgress(lastPolishPct, `Polishing Schedules (${evalsDone}/${totalPolishEvals})...`);
+            for (let rIdx = 0; rIdx < regimes.length; rIdx++) {
 
-            await new Promise(r => setTimeout(r, 2));
+              const { offset: testSpeedOffset, cap: testMaxCap } = regimes[rIdx];
 
-          }
+              const asChosen = polishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap);
 
-          const cand = combinedTop[i];
+              const trimmed = polishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap);
 
-          const candSpeedOffset = cand.speed_offset != null ? cand.speed_offset : speed_offset;
+              if (asChosen) {
 
-          const candMaxCap = cand.max_speed_cap != null ? cand.max_speed_cap : max_speed_cap;
+                asChosen.departure_offset_hrs = offsetHours;
 
-          const regimes = (speedRegimesToPolish.length > 0)
+                asChosen.departure_clock = formatClockTime(testDepHour);
 
-            ? speedRegimesToPolish
+                asChosen.speed_offset = testSpeedOffset;
 
-            : [{ offset: candSpeedOffset, cap: candMaxCap }];
+                asChosen.max_speed_cap = testMaxCap;
 
+                polishedCandidates.push(asChosen);
 
+              }
 
-          for (let rIdx = 0; rIdx < regimes.length; rIdx++) {
+              if (trimmed && (!asChosen || trimmed.stops.some((s, idx) => s.tgt_soc !== asChosen.stops[idx].tgt_soc))) {
 
-            const { offset: testSpeedOffset, cap: testMaxCap } = regimes[rIdx];
+                trimmed.departure_offset_hrs = offsetHours;
 
-            const asChosen = polishOne(cand, false, testDepHour, testSpeedOffset, testMaxCap);
+                trimmed.departure_clock = formatClockTime(testDepHour);
 
-            const trimmed = polishOne(cand, true, testDepHour, testSpeedOffset, testMaxCap);
+                trimmed.speed_offset = testSpeedOffset;
 
-            if (asChosen) {
+                trimmed.max_speed_cap = testMaxCap;
 
-              asChosen.departure_offset_hrs = offsetHours;
+                polishedCandidates.push(trimmed);
 
-              asChosen.departure_clock = formatClockTime(testDepHour);
-
-              asChosen.speed_offset = testSpeedOffset;
-
-              asChosen.max_speed_cap = testMaxCap;
-
-              polishedCandidates.push(asChosen);
-
-            }
-
-            if (trimmed && (!asChosen || trimmed.stops.some((s, idx) => s.tgt_soc !== asChosen.stops[idx].tgt_soc))) {
-
-              trimmed.departure_offset_hrs = offsetHours;
-
-              trimmed.departure_clock = formatClockTime(testDepHour);
-
-              trimmed.speed_offset = testSpeedOffset;
-
-              trimmed.max_speed_cap = testMaxCap;
-
-              polishedCandidates.push(trimmed);
+              }
 
             }
 
           }
 
         }
-
       }
 
 
