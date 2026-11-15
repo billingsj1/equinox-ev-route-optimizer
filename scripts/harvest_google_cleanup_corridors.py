@@ -176,6 +176,10 @@ def main():
         else:
             print(f"[{idx+1}/{len(CLEANUP_CORRIDORS)}] Saved {cid} ({len(pending)} calls)")
 
+    for p in (db_path, pub_db_path):
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(database, f)
+
     def _is_complete(cid):
         dates = database.get("corridors", {}).get(cid, {}).get("dates", {})
         return len(dates) == len(DATES) and all(
