@@ -28,7 +28,7 @@
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/454141",
+    "plugshare_url": "https://www.ionna.com/ev-charging-stations/oh/cambridge/61600-southgate-rd-43725/",
     "price_verified": true
   },
   {
@@ -76,7 +76,7 @@
       "CHAdeMO"
     ],
     "rate_regular": {
-      "off_peak": 0.4,
+      "off_peak": 0.6,
       "on_peak": 0.6
     },
     "gm_discount_eligible": false,
@@ -151,7 +151,7 @@
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/194073",
+    "plugshare_url": "https://www.tesla.com/findus/location/supercharger/somersetsupercharger",
     "price_verified": true
   },
   {
@@ -168,8 +168,8 @@
       "NACS"
     ],
     "rate_regular": {
-      "off_peak": 0.59,
-      "on_peak": 0.59
+      "off_peak": 0.55,
+      "on_peak": 0.55
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
@@ -229,8 +229,8 @@
       "NACS"
     ],
     "rate_regular": {
-      "off_peak": 0.59,
-      "on_peak": 0.59
+      "off_peak": 0.64,
+      "on_peak": 0.64
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
@@ -305,7 +305,7 @@
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/397535",
+    "plugshare_url": "https://www.tesla.com/findus/location/supercharger/26674",
     "price_verified": true
   },
   {
@@ -321,8 +321,8 @@
       "CCS1"
     ],
     "rate_regular": {
-      "off_peak": 0.54,
-      "on_peak": 0.54
+      "off_peak": 0.56,
+      "on_peak": 0.56
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
@@ -352,8 +352,8 @@
       "NACS"
     ],
     "rate_regular": {
-      "off_peak": 0.59,
-      "on_peak": 0.59
+      "off_peak": 0.64,
+      "on_peak": 0.64
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
@@ -382,13 +382,13 @@
       "CCS1"
     ],
     "rate_regular": {
-      "off_peak": 0.44,
+      "off_peak": 0.64,
       "on_peak": 0.64
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": true,
     "membership_rate": {
-      "off_peak": 0.33,
+      "off_peak": 0.48,
       "on_peak": 0.48
     },
     "tou_hours": {
@@ -413,8 +413,8 @@
       "NACS"
     ],
     "rate_regular": {
-      "off_peak": 0.59,
-      "on_peak": 0.59
+      "off_peak": 0.64,
+      "on_peak": 0.64
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": false,
@@ -459,7 +459,7 @@
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/448302",
+    "plugshare_url": "https://www.ionna.com/ev-charging-stations/pa/chester-springs/1800-ticonderoga-blvd-19425/",
     "price_verified": true
   },
   {
@@ -537,14 +537,14 @@
       "CCS1"
     ],
     "rate_regular": {
-      "off_peak": 0.56,
-      "on_peak": 0.56
+      "off_peak": 0.52,
+      "on_peak": 0.52
     },
     "gm_discount_eligible": false,
     "ea_pass_eligible": true,
     "membership_rate": {
-      "off_peak": 0.42,
-      "on_peak": 0.42
+      "off_peak": 0.39,
+      "on_peak": 0.39
     },
     "tou_hours": {
       "off_peak": "22:00-10:00",
@@ -583,7 +583,7 @@
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/462541",
+    "plugshare_url": "https://www.ionna.com/ev-charging-stations/md/frederick/1390-w-patrick-st-21703/",
     "price_verified": true
   },
   {
@@ -615,7 +615,7 @@
       "on_peak": "10:00-22:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/448358",
+    "plugshare_url": "https://www.ionna.com/ev-charging-stations/md/elkton/1657-elkton-rd-21921/",
     "price_verified": true
   },
   {
@@ -632,8 +632,8 @@
       "NACS"
     ],
     "rate_regular": {
-      "off_peak": 0.53,
-      "on_peak": 0.53
+      "off_peak": 0.54,
+      "on_peak": 0.54
     },
     "gm_discount_eligible": false,
     "gm_discount_pct": 0.0,
@@ -647,9 +647,40 @@
       "on_peak": "00:00-24:00"
     },
     "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/306630",
+    "plugshare_url": "https://dcfctracker.com/stations/371850",
     "price_verified": true,
     "ocm_id": 306630
+  },
+  {
+    "id": "ag-sideling-hill-pa",
+    "name": "Applegreen Electric - Sideling Hill, PA (PA Turnpike)",
+    "network": "Applegreen",
+    "city": "Taylor Township",
+    "state": "PA",
+    "latitude": 40.059,
+    "longitude": -78.0817,
+    "power_kw": 350,
+    "connectors": [
+      "CCS1",
+      "NACS"
+    ],
+    "rate_regular": {
+      "off_peak": 0.64,
+      "on_peak": 0.64
+    },
+    "gm_discount_eligible": false,
+    "ea_pass_eligible": false,
+    "membership_rate": {
+      "off_peak": 0.59,
+      "on_peak": 0.59
+    },
+    "tou_hours": {
+      "off_peak": "22:00-10:00",
+      "on_peak": "10:00-22:00"
+    },
+    "session_fee": 0.0,
+    "plugshare_url": "https://dcfctracker.com/stations/465436",
+    "price_verified": true
   },
   {
     "id": "tesla-mt-laurel-nj",
@@ -1083,37 +1114,6 @@
     },
     "session_fee": 0.0,
     "plugshare_url": "https://www.tesla.com/findus/location/supercharger/424861",
-    "price_verified": true
-  },
-  {
-    "id": "ag-sideling-hill-pa",
-    "name": "Applegreen Electric - Sideling Hill, PA (PA Turnpike)",
-    "network": "Applegreen",
-    "city": "Taylor Township",
-    "state": "PA",
-    "latitude": 40.059,
-    "longitude": -78.0817,
-    "power_kw": 350,
-    "connectors": [
-      "CCS1",
-      "NACS"
-    ],
-    "rate_regular": {
-      "off_peak": 0.59,
-      "on_peak": 0.59
-    },
-    "gm_discount_eligible": false,
-    "ea_pass_eligible": false,
-    "membership_rate": {
-      "off_peak": 0.59,
-      "on_peak": 0.59
-    },
-    "tou_hours": {
-      "off_peak": "22:00-10:00",
-      "on_peak": "10:00-22:00"
-    },
-    "session_fee": 0.0,
-    "plugshare_url": "https://dcfctracker.com/stations/465436",
     "price_verified": true
   }
 ]
