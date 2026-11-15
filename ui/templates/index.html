@@ -64942,12 +64942,6 @@
 
             free_flow_mph = 29.5;
 
-          } else if (sName.includes('new jersey') || sRef.includes('nj turnpike') || sRef.includes('njtp') || (lon > -75.05 && lon < -74.70 && lat > 39.88 && lat < 40.16)) {
-
-            base_mph = getNormalizedDirectionalTomTomSpeed('njturnpike_north', 'njturnpike_south', isNorthbound, localDayOfWeek, localHourFloat, posted_speed);
-
-            free_flow_mph = posted_speed;
-
           } else if (sRef.includes('276') || sName.includes('delaware river') || (lon > -75.40 && lon < -74.74 && lat > 40.05 && lat < 40.20)) {
 
             if ((is_ramp || is_plaza) && lon > -75.34 && lon < -75.28) {
@@ -64963,6 +64957,12 @@
               free_flow_mph = posted_speed;
 
             }
+
+          } else if (sName.includes('new jersey') || sRef.includes('nj turnpike') || sRef.includes('njtp') || (lon > -75.05 && lon < -74.70 && lat > 39.88 && lat < 40.16)) {
+
+            base_mph = getNormalizedDirectionalTomTomSpeed('njturnpike_north', 'njturnpike_south', isNorthbound, localDayOfWeek, localHourFloat, posted_speed);
+
+            free_flow_mph = posted_speed;
 
           } else if (lon <= -75.98 && lon > -76.885) {
 

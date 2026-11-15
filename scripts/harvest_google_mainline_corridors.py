@@ -223,6 +223,7 @@ def main():
     db_path = "data/bottleneck_speeds_db.json"
     pub_db_path = "public/data/bottleneck_speeds_db.json"
     database = json.load(open(db_path, "r", encoding="utf-8")) if os.path.exists(db_path) else {"metadata": {}, "corridors": {}}
+    all_failures = []
 
     for idx, c in enumerate(CORRIDORS):
         cid = c["id"]
@@ -261,22 +262,40 @@ def main():
             dkey, h_key, dt_iso = task
             return dkey, h_key, query_google_route(api_key, c["start"][0], c["start"][1], c["end"][0], c["end"][1], dt_iso)
 
+        corridor_failures = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as pool:
             for dkey, h_key, res in pool.map(_fetch, pending):
                 if res:
                     entry["dates"][dkey]["hours"][h_key] = res
+                else:
+                    corridor_failures.append((cid, dkey, h_key))
 
         for p in (db_path, pub_db_path):
             with open(p, "w", encoding="utf-8") as f:
                 json.dump(database, f)
-        print(f"[{idx+1}/{len(CORRIDORS)}] Saved {cid} ({len(pending)} calls)")
+        if corridor_failures:
+            all_failures.extend(corridor_failures)
+            print(f"[{idx+1}/{len(CORRIDORS)}] Saved partial {cid} ({len(pending) - len(corridor_failures)}/{len(pending)} succeeded, {len(corridor_failures)} FAILED)")
+        else:
+            print(f"[{idx+1}/{len(CORRIDORS)}] Saved {cid} ({len(pending)} calls)")
 
-    # Update data/tomtom_corridors_168h.json (+ public/data/) with interpolated 7x24 matrices
+    def _is_complete(cid):
+        dates = database.get("corridors", {}).get(cid, {}).get("dates", {})
+        return len(dates) == len(DATES) and all(
+            len(dates.get(d["key"], {}).get("hours", {})) == len(ALL_HOURS) for d in DATES
+        )
+
+    incomplete_corridors = [c["id"] for c in CORRIDORS if not _is_complete(c["id"])]
+
+    # Update data/tomtom_corridors_168h.json (+ public/data/) only for complete corridors
     tt_path = "data/tomtom_corridors_168h.json"
     pub_tt_path = "public/data/tomtom_corridors_168h.json"
     tt = json.load(open(tt_path, "r", encoding="utf-8"))
     for c in CORRIDORS:
         cid = c["id"]
+        if cid in incomplete_corridors:
+            print(f"SKIP publishing {cid} to tomtom_corridors_168h.json (incomplete harvest)")
+            continue
         dates = database["corridors"][cid]["dates"]
         mon = interpolate_day_24h(dates["baseline_mon"]["hours"])
         wed = interpolate_day_24h(dates["baseline_wed"]["hours"])
@@ -291,7 +310,7 @@ def main():
             json.dump(tt, f)
     print("Updated tomtom_corridors_168h.json & public/data/tomtom_corridors_168h.json!")
 
-    # Update data/holiday_congestion_offsets.json (+ public/data/) for all 22 corridors
+    # Update data/holiday_congestion_offsets.json (+ public/data/) only for complete corridors
     hol_path = "data/holiday_congestion_offsets.json"
     pub_hol_path = "public/data/holiday_congestion_offsets.json"
     hol_db = json.load(open(hol_path, "r", encoding="utf-8"))
@@ -310,6 +329,9 @@ def main():
     }
     for c in CORRIDORS:
         cid = c["id"]
+        if cid in incomplete_corridors:
+            print(f"SKIP publishing {cid} to holiday_congestion_offsets.json (incomplete harvest)")
+            continue
         dates = database["corridors"][cid]["dates"]
         hol_entry = {"id": cid, "name": c["name"], "holidays": {}}
         for hkey, (hdesc, bkey) in holiday_baseline_map.items():
@@ -341,6 +363,10 @@ def main():
         with open(p, "w", encoding="utf-8") as f:
             json.dump(hol_db, f)
     print("Updated holiday_congestion_offsets.json & public/data/holiday_congestion_offsets.json!")
+
+    if all_failures or incomplete_corridors:
+        print(f"ERROR: Harvest incomplete ({len(all_failures)} failed calls, {len(incomplete_corridors)} incomplete corridors): {all_failures[:10]}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
