@@ -4197,6 +4197,26 @@
 
 
 
+    function refreshMapAfterNetworkToggle() {
+
+      updateStationManagerBadge();
+
+      if (calculatedResults && currentItineraryKey && calculatedResults[currentItineraryKey]) {
+
+        renderMap(calculatedResults[currentItineraryKey]);
+
+      } else {
+
+        renderStandaloneStationMarkers();
+
+      }
+
+      renderUnverifiedStations();
+
+    }
+
+
+
     function toggleNetwork(net, isChecked) {
 
       const enabled = getEnabledNetworks();
@@ -4219,11 +4239,9 @@
 
 
 
-      updateStationManagerBadge();
+      renderNetworkFilters();
 
-      renderStandaloneStationMarkers();
-
-      renderUnverifiedStations();
+      refreshMapAfterNetworkToggle();
 
 // User clicks Calculate Route to apply changes
 
@@ -4255,11 +4273,7 @@
 
       renderNetworkFilters();
 
-      updateStationManagerBadge();
-
-      renderStandaloneStationMarkers();
-
-      renderUnverifiedStations();
+      refreshMapAfterNetworkToggle();
 
 // User clicks Calculate Route to apply changes
 
