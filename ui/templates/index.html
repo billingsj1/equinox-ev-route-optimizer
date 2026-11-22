@@ -78272,11 +78272,13 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
 
 
 
-      // 6. Asynchronously load high-resolution OSRM road geometry for the visual map line only
+      // 6. Asynchronously load high-resolution OSRM road geometry only if the corridor lacks it
 
-      // (Never mutates itinerary duration or card hours on click)
+      // (Preserves alternate-corridor geometry such as toll-free I-70/I-79 instead of snapping back to OSRM default)
 
-      if (itin.stops && itin.stops.length > 0 && !itin.osrmGeometryLoaded) {
+      const hasCorridorGeo = itin.route && Array.isArray(itin.route.coordinates) && itin.route.coordinates.length >= 20;
+
+      if (itin.stops && itin.stops.length > 0 && !itin.osrmGeometryLoaded && !hasCorridorGeo) {
 
         upgradePolylineWithOSRM(itin, poly);
 
@@ -78359,6 +78361,8 @@ if (!useDecamillaStop && destGeo.lon > -77.5 && originGeo.lon < -80.0) {
     async function upgradePolylineWithOSRM(itin, currentPoly) {
 
       if (itin.osrmGeometryLoaded) return;
+
+      if (itin.route && Array.isArray(itin.route.coordinates) && itin.route.coordinates.length >= 20) return;
 
       try {
 
