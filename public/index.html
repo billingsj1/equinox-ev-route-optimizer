@@ -4407,9 +4407,9 @@
 
     function matchStationsToPolyline(coords) {
 
-      // Session cache keyed on polyline signature + enabled networks + min_kw
-      const enabledNetsKey = (typeof document !== 'undefined')
-        ? Array.from(document.querySelectorAll('input[name="networkFilter"]:checked')).map(cb => cb.value).sort().join(',')
+      // Session cache keyed on polyline signature + enabled networks + station count
+      const enabledNetsKey = (typeof getEnabledNetworks === 'function')
+        ? Array.from(getEnabledNetworks()).sort().join(',')
         : 'all';
       let coordsKey = `empty_${enabledNetsKey}`;
       if (coords && coords.length > 0) {
@@ -4420,7 +4420,8 @@
           h1 = Math.imul(h1 ^ lonQ, 0x01000193);
           h1 = Math.imul(h1 ^ latQ, 0x01000193);
         }
-        coordsKey = `${coords.length}_${(h1 >>> 0).toString(36)}_${enabledNetsKey}`;
+        const stnLen = (typeof ALL_STATIONS !== 'undefined' && ALL_STATIONS) ? ALL_STATIONS.length : 0;
+        coordsKey = `${coords.length}_${(h1 >>> 0).toString(36)}_${enabledNetsKey}_${stnLen}`;
       }
 
       if (typeof window !== 'undefined') {
